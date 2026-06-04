@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5 Star Links</title>
+  <link rel="icon" type="image/png" href="pics/logo/logo.png.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: transparent;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+      color: #e2d9f3;
+      overflow: hidden;
+    }
+    #canvas-container {
+      position: relative;
+      width: 400px;
+      height: 400px;
+    }
+    canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .drip-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .drip-overlay svg {
+      width: 100%;
+      height: 100%;
+    }
+    .drip-overlay .drip {
+      fill: none;
+      stroke: #a855f7;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      filter: drop-shadow(0 1px 4px rgba(168,85,247,0.6));
+    }
+    .drip-overlay .drip-fill {
+      fill: #a855f7;
+      filter: drop-shadow(0 1px 4px rgba(168,85,247,0.6));
+    }
+    .drip-path { animation: dripFlow 2.5s ease-in-out infinite; }
+    .drip-drop { animation: dripFall 2.5s ease-in-out infinite; }
+    .drip-path-2 { animation: dripFlow 3s ease-in-out 0.5s infinite; }
+    .drip-drop-2 { animation: dripFall 3s ease-in-out 0.5s infinite; }
+    .drip-path-3 { animation: dripFlow 2.8s ease-in-out 1s infinite; }
+    .drip-drop-3 { animation: dripFall 2.8s ease-in-out 1s infinite; }
+    .drip-path-4 { animation: dripFlow 3.2s ease-in-out 0.3s infinite; }
+    .drip-drop-4 { animation: dripFall 3.2s ease-in-out 0.3s infinite; }
+    .drip-path-5 { animation: dripFlow 2.7s ease-in-out 0.8s infinite; }
+    .drip-drop-5 { animation: dripFall 2.7s ease-in-out 0.8s infinite; }
+
+    @keyframes dripFlow {
+      0%, 100% { stroke-dashoffset: 0; opacity: 0.4; }
+      50% { stroke-dashoffset: -30; opacity: 1; }
+    }
+    @keyframes dripFall {
+      0%, 100% { transform: translateY(0); opacity: 1; }
+      50% { transform: translateY(8px); opacity: 0.3; }
+    }
+    .shadow {
+      width: 120px;
+      height: 16px;
+      background: radial-gradient(ellipse, rgba(88,28,135,0.5) 0%, transparent 70%);
+      border-radius: 50%;
+      margin-top: 1rem;
+      animation: shadowPulse 3s ease-in-out infinite;
+    }
+    @keyframes shadowPulse {
+      0%, 100% { transform: scaleX(1); opacity: 0.5; }
+      50% { transform: scaleX(1.2); opacity: 0.8; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="canvas-container">
+  <canvas id="star3d"></canvas>
+  <div class="drip-overlay">
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <path class="drip drip-path" d="M120,300 C118,315 116,335 118,355" style="stroke-dasharray:20;stroke-dashoffset:0"/>
+      <circle class="drip-fill drip-drop" cx="118" cy="362" r="4"/>
+      <path class="drip drip-path-2" d="M200,310 C199,325 201,345 200,365" style="stroke-dasharray:20;stroke-dashoffset:0"/>
+      <circle class="drip-fill drip-drop-2" cx="200" cy="372" r="4"/>
+      <path class="drip drip-path-3" d="M280,295 C282,310 280,330 282,350" style="stroke-dasharray:20;stroke-dashoffset:0"/>
+      <circle class="drip-fill drip-drop-3" cx="282" cy="357" r="4"/>
+      <path class="drip drip-path-4" d="M80,200 C75,215 78,235 75,255" style="stroke-dasharray:15;stroke-dashoffset:0"/>
+      <circle class="drip-fill drip-drop-4" cx="75" cy="262" r="3"/>
+      <path class="drip drip-path-5" d="M320,210 C325,225 322,245 325,265" style="stroke-dasharray:15;stroke-dashoffset:0"/>
+      <circle class="drip-fill drip-drop-5" cx="325" cy="272" r="3"/>
+    </svg>
+  </div>
+</div>
+
+<div class="shadow"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  const canvas = document.getElementById('star3d');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(400, 400);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+  camera.position.z = 6;
+
+  const ambientLight = new THREE.AmbientLight(0x4a2080, 0.6);
+  scene.add(ambientLight);
+
+  const mainLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  mainLight.position.set(3, 4, 5);
+  scene.add(mainLight);
+
+  const fillLight = new THREE.DirectionalLight(0xa855f7, 0.4);
+  fillLight.position.set(-3, -2, 3);
+  scene.add(fillLight);
+
+  const rimLight = new THREE.DirectionalLight(0x7c3aed, 0.5);
+  rimLight.position.set(0, 0, -5);
+  scene.add(rimLight);
+
+  function createStarShape(outerR, innerR, points) {
+    const shape = new THREE.Shape();
+    for (let i = 0; i < points * 2; i++) {
+      const r = i % 2 === 0 ? outerR : innerR;
+      const angle = (i * Math.PI) / points - Math.PI / 2;
+      const x = Math.cos(angle) * r;
+      const y = Math.sin(angle) * r;
+      if (i === 0) shape.moveTo(x, y);
+      else shape.lineTo(x, y);
+    }
+    shape.closePath();
+    return shape;
+  }
+
+  const starShape = createStarShape(1.8, 0.75, 5);
+
+  const extrudeSettings = {
+    depth: 0.6,
+    bevelEnabled: true,
+    bevelThickness: 0.15,
+    bevelSize: 0.1,
+    bevelOffset: 0,
+    bevelSegments: 8
+  };
+
+  const starGeometry = new THREE.ExtrudeGeometry(starShape, extrudeSettings);
+  starGeometry.center();
+
+  const frontCanvas = document.createElement('canvas');
+  frontCanvas.width = 600;
+  frontCanvas.height = 600;
+  const ftx = frontCanvas.getContext('2d');
+  ftx.fillStyle = '#0a0510';
+  ftx.fillRect(0, 0, 600, 600);
+  const frontTex = new THREE.CanvasTexture(frontCanvas);
+
+  const backCanvas = document.createElement('canvas');
+  backCanvas.width = 600;
+  backCanvas.height = 600;
+  const btx = backCanvas.getContext('2d');
+
+  btx.fillStyle = '#0a0510';
+  btx.fillRect(0, 0, 600, 600);
+
+  const grad = btx.createRadialGradient(300, 300, 50, 300, 300, 280);
+  grad.addColorStop(0, 'rgba(168,85,247,0.15)');
+  grad.addColorStop(1, 'rgba(10,5,16,0)');
+  btx.fillStyle = grad;
+  btx.fillRect(0, 0, 600, 600);
+
+  function drawStar(ctx, cx, cy, outerR, innerR, points, color) {
+    ctx.beginPath();
+    for (let i = 0; i < points * 2; i++) {
+      const r = i % 2 === 0 ? outerR : innerR;
+      const angle = (i * Math.PI) / points - Math.PI / 2;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  function drawBackLogo(glow) {
+    btx.clearRect(0, 0, 600, 600);
+
+    btx.fillStyle = '#0a0510';
+    btx.fillRect(0, 0, 600, 600);
+
+    const grad = btx.createRadialGradient(300, 300, 50, 300, 300, 280);
+    grad.addColorStop(0, `rgba(168,85,247,${0.1 + glow * 0.15})`);
+    grad.addColorStop(1, 'rgba(10,5,16,0)');
+    btx.fillStyle = grad;
+    btx.fillRect(0, 0, 600, 600);
+
+    btx.shadowColor = `rgba(168,85,247,${0.4 + glow * 0.5})`;
+    btx.shadowBlur = 15 + glow * 25;
+    drawStar(btx, 300, 230, 100, 42, 5, '#a855f7');
+    btx.shadowBlur = 0;
+
+    btx.shadowColor = `rgba(168,85,247,${0.5 + glow * 0.4})`;
+    btx.shadowBlur = 10 + glow * 20;
+    drawStar(btx, 300, 230, 85, 35, 5, '#7c3aed');
+    btx.shadowBlur = 0;
+
+    drawStar(btx, 300, 230, 60, 25, 5, '#0a0510');
+
+    btx.fillStyle = '#a855f7';
+    btx.font = 'bold 90px "Segoe UI", Arial, sans-serif';
+    btx.textAlign = 'center';
+    btx.textBaseline = 'middle';
+    btx.shadowColor = `rgba(168,85,247,${0.6 + glow * 0.4})`;
+    btx.shadowBlur = 10 + glow * 20;
+    btx.fillText('5', 300, 230);
+    btx.shadowBlur = 0;
+
+    btx.shadowColor = `rgba(168,85,247,${0.3 + glow * 0.4})`;
+    btx.shadowBlur = 5 + glow * 12;
+    btx.fillStyle = '#ffffff';
+    btx.font = 'bold 72px "Segoe UI", Arial, sans-serif';
+    btx.fillText('STAR', 300, 380);
+
+    btx.fillStyle = '#a855f7';
+    btx.font = 'bold 72px "Segoe UI", Arial, sans-serif';
+    btx.fillText('LINKS', 300, 460);
+    btx.shadowBlur = 0;
+
+    btx.shadowColor = `rgba(168,85,247,${0.2 + glow * 0.3})`;
+    btx.shadowBlur = 3 + glow * 8;
+    btx.strokeStyle = `rgba(168,85,247,${0.3 + glow * 0.4})`;
+    btx.lineWidth = 2;
+    btx.beginPath();
+    btx.moveTo(160, 520);
+    btx.lineTo(440, 520);
+    btx.stroke();
+    btx.shadowBlur = 0;
+
+    backTex.needsUpdate = true;
+  }
+
+  drawBackLogo(0);
+
+  const backTex = new THREE.CanvasTexture(backCanvas);
+
+  const plushMaterial = new THREE.MeshStandardMaterial({
+    map: frontTex,
+    roughness: 0.7,
+    metalness: 0.1,
+  });
+
+  const backMaterial = new THREE.MeshStandardMaterial({
+    map: backTex,
+    roughness: 0.7,
+    metalness: 0.1,
+  });
+
+  const star = new THREE.Mesh(starGeometry, [plushMaterial, backMaterial, plushMaterial]);
+  scene.add(star);
+
+  const edgeGeometry = new THREE.ExtrudeGeometry(starShape, {
+    depth: 0.65,
+    bevelEnabled: false
+  });
+  edgeGeometry.center();
+
+  const edgeMaterial = new THREE.MeshStandardMaterial({
+    color: 0x0a0a0a,
+    roughness: 0.7,
+    metalness: 0.1
+  });
+
+  const starEdge = new THREE.Mesh(edgeGeometry, edgeMaterial);
+  starEdge.position.z = -0.02;
+  scene.add(starEdge);
+
+  function animate() {
+    requestAnimationFrame(animate);
+    star.rotation.y += 0.012;
+    starEdge.rotation.y = star.rotation.y;
+    star.rotation.x = Math.sin(Date.now() * 0.001) * 0.08;
+    starEdge.rotation.x = star.rotation.x;
+
+    const t = Date.now() * 0.001;
+    const pulse = Math.sin(t * 0.4) * 0.3
+                + Math.sin(t * 0.7) * 0.2
+                + Math.sin(t * 1.1) * 0.15
+                + Math.sin(t * 0.15) * 0.35;
+    const glow = Math.max(0, Math.min(1, (pulse + 1) / 2));
+    drawBackLogo(glow);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+</script>
+
+</body>
+</html>

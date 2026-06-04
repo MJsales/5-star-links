@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cart – 5 Star Links</title>
+  <link rel="icon" type="image/png" href="pics/logo/logo.png.png">
+  <script src="https://js.stripe.com/v3/"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050208;
+      color: #fff;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: rgba(13,8,21,0.9); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding: 1rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 800px; margin: 0 auto;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .logo-wrap-sm {
+      position: relative; width: 40px; height: 40px;
+      animation: floatSm 3s ease-in-out infinite; flex-shrink: 0;
+    }
+    .logo-wrap-sm::after {
+      content: ''; position: absolute; bottom: -4px; left: 50%;
+      transform: translateX(-50%); width: 28px; height: 5px;
+      background: radial-gradient(ellipse, rgba(168,85,247,0.35) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    @keyframes floatSm { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+    .plush-3d-sm {
+      width: 40px; height: 40px; position: relative;
+      transform-style: preserve-3d; animation: spinYSm 6s linear infinite;
+    }
+    @keyframes spinYSm { from{transform:rotateY(0deg)} to{transform:rotateY(360deg)} }
+    .plush-face-sm { position: absolute; inset: 0; backface-visibility: visible; }
+    .plush-front-sm { transform: translateZ(4px); }
+    .plush-front-sm img { width: 40px; height: 40px; object-fit: contain; display: block; border-radius: 4px; }
+    .plush-back-sm { transform: rotateY(180deg) translateZ(4px); }
+    .plush-back-sm img { width: 40px; height: 40px; object-fit: contain; display: block; border-radius: 4px; filter: brightness(0.85); }
+    .plush-edge-sm {
+      position: absolute; inset: 0;
+      background: #0a0510;
+      transform: translateZ(calc(-0.5px * var(--i)));
+    }
+    .logo-drips-sm {
+      position: absolute; inset: 0; pointer-events: none;
+      animation: spinYSm 6s linear infinite reverse;
+    }
+    .logo-drips-sm .drip { fill: none; stroke: #a855f7; stroke-width: 2; stroke-linecap: round; }
+    .logo-drips-sm .drip-fill { fill: #a855f7; }
+    .drip-path { animation: dripFlowSm 2.5s ease-in-out infinite; }
+    .drip-drop { animation: dripFallSm 2.5s ease-in-out infinite; }
+    .drip-path-2 { animation: dripFlowSm 3s ease-in-out 0.5s infinite; }
+    .drip-drop-2 { animation: dripFallSm 3s ease-in-out 0.5s infinite; }
+    .drip-path-3 { animation: dripFlowSm 2.8s ease-in-out 1s infinite; }
+    .drip-drop-3 { animation: dripFallSm 2.8s ease-in-out 1s infinite; }
+    @keyframes dripFlowSm { 0%,100%{stroke-dashoffset:0;opacity:0.4} 50%{stroke-dashoffset:-30;opacity:1} }
+    @keyframes dripFallSm { 0%,100%{transform:translateY(0);opacity:1} 50%{transform:translateY(4px);opacity:0.3} }
+
+    .topbar h1 {
+      font-size: 1.3rem; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .back-btn {
+      color: #a78bfa; text-decoration: none; font-weight: 600; font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .back-btn:hover { color: #fff; }
+
+    .container { max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+    .cart-item {
+      display: flex; align-items: center; gap: 1rem;
+      background: linear-gradient(145deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.12); border-radius: 14px;
+      padding: 1rem; margin-bottom: 1rem;
+      transition: border-color 0.3s;
+    }
+    .cart-item:hover { border-color: rgba(168,85,247,0.35); }
+    .cart-item svg { width: 60px; height: auto; flex-shrink: 0; }
+    .details { flex: 1; }
+    .details h3 { font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .color-tag {
+      display: inline-block; margin-top: 4px; padding: 2px 10px;
+      background: rgba(168,85,247,0.15); border-radius: 20px;
+      font-size: 0.75rem; color: #a78bfa; text-transform: capitalize;
+    }
+    .item-price { font-size: 1.2rem; font-weight: 800; color: #a855f7; }
+    .remove-btn {
+      background: none; border: none; color: #555; font-size: 1.4rem;
+      cursor: pointer; transition: color 0.2s; padding: 0 4px;
+    }
+    .remove-btn:hover { color: #c02828; }
+
+    .summary {
+      background: linear-gradient(145deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.12); border-radius: 14px;
+      padding: 1.2rem; margin-top: 1.5rem;
+    }
+    .summary .row {
+      display: flex; justify-content: space-between; padding: 0.4rem 0;
+      font-size: 0.95rem; color: #999;
+    }
+    .summary .row.total {
+      border-top: 1px solid rgba(168,85,247,0.15); margin-top: 0.5rem;
+      padding-top: 0.8rem; font-size: 1.15rem; font-weight: 800; color: #fff;
+    }
+    .checkout-btn {
+      display: block; width: 100%; margin-top: 1.2rem; padding: 1rem;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 800;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
+      transition: all 0.3s;
+    }
+    .checkout-btn:hover { transform: scale(1.02); box-shadow: 0 8px 30px rgba(168,85,247,0.35); }
+
+    .empty { text-align: center; padding: 4rem 1rem; }
+    .empty h2 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .empty p { color: #666; }
+    .empty a { color: #a855f7; text-decoration: none; font-weight: 700; }
+    .empty a:hover { text-decoration: underline; }
+
+    .footer {
+      text-align: center; padding: 3rem 1rem; font-size: 0.85rem;
+      color: #444; border-top: 1px solid rgba(168,85,247,0.1); margin-top: 2rem;
+    }
+    .footer strong { color: #a855f7; }
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      padding: 0.8rem 2rem; border-radius: 40px; font-weight: 700;
+      font-size: 0.95rem; opacity: 0; transition: opacity 0.3s;
+      pointer-events: none; z-index: 999; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+
+    .payment-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .payment-overlay.active { display: flex; }
+    .payment-modal {
+      background: linear-gradient(145deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.25); border-radius: 18px;
+      padding: 2rem; width: 90%; max-width: 420px; position: relative;
+    }
+    .payment-modal h2 {
+      margin-bottom: 1.5rem; font-size: 1.3rem;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .payment-close {
+      position: absolute; top: 12px; right: 16px;
+      background: none; border: none; color: #555; font-size: 1.5rem; cursor: pointer;
+    }
+    .payment-close:hover { color: #fff; }
+    #apple-pay-button {
+      width: 100%; padding: 14px; background: #000; color: #fff;
+      border: 1px solid #333; border-radius: 10px; font-size: 1rem;
+      font-weight: 600; cursor: pointer; margin-bottom: 1rem; display: none;
+    }
+    #apple-pay-button:hover { background: #222; }
+    .divider {
+      text-align: center; color: #444; margin: 1rem 0; font-size: 0.85rem;
+    }
+    #card-element {
+      padding: 12px; background: #050208;
+      border: 1px solid rgba(168,85,247,0.2); border-radius: 10px; margin-bottom: 1rem;
+    }
+    #card-errors { color: #c02828; font-size: 0.85rem; margin-bottom: 1rem; min-height: 1.2em; }
+    .pay-btn {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: 800;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .pay-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-wrap-sm">
+      <div class="plush-3d-sm">
+        <div class="plush-face-sm plush-back-sm">
+          <img src="pics/logo/logo.png.png" alt="5 Star Links"/>
+        </div>
+        <div class="plush-edge-sm" style="--i:1"></div>
+        <div class="plush-edge-sm" style="--i:2"></div>
+        <div class="plush-edge-sm" style="--i:3"></div>
+        <div class="plush-edge-sm" style="--i:4"></div>
+        <div class="plush-edge-sm" style="--i:5"></div>
+        <div class="plush-edge-sm" style="--i:6"></div>
+        <div class="plush-edge-sm" style="--i:7"></div>
+        <div class="plush-edge-sm" style="--i:8"></div>
+        <div class="plush-face-sm plush-front-sm">
+          <img src="pics/logo/logo.png.png" alt="5 Star Links"/>
+        </div>
+      </div>
+      <svg class="logo-drips-sm" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+        <path class="drip drip-path" d="M70,170 C68,180 66,195 68,210"/>
+        <ellipse class="drip-fill drip-drop" cx="68" cy="218" rx="4" ry="6"/>
+        <path class="drip drip-path-2" d="M110,175 C109,185 111,200 110,215"/>
+        <ellipse class="drip-fill drip-drop-2" cx="110" cy="222" rx="4" ry="6"/>
+        <path class="drip drip-path-3" d="M150,168 C152,178 150,193 152,208"/>
+        <ellipse class="drip-fill drip-drop-3" cx="152" cy="216" rx="4" ry="6"/>
+      </svg>
+    </div>
+    <h1>5 Star Links</h1>
+  </div>
+  <a href="index.html" class="back-btn">&larr; Continue Shopping</a>
+</div>
+
+<div class="container">
+  <div id="cartContent"></div>
+</div>
+
+<div class="footer">
+  &copy; 2026 <strong>5 Star Links</strong> &bull; All rights reserved
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="payment-overlay" id="paymentOverlay">
+  <div class="payment-modal">
+    <button class="payment-close" onclick="closePayment()">&times;</button>
+    <h2>Pay $<span id="payAmount">0</span></h2>
+    <button id="apple-pay-button"> Pay</button>
+    <div class="divider">or pay with card</div>
+    <div id="card-element"></div>
+    <div id="card-errors"></div>
+    <button class="pay-btn" id="payBtn" onclick="submitPayment()">Pay Now</button>
+  </div>
+</div>
+
+<script>
+  const colorData = {
+    black:  { fill: '#1a1a1a', stroke: '#000' },
+    pink:   { fill: '#e87ca0', stroke: '#c4567a' },
+    white:  { fill: '#e8e8e8', stroke: '#bbb' },
+    orange: { fill: '#e8762a', stroke: '#c45a18' },
+    red:    { fill: '#c02828', stroke: '#8a1a1a' },
+    blue:   { fill: '#3366cc', stroke: '#224499' },
+  };
+
+  const toast = document.getElementById('toast');
+  let toastTimer;
+
+  function getCart() { return JSON.parse(localStorage.getItem('cart') || '[]'); }
+  function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); }
+
+  function balaclavaSVG(fill, stroke) {
+    return `<svg viewBox="0 0 160 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 100 Q30 30 80 20 Q130 30 130 100" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      <path d="M30 100 L30 160 Q30 200 80 210 Q130 200 130 160 L130 100 Q130 100 80 95 Q30 100 30 100Z" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      <ellipse cx="80" cy="95" rx="30" ry="16" fill="#0a0a0a" stroke="${stroke}" stroke-width="2"/>
+      <path d="M80 110 L80 140" stroke="${stroke}" stroke-width="1.5" opacity="0.5"/>
+      <path d="M50 170 Q80 180 110 170" stroke="${stroke}" stroke-width="1.5" fill="none" opacity="0.4"/>
+      <path d="M30 160 L20 220 L140 220 L130 160" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+    </svg>`;
+  }
+
+  function spiderHoodieSVG() {
+    return `<svg viewBox="0 0 200 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 80 L40 260 Q40 275 100 275 Q160 275 160 260 L160 80" fill="#111" stroke="#333" stroke-width="2"/>
+      <path d="M40 80 Q40 20 100 15 Q160 20 160 80 L155 95 Q100 85 45 95 Z" fill="#111" stroke="#333" stroke-width="2"/>
+      <path d="M50 82 Q50 35 100 30 Q150 35 150 82 L147 92 Q100 83 53 92 Z" fill="#0a0a0a"/>
+      <path d="M40 90 L10 170 Q8 180 18 178 L40 160" fill="#111" stroke="#333" stroke-width="2"/>
+      <path d="M160 90 L190 170 Q192 180 182 178 L160 160" fill="#111" stroke="#333" stroke-width="2"/>
+      <g stroke="#fff" stroke-width="1.2" fill="none" opacity="0.9">
+        <path d="M100 95 Q60 130 30 190"/>
+        <path d="M100 95 Q140 130 170 190"/>
+        <path d="M100 95 Q80 140 60 200"/>
+        <path d="M100 95 Q120 140 140 200"/>
+        <path d="M100 95 Q100 150 100 220"/>
+        <path d="M55 140 Q75 135 100 140"/>
+        <path d="M145 140 Q125 135 100 140"/>
+        <path d="M40 170 Q70 160 100 170"/>
+        <path d="M160 170 Q130 160 100 170"/>
+        <ellipse cx="100" cy="95" rx="18" ry="14"/>
+        <circle cx="93" cy="92" r="3" fill="#fff"/>
+        <circle cx="107" cy="92" r="3" fill="#fff"/>
+      </g>
+    </svg>`;
+  }
+
+  function bapeHoodieSVG() {
+    return `<svg viewBox="0 0 200 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="camoC" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+          <rect width="40" height="40" fill="#222"/>
+          <rect x="0" y="0" width="18" height="14" rx="4" fill="#333"/>
+          <rect x="20" y="8" width="16" height="12" rx="3" fill="#2a2a2a"/>
+          <rect x="8" y="22" width="20" height="10" rx="5" fill="#383838"/>
+          <rect x="28" y="26" width="12" height="14" rx="3" fill="#2e2e2e"/>
+          <rect x="2" y="32" width="10" height="8" rx="2" fill="#3a3a3a"/>
+        </pattern>
+      </defs>
+      <path d="M40 80 L40 260 Q40 275 100 275 Q160 275 160 260 L160 80" fill="url(#camoC)" stroke="#444" stroke-width="2"/>
+      <path d="M40 80 Q40 20 100 15 Q160 20 160 80 L155 95 Q100 85 45 95 Z" fill="url(#camoC)" stroke="#444" stroke-width="2"/>
+      <path d="M50 82 Q50 35 100 30 Q150 35 150 82 L147 92 Q100 83 53 92 Z" fill="#111"/>
+      <path d="M40 90 L10 170 Q8 180 18 178 L40 160" fill="url(#camoC)" stroke="#444" stroke-width="2"/>
+      <path d="M160 90 L190 170 Q192 180 182 178 L160 160" fill="url(#camoC)" stroke="#444" stroke-width="2"/>
+      <line x1="100" y1="95" x2="100" y2="275" stroke="#888" stroke-width="2"/>
+      <circle cx="100" cy="95" r="3" fill="#aaa"/>
+      <g fill="#fff">
+        <path d="M52,50 L62,68 L42,68 Z"/>
+        <path d="M48,72 L60,90 L36,90 Z"/>
+        <path d="M148,50 L138,68 L158,68 Z"/>
+        <path d="M152,72 L140,90 L164,90 Z"/>
+        <path d="M70,42 L80,60 L60,60 Z"/>
+        <path d="M90,38 L100,56 L80,56 Z"/>
+        <path d="M110,38 L120,56 L100,56 Z"/>
+        <path d="M130,42 L140,60 L120,60 Z"/>
+      </g>
+      <ellipse cx="78" cy="35" rx="8" ry="6" fill="#fff"/>
+      <path d="M74 32 Q78 40 82 32" stroke="#000" stroke-width="1.5" fill="none"/>
+      <path d="M76 35 L78 38 L80 35" stroke="#000" stroke-width="1" fill="none"/>
+      <path d="M122 32 Q126 40 130 32" stroke="#000" stroke-width="1.5" fill="none"/>
+      <path d="M124 35 L126 38 L128 35" stroke="#000" stroke-width="1" fill="none"/>
+      <path d="M85 44 Q100 52 115 44" stroke="#000" stroke-width="1.5" fill="none"/>
+    </svg>`;
+  }
+
+  function getItemSVG(item) {
+    if (item.id === 'balaclava' || item.id === 'ski-mask') {
+      const c = colorData[item.color ? item.color.toLowerCase() : 'black'] || colorData.black;
+      return balaclavaSVG(c.fill, c.stroke);
+    } else if (item.id === 'spider-hoodie') {
+      return spiderHoodieSVG();
+    } else if (item.id === 'bape-hoodie') {
+      return bapeHoodieSVG();
+    }
+    return balaclavaSVG('#1a1a1a', '#000');
+  }
+
+  function render() {
+    const cart = getCart();
+    const el = document.getElementById('cartContent');
+
+    if (cart.length === 0) {
+      el.innerHTML = `
+        <div class="empty">
+          <h2>Your cart is empty</h2>
+          <p style="color:#666;margin-top:0.5rem">Browse our collection and find your perfect fit.</p>
+          <p style="margin-top:1.5rem"><a href="index.html" style="color:#a855f7;font-weight:700">Shop now &rarr;</a></p>
+        </div>`;
+      return;
+    }
+
+    const total = cart.length * 5;
+    let itemsHTML = '';
+
+    cart.forEach((item, i) => {
+      const colorLabel = item.color ? ` &mdash; ${item.color}` : '';
+      itemsHTML += `
+        <div class="cart-item">
+          <div>${getItemSVG(item)}</div>
+          <div class="details">
+            <h3>${item.name}${colorLabel}</h3>
+            <div class="color-tag">${item.id}</div>
+          </div>
+          <div class="item-price">$${item.price || 5}</div>
+          <button class="remove-btn" onclick="removeItem(${i})" title="Remove">&times;</button>
+        </div>`;
+    });
+
+    el.innerHTML = `
+      ${itemsHTML}
+      <div class="summary">
+        <div class="row"><span>Subtotal (${cart.length} item${cart.length > 1 ? 's' : ''})</span><span>$${total}</span></div>
+        <div class="row"><span>Shipping</span><span style="color:#a855f7">FREE</span></div>
+        <div class="row total"><span>Total</span><span>$${total}</span></div>
+      </div>
+      <button class="checkout-btn" onclick="checkout()">
+        Checkout &mdash; $${total}
+      </button>`;
+  }
+
+  function removeItem(index) {
+    const cart = getCart();
+    const removed = cart.splice(index, 1)[0];
+    saveCart(cart);
+    render();
+    showToast(`${removed.name} removed from cart`);
+  }
+
+  function showToast(msg) {
+    toast.innerHTML = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+  const publishableKey = 'pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3';
+  let stripe, cardElement, clientSecret;
+
+  async function checkout() {
+    const cart = getCart();
+    if (cart.length === 0) { showToast('Cart is empty'); return; }
+
+    const items = cart.map(item => ({
+      id: item.id,
+      color: item.color || null,
+      quantity: item.quantity || 1
+    }));
+
+    const total = cart.reduce((sum, item) => sum + 5 * (item.quantity || 1), 0);
+    document.getElementById('payAmount').textContent = total;
+
+    try {
+      const res = await fetch('/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items })
+      });
+      const data = await res.json();
+      if (data.clientSecret) {
+        clientSecret = data.clientSecret;
+        initStripe();
+        document.getElementById('paymentOverlay').classList.add('active');
+      } else {
+        showToast('Failed to start checkout');
+      }
+    } catch (err) {
+      showToast('Server error — is it running?');
+    }
+  }
+
+  function initStripe() {
+    stripe = Stripe(publishableKey);
+    const elements = stripe.elements();
+    cardElement = elements.create('card', {
+      style: {
+        base: { color: '#fff', fontSize: '16px', '::placeholder': { color: '#666' } },
+        invalid: { color: '#c02828' }
+      }
+    });
+    cardElement.mount('#card-element');
+
+    cardElement.on('change', (event) => {
+      document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+    });
+
+    const paymentRequest = stripe.paymentRequest({
+      country: 'US',
+      currency: 'usd',
+      total: { label: '5 Star Links', amount: parseInt(document.getElementById('payAmount').textContent) * 100 },
+      requestPayerName: true,
+      requestPayerEmail: true,
+    });
+
+    paymentRequest.canMakePayment().then((result) => {
+      if (result && (result.applePay || result.googlePay)) {
+        document.getElementById('apple-pay-button').style.display = 'block';
+      }
+    });
+
+    document.getElementById('apple-pay-button').addEventListener('click', () => {
+      paymentRequest.show();
+    });
+
+    paymentRequest.on('paymentmethod', async (e) => {
+      const { error } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: e.paymentMethod.id
+      }, { handleActions: false });
+      if (error) {
+        e.complete('fail');
+        showToast(error.message);
+      } else {
+        e.complete('success');
+        window.location.href = 'success.html';
+      }
+    });
+  }
+
+  async function submitPayment() {
+    const btn = document.getElementById('payBtn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+
+    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: { card: cardElement }
+    });
+
+    if (error) {
+      document.getElementById('card-errors').textContent = error.message;
+      btn.disabled = false;
+      btn.textContent = 'Pay Now';
+    } else if (paymentIntent.status === 'succeeded') {
+      window.location.href = 'success.html';
+    }
+  }
+
+  function closePayment() {
+    document.getElementById('paymentOverlay').classList.remove('active');
+  }
+
+  render();
+</script>
+</body>
+</html>
