@@ -313,8 +313,7 @@
         <option value="GRT">The Graph (GRT)</option>
       </select>
     </div>
-    <div id="walletDetected" style="display:none;padding:10px 14px;margin-bottom:10px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:10px;color:#22c55e;font-size:0.9rem;font-weight:600;"></div>
-    <div id="walletHint" style="font-size:0.75rem;color:#a855f7;margin-bottom:6px;min-height:1rem;"></div>
+    <div id="walletHint" style="font-size:0.7rem;color:#a855f7;margin-bottom:6px;min-height:0.8rem;"></div>
     <input type="text" id="walletAddress" placeholder="Paste any wallet address — auto-detects chain" oninput="autoDetectChain()" style="width:100%;padding:12px;margin-bottom:14px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;word-break:break-all;" />
     <button onclick="addWallet()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Link Wallet</button>
   </div>
@@ -368,7 +367,7 @@ fetch('stocks-data.json').then(function(r) { return r.json(); }).then(function(d
 }).catch(function(e) { console.error('Failed to load stocks data:', e); });
 
 function fetchLiveCryptoPrices() {
-  var coinIds = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOGE': 'dogecoin', 'XRP': 'ripple', 'ADA': 'cardano', 'AVAX': 'avalanche-2', 'LINK': 'chainlink', 'DOT': 'polkadot', 'MATIC': 'matic-network' };
+  var coinIds = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOGE': 'dogecoin', 'XRP': 'ripple', 'ADA': 'cardano', 'AVAX': 'avalanche-2', 'LINK': 'chainlink', 'DOT': 'polkadot', 'MATIC': 'matic-network', 'BNB': 'binancecoin', 'TRX': 'tron', 'LTC': 'litecoin', 'SHIB': 'shiba-inu', 'NEAR': 'near', 'ARB': 'arbitrum', 'OP': 'optimism', 'FIL': 'filecoin', 'ATOM': 'cosmos', 'SUI': 'sui', 'INJ': 'injective-protocol', 'RENDER': 'render-token', 'GRT': 'the-graph', 'PEPE': 'pepe', 'BONK': 'bonk', 'FLOKI': 'floki', 'WIF': 'dogwifcoin', 'APT': 'aptos', 'JUP': 'jupiter-exchange-solana', 'USDC': 'usd-coin', 'USDT': 'tether' };
   var ids = Object.values(coinIds).join(',');
   fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd&include_24hr_change=true')
     .then(function(r) { return r.json(); })
@@ -981,7 +980,6 @@ function openAddWallet() {
     return;
   }
   document.getElementById('walletAddress').value = '';
-  document.getElementById('walletDetected').style.display = 'none';
   document.getElementById('walletChainWrap').style.display = 'block';
   document.getElementById('walletHint').textContent = '';
   document.getElementById('addWalletOverlay').style.display = 'flex';
@@ -996,16 +994,13 @@ function autoDetectChain() {
   var detected = detectChain(address);
   var sel = document.getElementById('walletChain');
   var hint = document.getElementById('walletHint');
-  var detectedEl = document.getElementById('walletDetected');
   var wrap = document.getElementById('walletChainWrap');
   if (detected) {
     sel.value = detected;
-    if (hint) hint.textContent = '';
-    if (detectedEl) { detectedEl.style.display = 'block'; detectedEl.textContent = '✓ ' + detected + ' detected'; }
-    if (wrap) wrap.style.display = 'none';
+    if (hint) hint.textContent = 'Detected: ' + detected + ' — change below if needed';
+    if (wrap) wrap.style.display = 'block';
   } else {
     if (hint) hint.textContent = '';
-    if (detectedEl) detectedEl.style.display = 'none';
     if (wrap) wrap.style.display = 'block';
   }
 }
@@ -1457,19 +1452,21 @@ setInterval(tickCountdown, 1000);
 var origGeneratePrediction = generatePrediction;
 generatePrediction = function(input) {
   var lower = input.toLowerCase();
-  var all = stocksData ? (stocksData.stocks || []).concat(stocksData.crypto || []) : [];
-  all.forEach(function(a) {
-    if (lower.includes(a.symbol.toLowerCase()) || lower.includes(a.name.toLowerCase())) {
-      updateChart(a.symbol);
+  try {
+    var all = stocksData ? (stocksData.stocks || []).concat(stocksData.crypto || []) : [];
+    all.forEach(function(a) {
+      if (lower.includes(a.symbol.toLowerCase()) || lower.includes(a.name.toLowerCase())) {
+        updateChart(a.symbol);
+      }
+    });
+    if (lower.includes('wallet') && wallets.length > 0) {
+      var bestWallet = wallets.find(function(wt) { return wt.balance !== null; });
+      if (bestWallet) {
+        var coin = all.find(function(a) { return a.symbol === bestWallet.chain; });
+        if (coin) updateChart(coin.symbol);
+      }
     }
-  });
-  if (lower.includes('wallet') && wallets.length > 0) {
-    var bestWallet = wallets.find(function(wt) { return wt.balance !== null; });
-    if (bestWallet) {
-      var coin = all.find(function(a) { return a.symbol === bestWallet.chain; });
-      if (coin) updateChart(coin.symbol);
-    }
-  }
+  } catch(e) { console.error('Chart update error:', e); }
   return origGeneratePrediction(input);
 };
 
