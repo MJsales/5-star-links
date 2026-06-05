@@ -180,7 +180,8 @@
     </div>
   </div>
   <div class="chat-input-wrap">
-    <input type="password" class="chat-input" id="chatInput" placeholder="Ask about any stock or crypto..." onkeypress="if(event.key==='Enter')sendMsg()" name="chat_text">
+    <input type="email" style="position:absolute;left:-9999px;opacity:0;" tabindex="-1" autocomplete="email" aria-hidden="true">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about any stock or crypto..." onkeypress="if(event.key==='Enter')sendMsg()" autocomplete="off">
     <button class="send-btn" onclick="sendMsg()">Send</button>
   </div>
 </div>
