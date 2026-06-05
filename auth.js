@@ -1,7 +1,3 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
 const firebaseConfig = {
   apiKey: "AIzaSyC_BsfYnXeSCv5oNnAVS2xR0UKRhZNaBj4",
   authDomain: "starlinks-124a3.firebaseapp.com",
@@ -12,34 +8,51 @@ const firebaseConfig = {
   measurementId: "G-BYF34LLMB9"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
+let firebaseApp = null;
+let firebaseAuth = null;
+let firebaseDb = null;
 let currentUser = null;
+let firebaseReady = false;
 
-onAuthStateChanged(auth, (user) => {
-  currentUser = user;
-  updateAuthUI();
-  if (user) syncFromCloud();
-});
+async function initFirebase() {
+  try {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    const { getFirestore, doc, getDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
 
-function updateAuthUI() {
-  const authBtn = document.getElementById('authBtn');
-  if (!authBtn) return;
-  if (currentUser) {
-    authBtn.textContent = currentUser.displayName || currentUser.email.split('@')[0];
-    authBtn.onclick = handleSignOut;
-  } else {
-    authBtn.textContent = 'Sign In';
-    authBtn.onclick = showAuthModal;
+    firebaseApp = initializeApp(firebaseConfig);
+    firebaseAuth = getAuth(firebaseApp);
+    firebaseDb = getFirestore(firebaseApp);
+    firebaseReady = true;
+
+    onAuthStateChanged(firebaseAuth, (user) => {
+      currentUser = user;
+      updateAuthUI();
+      if (user) syncFromCloud();
+    });
+  } catch (e) {
+    console.error('Firebase init failed:', e);
   }
 }
 
+function updateAuthUI() {
+  const authBtns = document.querySelectorAll('[id="authBtn"]');
+  authBtns.forEach(authBtn => {
+    if (currentUser) {
+      authBtn.textContent = currentUser.displayName || currentUser.email.split('@')[0];
+      authBtn.onclick = handleSignOut;
+    } else {
+      authBtn.textContent = 'Sign In';
+      authBtn.onclick = showAuthModal;
+    }
+  });
+}
+
 async function syncFromCloud() {
-  if (!currentUser) return;
+  if (!currentUser || !firebaseReady) return;
   try {
-    const docRef = doc(db, 'users', currentUser.uid);
+    const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const docRef = doc(firebaseDb, 'users', currentUser.uid);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
@@ -50,9 +63,10 @@ async function syncFromCloud() {
 }
 
 async function syncToCloud() {
-  if (!currentUser) return;
+  if (!currentUser || !firebaseReady) return;
   try {
-    const docRef = doc(db, 'users', currentUser.uid);
+    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const docRef = doc(firebaseDb, 'users', currentUser.uid);
     await setDoc(docRef, {
       cart: JSON.parse(localStorage.getItem('cart') || '[]'),
       purchasedItems: JSON.parse(localStorage.getItem('purchasedItems') || '[]'),
@@ -62,7 +76,9 @@ async function syncToCloud() {
 }
 
 async function handleSignUp(name, email, password) {
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  if (!firebaseReady) throw new Error('Firebase not ready. Try again.');
+  const { createUserWithEmailAndPassword, updateProfile } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+  const cred = await createUserWithEmailAndPassword(firebaseAuth, email, password);
   await updateProfile(cred.user, { displayName: name });
   updateAuthUI();
   await syncToCloud();
@@ -70,15 +86,19 @@ async function handleSignUp(name, email, password) {
 }
 
 async function handleSignIn(email, password) {
-  const cred = await signInWithEmailAndPassword(auth, email, password);
+  if (!firebaseReady) throw new Error('Firebase not ready. Try again.');
+  const { signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+  const cred = await signInWithEmailAndPassword(firebaseAuth, email, password);
   updateAuthUI();
   await syncFromCloud();
   return cred;
 }
 
 async function handleSignOut() {
+  if (!firebaseReady) return;
+  const { signOut } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
   await syncToCloud();
-  await signOut(auth);
+  await signOut(firebaseAuth);
   currentUser = null;
   updateAuthUI();
 }
@@ -100,3 +120,5 @@ window.authModule = {
   hideAuth: hideAuthModal,
   syncToCloud
 };
+
+initFirebase();

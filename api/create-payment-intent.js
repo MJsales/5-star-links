@@ -22,13 +22,22 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { items } = req.body;
+    const { items, amount } = req.body;
 
     let totalAmount = 0;
-    items.forEach(item => {
-      const product = products[item.id];
-      totalAmount += product.price * (item.quantity || 1);
-    });
+
+    if (amount) {
+      totalAmount = amount;
+    } else if (items) {
+      items.forEach(item => {
+        const product = products[item.id];
+        if (product) totalAmount += product.price * (item.quantity || 1);
+      });
+    }
+
+    if (totalAmount <= 0) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount,

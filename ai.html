@@ -234,7 +234,7 @@
 </div>
 
 <script src="https://js.stripe.com/v3/"></script>
-<script type="module" src="auth.js"></script>
+<script src="auth.js"></script>
 <script>
 const stripe = Stripe('pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3');
 let paid = localStorage.getItem('aiPicksPaid') === 'true';
@@ -246,25 +246,6 @@ function showChat() {
   document.getElementById('chatContainer').classList.add('active');
 }
 
-async function startPayment() {
-  const err = document.getElementById('payError');
-  err.textContent = '';
-
-  const promoInput = document.getElementById('promoInput');
-  const promoCode = promoInput ? promoInput.value.trim().toUpperCase() : '';
-  if (promoCode === 'JOHNABBY') {
-    localStorage.setItem('aiPicksPaid', 'true');
-    const purchased = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
-    purchased.push({ id: 'ai-picks', name: 'AI Sports Picks', quantity: 1 });
-    localStorage.setItem('purchasedItems', JSON.stringify(purchased));
-    if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
-    showChat();
-    return;
-  }
-
-  openPayment();
-}
-
 const elements = stripe.elements();
 let card = null;
 
@@ -272,13 +253,18 @@ function openPayment() {
   const overlay = document.getElementById('paymentOverlay');
   overlay.style.display = 'flex';
   if (!card) {
-    card = elements.create('card', {
-      style: {
-        base: { color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: '16px', '::placeholder': { color: '#555' } },
-        invalid: { color: '#c02828' }
-      }
-    });
-    card.mount('#card-mount');
+    try {
+      card = elements.create('card', {
+        style: {
+          base: { color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: '16px', '::placeholder': { color: '#555' } },
+          invalid: { color: '#c02828' }
+        }
+      });
+      card.mount('#card-mount');
+    } catch (e) {
+      console.error('Stripe card error:', e);
+      document.getElementById('payError2').textContent = 'Payment system error. Try again.';
+    }
   }
 }
 
