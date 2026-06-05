@@ -164,7 +164,6 @@
   .alert-toast.buy { background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);color:#86efac; }
   @keyframes slideIn { from { opacity:0;transform:translateX(50px); } to { opacity:1;transform:translateX(0); } }
   @keyframes slideOut { from { opacity:1;transform:translateX(0); } to { opacity:0;transform:translateX(50px); } }
-</style>
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 </style>
 
@@ -636,38 +635,36 @@ renderReviews();
 var portfolio = [];
 
 function getPortfolio() {
-  if (window.authModule && window.authModule.getCurrentUser()) {
-    var db = window._fbDb;
+  if (window.authModule && window.authModule.getCurrentUser() && window._fbDb) {
     var uid = window.authModule.getCurrentUser().uid;
-    if (db && uid) {
-      return db.collection('users').doc(uid).collection('portfolio').get().then(function(snap) {
-        var items = [];
-        snap.forEach(function(doc) { items.push(doc.data()); });
-        return items;
-      }).catch(function() { return []; });
-    }
+    return window._fbDb.collection('users').doc(uid).collection('portfolio').get().then(function(snap) {
+      var items = [];
+      snap.forEach(function(doc) { items.push(doc.data()); });
+      if (items.length > 0) {
+        localStorage.setItem('portfolio', JSON.stringify(items));
+      }
+      return items;
+    }).catch(function() {
+      return JSON.parse(localStorage.getItem('portfolio') || '[]');
+    });
   }
   return Promise.resolve(JSON.parse(localStorage.getItem('portfolio') || '[]'));
 }
 
 function savePortfolio(items) {
   portfolio = items;
-  if (window.authModule && window.authModule.getCurrentUser()) {
-    var db = window._fbDb;
+  localStorage.setItem('portfolio', JSON.stringify(items));
+  if (window.authModule && window.authModule.getCurrentUser() && window._fbDb) {
     var uid = window.authModule.getCurrentUser().uid;
-    if (db && uid) {
-      var batch = db.batch();
-      var ref = db.collection('users').doc(uid).collection('portfolio');
-      ref.get().then(function(snap) {
-        snap.forEach(function(doc) { batch.delete(doc.ref); });
-        items.forEach(function(item) {
-          batch.set(ref.doc(item.symbol), item);
-        });
-        return batch.commit();
-      }).catch(function(e) { console.error('Portfolio save error:', e); });
-    }
-  } else {
-    localStorage.setItem('portfolio', JSON.stringify(items));
+    var ref = window._fbDb.collection('users').doc(uid).collection('portfolio');
+    ref.get().then(function(snap) {
+      var batch = window._fbDb.batch();
+      snap.forEach(function(doc) { batch.delete(doc.ref); });
+      items.forEach(function(item) {
+        batch.set(ref.doc(item.symbol), item);
+      });
+      return batch.commit();
+    }).catch(function(e) { console.error('Portfolio save error:', e); });
   }
   renderPortfolio();
   checkSellAlerts();
