@@ -36,6 +36,15 @@
     .viral-score { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
     .tip-box { background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.2); border-radius: 12px; padding: 1rem; margin: 0.5rem 0; font-size: 0.9rem; color: #ccc; }
     .tip-box b { color: #a855f7; }
+    .video-embed { border-radius: 12px; overflow: hidden; margin: 0.5rem 0; border: 1px solid rgba(168,85,247,0.2); }
+    .video-embed iframe { width: 100%; aspect-ratio: 16/9; border: none; }
+    .video-info { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 10px; margin: 0.5rem 0; }
+    .video-info .title { font-weight: 700; font-size: 0.95rem; color: #fff; }
+    .video-info .meta { font-size: 0.8rem; color: #888; margin-top: 4px; }
+    .transcript-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; background: rgba(168,85,247,0.15); color: #a855f7; border: 1px solid rgba(168,85,247,0.3); }
+    .chapter-tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); margin: 2px; }
+    .loading-dots::after { content: ''; animation: dots 1.5s steps(4,end) infinite; }
+    @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } 100% { content: ''; } }
     .auth-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 2000; align-items: center; justify-content: center; }
     .auth-overlay.active { display: flex; }
     .auth-modal { background: linear-gradient(145deg, #0d0815, #110a1a); border: 1px solid rgba(168,85,247,0.25); border-radius: 18px; padding: 2rem; width: 90%; max-width: 380px; position: relative; }
@@ -69,11 +78,12 @@
       <div class="label">Video AI</div>
       Yo! I turn long YouTube videos into viral TikToks. 🎬<br><br>
       Drop a YouTube link and I'll:<br>
-      &#8226; Find the most viral moments<br>
+      &#8226; Pull the video title, duration &amp; transcript<br>
+      &#8226; Find the most viral moments automatically<br>
       &#8226; Split into Part 1, Part 2, Part 3...<br>
-      &#8226; Write captions & hashtags<br>
+      &#8226; Write captions &amp; hashtags<br>
       &#8226; Predict which part will blow up<br><br>
-      <span style="color:#ef4444;font-weight:600;">Try:</span> "Splice this video" + paste a YouTube URL<br>
+      <span style="color:#ef4444;font-weight:600;">Try:</span> Paste any YouTube URL and say "splice this"<br>
       Or ask: "How do I make viral parts?" "Best length for TikTok" "Give me a content strategy"
     </div>
   </div>
@@ -148,7 +158,7 @@ var captions = [
   "The algorithm brought you here for a reason"
 ];
 
-var hashtags = [
+var hashtagSets = [
   "#viral #fyp #part1 #storytime #mindblown #knowledge #mustwatch #follow",
   "#foryou #viral #series #truth #exposed #waitforit #fyp",
   "#tiktokviral #fyp #storytime #part1 #serialcontent #hook #engagement",
@@ -156,63 +166,325 @@ var hashtags = [
   "#fyp #viral #series #bepartofit #community #engagement #trending"
 ];
 
-var niches = [
-  { name: "True Crime", topics: ["unsolved mysteries", "cold cases", "serial killer psychology", "forensic evidence", "courtroom drama"] },
-  { name: "Conspiracy", topics: ["government secrets", "hidden history", "cover-ups", "unexplained events", "whistleblowers"] },
-  { name: "Self-Improvement", topics: ["productivity hacks", "mental health", "discipline", "money mindset", "confidence building"] },
-  { name: "Tech/AI", topics: ["AI tools", "productivity apps", "tech secrets", "startup stories", "gadget reviews"] },
-  { name: "Drama/Storytime", topics: ["crazy experiences", "betrayal stories", "revenge tales", "plot twists", "life lessons"] }
-];
-
 function extractYouTubeId(url) {
   var match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
   return match ? match[1] : null;
 }
 
-function generateSplices(input) {
-  var lower = input.toLowerCase();
-  var seed = hashString(lower + todayStr);
-  var rng = seededRandom(seed);
-  var parts = 3 + Math.floor(rng() * 4);
-  var totalDuration = 8 + Math.floor(rng() * 25);
+function formatDuration(seconds) {
+  if (!seconds) return 'Unknown';
+  var h = Math.floor(seconds / 3600);
+  var m = Math.floor((seconds % 3600) / 60);
+  var s = seconds % 60;
+  if (h > 0) return h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  return m + ':' + String(s).padStart(2,'0');
+}
+
+function formatTime(seconds) {
+  var m = Math.floor(seconds / 60);
+  var s = Math.floor(seconds % 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+// Fetch video metadata from our serverless API
+async function fetchVideoData(url) {
+  try {
+    var res = await fetch('/api/youtube', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url })
+    });
+    if (!res.ok) throw new Error('Failed to fetch video');
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+// Fetch transcript from our serverless API
+async function fetchTranscript(videoId) {
+  try {
+    var res = await fetch('/api/transcript', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId: videoId })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+// Analyze transcript to find viral moments and generate smart splices
+function analyzeTranscript(transcript, duration, title) {
+  if (!transcript || transcript.length === 0) return null;
+
+  var totalSegs = transcript.length;
+  var dur = duration || transcript[transcript.length - 1].end;
+
+  // Score each segment by "virality potential"
+  var scored = transcript.map(function(seg, i) {
+    var score = 50;
+    var text = seg.text.toLowerCase();
+
+    // Emotional keywords boost score
+    var emotionalWords = ['insane','crazy','unbelievable','shocking','secret','hidden','truth','exposed','never','always','wrong','right','proof','evidence','mind','blow','wow','omg','damn','wild','legend','insane','fail','win','destroy','beat','destroyed','nightmare','scary','terrifying','hilarious','funny','sad','emotional'];
+    emotionalWords.forEach(function(w) {
+      if (text.includes(w)) score += 8;
+    });
+
+    // Questions boost engagement
+    if (text.includes('?')) score += 10;
+
+    // Exclamations boost energy
+    if (text.includes('!')) score += 5;
+
+    // Controversy/debate keywords
+    var controversy = ['controversy','debate','argument','fight','disagree','wrong','lie','fake','real','truth','fact'];
+    controversy.forEach(function(w) {
+      if (text.includes(w)) score += 6;
+    });
+
+    // Beginning and end naturally high value
+    if (i < 3) score += 15;
+    if (i >= totalSegs - 3) score += 12;
+
+    // Middle often has climax
+    var midpoint = Math.floor(totalSegs / 2);
+    if (Math.abs(i - midpoint) <= 2) score += 10;
+
+    // Longer segments are more substantive
+    if (seg.end - seg.start > 8) score += 5;
+
+    // Cap at 99
+    score = Math.min(score, 99);
+
+    return { index: i, score: score, seg: seg };
+  });
+
+  // Sort by score and pick top segments as clip anchors
+  scored.sort(function(a, b) { return b.score - a.score; });
+
+  // Group into 3-6 parts based on video length
+  var numParts;
+  if (dur < 120) numParts = 2;
+  else if (dur < 300) numParts = 3;
+  else if (dur < 600) numParts = 4;
+  else if (dur < 1200) numParts = 5;
+  else numParts = 6;
+
+  // Distribute parts across the video timeline
+  var partDuration = dur / numParts;
   var splices = [];
 
-  for (var i = 0; i < parts; i++) {
-    var hook = viralHooks[Math.floor(rng() * viralHooks.length)];
-    var caption = captions[Math.floor(rng() * captions.length)];
-    var hashtagsStr = hashtags[Math.floor(rng() * hashtags.length)];
-    var clipStart = Math.floor(rng() * (totalDuration - 1));
-    var clipLength = 15 + Math.floor(rng() * 45);
-    var clipEnd = clipStart + clipLength;
+  for (var p = 0; p < numParts; p++) {
+    var partStart = p * partDuration;
+    var partEnd = Math.min((p + 1) * partDuration, dur);
+
+    // Find best segment in this part range
+    var bestInPart = scored.find(function(s) {
+      return s.seg.start >= partStart - 5 && s.seg.start <= partEnd + 5;
+    }) || scored[p]; // fallback
+
+    var viralScore = bestInPart.score;
+    var peakMoment;
+    if (p === 0) peakMoment = 'hook';
+    else if (p === numParts - 1) peakMoment = 'cliffhanger';
+    else if (p === Math.floor(numParts / 2)) peakMoment = 'climax';
+    else peakMoment = 'buildup';
+
+    var hook = viralHooks[Math.floor(hashString(title + p) % viralHooks.length)];
+    var caption = captions[Math.floor(hashString(title + 'cap' + p) % captions.length)];
+    var hashtags = hashtagSets[Math.floor(hashString(title + 'tag' + p) % hashtagSets.length)];
+
+    // Get transcript preview for this part
+    var segsInRange = transcript.filter(function(s) {
+      return s.start >= partStart && s.start < partEnd;
+    });
+    var preview = segsInRange.slice(0, 2).map(function(s) { return s.text; }).join(' ');
+
+    splices.push({
+      part: p + 1,
+      hook: hook,
+      caption: caption,
+      hashtags: hashtags,
+      clipStart: formatTime(partStart),
+      clipEnd: formatTime(partEnd),
+      viralScore: viralScore,
+      predictedViews: Math.floor(viralScore * 5000 + Math.random() * 20000),
+      peakMoment: peakMoment,
+      transcriptPreview: preview.substring(0, 150),
+      anchorText: bestInPart.seg.text.substring(0, 100)
+    });
+  }
+
+  return splices;
+}
+
+function addLoadingMsg() {
+  var messages = document.getElementById('chatMessages');
+  var loadingDiv = document.createElement('div');
+  loadingDiv.className = 'msg ai';
+  loadingDiv.id = 'loadingMsg';
+  loadingDiv.innerHTML = '<div class="label">Video AI</div>Analyzing video<span class="loading-dots"></span>';
+  messages.appendChild(loadingDiv);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function removeLoadingMsg() {
+  var el = document.getElementById('loadingMsg');
+  if (el) el.remove();
+}
+
+async function processYouTubeUrl(url) {
+  var videoId = extractYouTubeId(url);
+  if (!videoId) {
+    removeLoadingMsg();
+    addAiMsg('That doesn\'t look like a valid YouTube URL. Try pasting a link like:<br><code>https://www.youtube.com/watch?v=...</code><br>or<br><code>https://youtu.be/...</code>');
+    return;
+  }
+
+  // Step 1: Fetch video metadata
+  var videoData = await fetchVideoData(url);
+  if (!videoData || videoData.error) {
+    removeLoadingMsg();
+    addAiMsg('Couldn\'t fetch that video. Make sure it\'s a public YouTube video and try again.');
+    return;
+  }
+
+  // Step 2: Fetch transcript
+  var transcriptData = await fetchTranscript(videoId);
+  var hasTranscript = transcriptData && transcriptData.transcript && transcriptData.transcript.length > 0;
+
+  // Step 3: Generate splices
+  var splices;
+  if (hasTranscript) {
+    splices = analyzeTranscript(transcriptData.transcript, videoData.duration, videoData.title);
+  }
+
+  // Fallback: generate splices from metadata alone
+  if (!splices) {
+    splices = generateFallbackSplices(videoData);
+  }
+
+  removeLoadingMsg();
+
+  // Build the response
+  var reply = '';
+
+  // Video embed
+  reply += '<div class="video-embed"><iframe src="' + videoData.embedUrl + '" allowfullscreen></iframe></div>';
+
+  // Video info
+  reply += '<div class="video-info">';
+  reply += '<div class="title">' + escHtml(videoData.title) + '</div>';
+  reply += '<div class="meta">';
+  reply += escHtml(videoData.author);
+  if (videoData.duration) reply += ' &bull; ' + formatDuration(videoData.duration);
+  if (videoData.viewCount) reply += ' &bull; ' + videoData.viewCount.toLocaleString() + ' views';
+  if (videoData.publishDate) reply += ' &bull; ' + videoData.publishDate;
+  reply += '</div>';
+  if (hasTranscript) {
+    reply += '<div style="margin-top:6px;"><span class="transcript-badge">✓ Transcript loaded (' + transcriptData.totalSegments + ' segments)</span></div>';
+  } else {
+    reply += '<div style="margin-top:6px;"><span class="transcript-badge" style="color:#f59e0b;border-color:rgba(245,158,11,0.3);">⚠ No transcript available — using AI analysis</span></div>';
+  }
+  reply += '</div>';
+
+  // Chapters if found
+  if (videoData.chapters && videoData.chapters.length > 0) {
+    reply += '<div style="margin:0.5rem 0;"><span style="font-size:0.8rem;color:#f59e0b;font-weight:600;">📖 Chapters Found:</span><br>';
+    reply += videoData.chapters.map(function(ch) {
+      return '<span class="chapter-tag">' + ch.time + ' ' + escHtml(ch.title) + '</span>';
+    }).join(' ');
+    reply += '</div>';
+  }
+
+  reply += '<br><b>🎬 Spliced into ' + splices.length + ' Parts!</b><br><br>';
+
+  splices.forEach(function(s) {
+    var scoreColor = s.viralScore >= 75 ? '#22c55e' : s.viralScore >= 50 ? '#f59e0b' : '#ef4444';
+    var peakLabel = s.peakMoment === 'hook' ? '🪝 HOOK' : s.peakMoment === 'climax' ? '🔥 CLIMAX' : s.peakMoment === 'cliffhanger' ? '🪢 CLIFFHANGER' : '📈 BUILDUP';
+
+    reply += '<div class="clip-card">';
+    reply += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+    reply += '<h3><span class="part-badge">Part ' + s.part + '</span>' + peakLabel + '</h3>';
+    reply += '<span class="viral-score" style="color:' + scoreColor + ';border-color:' + scoreColor + '33;">Viral: ' + s.viralScore + '%</span>';
+    reply += '</div>';
+    reply += '<div class="time">⏱ ' + s.clipStart + ' → ' + s.clipEnd + '</div>';
+    if (s.anchorText) {
+      reply += '<div class="desc">Anchor: "' + escHtml(s.anchorText) + (s.anchorText.length >= 100 ? '...' : '') + '"</div>';
+    }
+    if (s.transcriptPreview) {
+      reply += '<div style="margin-top:6px;font-size:0.8rem;color:#888;font-style:italic;">' + escHtml(s.transcriptPreview) + (s.transcriptPreview.length >= 150 ? '...' : '') + '</div>';
+    }
+    reply += '<div style="margin-top:8px;font-size:0.8rem;color:#555;">Caption: ' + s.caption + '</div>';
+    reply += '<div style="font-size:0.75rem;color:#444;margin-top:4px;">' + s.hashtags + '</div>';
+    reply += '<div style="font-size:0.8rem;color:#a855f7;margin-top:6px;">📊 Predicted: ' + s.predictedViews.toLocaleString() + ' views</div>';
+    reply += '</div>';
+  });
+
+  // Best part strategy
+  var bestPart = splices.reduce(function(a, b) { return a.viralScore > b.viralScore ? a : b; });
+  reply += '<div class="tip-box">';
+  reply += '<b>🏆 Best Part to Post First:</b> Part ' + bestPart.part + ' (highest viral score: ' + bestPart.viralScore + '%)<br><br>';
+  reply += '<b>📋 Posting Strategy:</b><br>';
+  reply += '• Post Part ' + bestPart.part + ' first as a teaser<br>';
+  reply += '• Caption: "Follow for Part 2 🧵"<br>';
+  reply += '• Pin comment: "Full story in my profile — Part 2 drops tomorrow"<br>';
+  reply += '• Reply to EVERY comment to boost algorithm<br><br>';
+  reply += '<b>✂️ How to Clip:</b><br>';
+  reply += '• Use the timestamps above in any video editor<br>';
+  reply += '• Recommended: <b>CapCut</b> (free, best for TikTok)<br>';
+  reply += '• Add text overlay with the hook quote for each part';
+  reply += '</div>';
+
+  addAiMsg(reply);
+}
+
+function generateFallbackSplices(videoData) {
+  var dur = videoData.duration || 300;
+  var seed = hashString(videoData.title + todayStr);
+  var rng = seededRandom(seed);
+  var numParts = dur < 120 ? 2 : dur < 300 ? 3 : dur < 600 ? 4 : 5;
+  var partDur = dur / numParts;
+  var splices = [];
+
+  for (var i = 0; i < numParts; i++) {
+    var start = i * partDur;
+    var end = Math.min((i + 1) * partDur, dur);
     var viralScore = 40 + Math.floor(rng() * 55);
-    var views = Math.floor(rng() * 500000 + 1000);
 
     splices.push({
       part: i + 1,
-      hook: hook,
-      caption: caption,
-      hashtags: hashtagsStr,
-      clipStart: clipStart + ':' + String(Math.floor(rng() * 59)).padStart(2, '0'),
-      clipEnd: clipEnd + ':' + String(Math.floor(rng() * 59)).padStart(2, '0'),
+      hook: viralHooks[Math.floor(rng() * viralHooks.length)],
+      caption: captions[Math.floor(rng() * captions.length)],
+      hashtags: hashtagSets[Math.floor(rng() * hashtagSets.length)],
+      clipStart: formatTime(start),
+      clipEnd: formatTime(end),
       viralScore: viralScore,
-      predictedViews: views,
-      peakMoment: i === Math.floor(parts / 2) ? 'climax' : i === 0 ? 'hook' : i === parts - 1 ? 'cliffhanger' : 'buildup',
-      thumbnailTime: clipStart + ':' + String(Math.floor(rng() * 59)).padStart(2, '0')
+      predictedViews: Math.floor(viralScore * 5000 + rng() * 20000),
+      peakMoment: i === 0 ? 'hook' : i === numParts - 1 ? 'cliffhanger' : i === Math.floor(numParts / 2) ? 'climax' : 'buildup',
+      anchorText: null,
+      transcriptPreview: null
     });
   }
   return splices;
+}
+
+function addAiMsg(html) {
+  var messages = document.getElementById('chatMessages');
+  messages.innerHTML += '<div class="msg ai"><div class="label">Video AI</div>' + html + '</div>';
+  messages.scrollTop = messages.scrollHeight;
 }
 
 function generateStrategy(input) {
   var lower = input.toLowerCase();
   var seed = hashString(lower + todayStr);
   var rng = seededRandom(seed);
-  var niche = niches[Math.floor(rng() * niches.length)];
-  var topic = niche.topics[Math.floor(rng() * niche.topics.length)];
 
   return {
-    niche: niche.name,
-    topic: topic,
     postingSchedule: [
       'Post Part 1 on <b>Tuesday 6pm EST</b> (peak engagement)',
       'Post Part 2 on <b>Thursday 12pm EST</b> (lunch break scrollers)',
@@ -241,66 +513,36 @@ function sendMsg() {
   messages.innerHTML += '<div class="msg user">' + escHtml(text) + '</div>';
   messages.scrollTop = messages.scrollHeight;
 
+  var lower = text.toLowerCase();
+  var urlMatch = text.match(/(https?:\/\/[^\s]+)/);
+  var isYouTube = urlMatch && (lower.includes('youtube') || lower.includes('youtu.be'));
+
+  if (isYouTube || lower.includes('splice') || lower.includes('clip') || lower.includes('cut') || lower.includes('split')) {
+    var url = isYouTube ? urlMatch[1] : null;
+    if (!url) {
+      addAiMsg('Paste a YouTube URL and I\'ll splice it! Something like:<br><code>https://www.youtube.com/watch?v=dQw4w9WgXcQ</code>');
+      return;
+    }
+    addLoadingMsg();
+    processYouTubeUrl(url);
+    return;
+  }
+
+  // Non-URL responses are instant
   setTimeout(function() {
     var reply = generateReply(text);
-    messages.innerHTML += '<div class="msg ai"><div class="label">Video AI</div>' + reply + '</div>';
-    messages.scrollTop = messages.scrollHeight;
-  }, 800 + Math.random() * 1500);
+    addAiMsg(reply);
+  }, 600 + Math.random() * 800);
 }
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function generateReply(input) {
   var lower = input.toLowerCase();
-  var urlMatch = input.match(/(https?:\/\/[^\s]+)/);
-  var isYouTube = urlMatch && (lower.includes('youtube') || lower.includes('youtu.be'));
-
-  if (isYouTube || lower.includes('splice') || lower.includes('clip') || lower.includes('cut') || lower.includes('split')) {
-    var splices = generateSplices(input);
-    var url = isYouTube ? urlMatch[1] : 'https://youtube.com/watch?v=example';
-    var videoId = extractYouTubeId(url) || 'dQw4w9WgXcQ';
-    var totalParts = splices.length;
-
-    var reply = '<b>🎬 Video Spliced into ' + totalParts + ' Parts!</b><br><br>';
-    reply += '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:10px;margin-bottom:12px;">';
-    reply += '<div style="font-size:0.8rem;color:#888;">YouTube Video</div>';
-    reply += '<div style="font-size:0.9rem;color:#fff;word-break:break-all;">' + url.substring(0, 60) + '...</div>';
-    reply += '</div>';
-
-    splices.forEach(function(s) {
-      var scoreColor = s.viralScore >= 75 ? '#22c55e' : s.viralScore >= 50 ? '#f59e0b' : '#ef4444';
-      var peakLabel = s.peakMoment === 'hook' ? '🪝 HOOK' : s.peakMoment === 'climax' ? '🔥 CLIMAX' : s.peakMoment === 'cliffhanger' ? ' cliffhanger' : '📈 BUILDUP';
-      reply += '<div class="clip-card">';
-      reply += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-      reply += '<h3><span class="part-badge">Part ' + s.part + '</span>' + peakLabel + '</h3>';
-      reply += '<span class="viral-score" style="color:' + scoreColor + ';border-color:' + scoreColor + '33;">Viral: ' + s.viralScore + '%</span>';
-      reply += '</div>';
-      reply += '<div class="time">⏱ ' + s.clipStart + ' → ' + s.clipEnd + '</div>';
-      reply += '<div class="desc">"' + s.hook + '"</div>';
-      reply += '<div style="margin-top:8px;font-size:0.8rem;color:#555;">Caption: ' + s.caption + '</div>';
-      reply += '<div style="font-size:0.75rem;color:#444;margin-top:4px;">' + s.hashtags + '</div>';
-      reply += '<div style="font-size:0.8rem;color:#a855f7;margin-top:6px;">📊 Predicted: ' + s.predictedViews.toLocaleString() + ' views</div>';
-      reply += '</div>';
-    });
-
-    var bestPart = splices.reduce(function(a, b) { return a.viralScore > b.viralScore ? a : b; });
-    reply += '<div class="tip-box">';
-    reply += '<b>🏆 Best Part to Post First:</b> Part ' + bestPart.part + ' (highest viral score: ' + bestPart.viralScore + '%)<br><br>';
-    reply += '<b>📋 Posting Strategy:</b><br>';
-    reply += '• Post Part ' + bestPart.part + ' first as a teaser<br>';
-    reply += '• Caption: "Follow for Part 2 🧵"<br>';
-    reply += '• Pin comment: "Full story in my profile — Part 2 drops tomorrow"<br>';
-    reply += '• Reply to EVERY comment to boost algorithm';
-    reply += '</div>';
-
-    return reply;
-  }
 
   if (lower.includes('strategy') || lower.includes('plan') || lower.includes('content plan') || lower.includes('schedule')) {
     var strat = generateStrategy(input);
     var reply = '<b>📋 Viral Content Strategy</b><br><br>';
-    reply += '<b>Niche:</b> ' + strat.niche + '<br>';
-    reply += '<b>Topic:</b> ' + strat.topic + '<br><br>';
     reply += '<b>📅 Posting Schedule:</b><br>';
     reply += strat.postingSchedule.map(function(s) { return '&#8226; ' + s; }).join('<br>');
     reply += '<br><br><b>🚀 Growth Tips:</b><br>';
@@ -359,9 +601,9 @@ function generateReply(input) {
     var reply = '<b>🔗 How to Use AI Video Splicer</b><br><br>';
     reply += '<b>Step 1:</b> Find a YouTube video with great content<br>';
     reply += '<b>Step 2:</b> Paste the link here and say "splice this"<br>';
-    reply += '<b>Step 3:</b> I\'ll analyze it and split it into viral TikTok parts<br>';
+    reply += '<b>Step 3:</b> I\'ll fetch the video, pull its transcript, and find viral moments<br>';
     reply += '<b>Step 4:</b> Use the timestamps to clip in any video editor<br>';
-    reply += '<b>Step 5:</b> Post each part with the captions & hashtags I give you<br><br>';
+    reply += '<b>Step 5:</b> Post each part with the captions &amp; hashtags I give you<br><br>';
     reply += '<b>Recommended Tools for Clipping:</b><br>';
     reply += '&#8226; <b>CapCut</b> (free, best for TikTok)<br>';
     reply += '&#8226; <b>InShot</b> (mobile-friendly)<br>';
@@ -375,9 +617,10 @@ function generateReply(input) {
     var reply = '<b>Yo! Welcome to AI Video Splicer</b> 🎬<br><br>';
     reply += 'I turn long YouTube videos into viral TikTok content.<br><br>';
     reply += '<b>What I can do:</b><br>';
-    reply += '&#8226; Analyze any YouTube video for viral moments<br>';
+    reply += '&#8226; Analyze any YouTube video with real transcript data<br>';
+    reply += '&#8226; Find the most viral moments automatically<br>';
     reply += '&#8226; Split into Part 1, 2, 3... series format<br>';
-    reply += '&#8226; Write hooks, captions & hashtags<br>';
+    reply += '&#8226; Write hooks, captions &amp; hashtags<br>';
     reply += '&#8226; Predict which parts will go viral<br>';
     reply += '&#8226; Create a full posting strategy<br><br>';
     reply += 'Drop a YouTube link or ask me anything! 🚀';
@@ -386,15 +629,13 @@ function generateReply(input) {
 
   var seed = hashString(lower + todayStr);
   var rng = seededRandom(seed);
-  var niche = niches[Math.floor(rng() * niches.length)];
-  var topic = niche.topics[Math.floor(rng() * niche.topics.length)];
 
   var reply = 'I can help you create viral TikTok content! Here\'s what I do:<br><br>';
-  reply += '&#8226; <b>Paste a YouTube URL</b> → I\'ll splice it into viral parts<br>';
+  reply += '&#8226; <b>Paste a YouTube URL</b> → I\'ll fetch the video, pull the transcript, and splice it into viral parts<br>';
   reply += '&#8226; <b>Ask "strategy"</b> → I\'ll create a content plan<br>';
   reply += '&#8226; <b>Ask "tips"</b> → I\'ll give you the viral playbook<br>';
   reply += '&#8226; <b>Ask "length"</b> → optimal video durations<br><br>';
-  reply += '<div class="tip-box"><b>💡 Hot Idea:</b> Try the "' + niche.name + '" niche — specifically <b>' + topic + '</b>. These get massive engagement right now.</div>';
+  reply += '<div class="tip-box"><b>💡 Try it:</b> Paste any YouTube URL and say "splice this" — I\'ll analyze the real video, pull its transcript, and find the most viral moments automatically!</div>';
   return reply;
 }
 
