@@ -569,7 +569,8 @@
     if (cart.length === 0) { showToast('Cart is empty'); return; }
 
     if (promoApplied && promoDiscount > 0) {
-      localStorage.setItem('purchasedItems', JSON.stringify(cart));
+      var existing = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+      localStorage.setItem('purchasedItems', JSON.stringify(existing.concat(cart)));
       localStorage.removeItem('cart');
       if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
       window.location.href = 'success.html?free=1';
@@ -579,7 +580,8 @@
     const referralCredits = parseInt(localStorage.getItem('referralCredits') || '0');
     if (referralCredits > 0) {
       localStorage.setItem('referralCredits', '0');
-      localStorage.setItem('purchasedItems', JSON.stringify(cart));
+      var existing2 = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+      localStorage.setItem('purchasedItems', JSON.stringify(existing2.concat(cart)));
       localStorage.removeItem('cart');
       if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
       window.location.href = 'success.html?free=1';
@@ -656,7 +658,8 @@
         showToast(error.message);
       } else {
         e.complete('success');
-        localStorage.setItem('purchasedItems', JSON.stringify(getCart()));
+        var existing3 = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+        localStorage.setItem('purchasedItems', JSON.stringify(existing3.concat(getCart())));
         localStorage.removeItem('cart');
         window.location.href = 'success.html';
       }
@@ -677,7 +680,8 @@
       btn.disabled = false;
       btn.textContent = 'Pay Now';
     } else if (paymentIntent.status === 'succeeded') {
-      localStorage.setItem('purchasedItems', JSON.stringify(getCart()));
+      var existing4 = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+      localStorage.setItem('purchasedItems', JSON.stringify(existing4.concat(getCart())));
       localStorage.removeItem('cart');
       window.location.href = 'success.html';
     }
