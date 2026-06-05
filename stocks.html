@@ -436,6 +436,73 @@ function generatePrediction(input) {
   var seed = hashString(lower + todayStr);
   var rng = seededRandom(seed);
 
+  if ((lower.includes('sell') || lower.includes('when') || lower.includes('should i') || lower.includes('portfolio') || lower.includes('my') || lower.includes('hold')) && portfolio.length > 0) {
+    var matchedPos = null;
+    portfolio.forEach(function(p) {
+      if (lower.includes(p.symbol.toLowerCase())) matchedPos = p;
+    });
+    if (matchedPos) {
+      var current = getCurrentPrice(matchedPos.symbol);
+      var pnl = current > 0 ? ((current - matchedPos.entryPrice) / matchedPos.entryPrice * 100) : 0;
+      var holdingDays = Math.floor((Date.now() - new Date(matchedPos.date).getTime()) / 86400000);
+      var allAssets = stocksData ? (stocksData.stocks || []).concat(stocksData.crypto || []) : [];
+      var asset = allAssets.find(function(a) { return a.symbol === matchedPos.symbol; });
+      var rsi = asset ? asset.rsi : 50;
+      var trend = asset ? asset.trend : 'neutral';
+      var cost = matchedPos.entryPrice * matchedPos.amount;
+      var value = current * matchedPos.amount;
+      var profit = value - cost;
+
+      var score = 0;
+      var reasons = [];
+      if (pnl >= 10) { score -= 3; reasons.push('Up ' + pnl.toFixed(1) + '% — great time to take profit'); }
+      else if (pnl >= 5 && holdingDays >= 3) { score -= 2; reasons.push('Up ' + pnl.toFixed(1) + '% after ' + holdingDays + ' days — consider selling half'); }
+      else if (pnl > 0) { reasons.push('Still in profit at ' + pnl.toFixed(1) + '% — could hold longer'); }
+      if (pnl <= -10) { score += 3; reasons.push('Down ' + pnl.toFixed(1) + '% — consider cutting losses'); }
+      else if (pnl <= -5) { score += 2; reasons.push('Down ' + pnl.toFixed(1) + '% — watch closely'); }
+      if (rsi > 75) { score -= 2; reasons.push('RSI at ' + rsi + ' — overbought, good exit point'); }
+      else if (rsi < 30) { score += 2; reasons.push('RSI at ' + rsi + ' — oversold, hold for recovery'); }
+      if (trend === 'bearish') { score += 1; reasons.push('Trend is bearish — consider reducing position'); }
+      if (trend === 'bullish' && pnl > 0) { score -= 1; reasons.push('Trend is bullish — could hold for more gains'); }
+      if (holdingDays >= 14 && pnl > 3) { score -= 1; reasons.push('Held ' + holdingDays + ' days — long hold, consider taking some profit'); }
+
+      var shouldSell = score <= -2;
+      var shouldHold = score >= 2;
+      var verdict = shouldSell ? '🔴 SELL NOW' : shouldHold ? '🟢 HOLD' : '🟡 WAIT & WATCH';
+      var verdictColor = shouldSell ? '#ef4444' : shouldHold ? '#22c55e' : '#f59e0b';
+
+      var priceLabel = current > 1000 ? '$' + current.toLocaleString() : '$' + current;
+      var entryLabel = matchedPos.entryPrice > 1000 ? '$' + matchedPos.entryPrice.toLocaleString() : '$' + matchedPos.entryPrice;
+
+      return '<b>Your ' + matchedPos.symbol + ' Position</b><br><br>' +
+        'Entry: <b>' + entryLabel + '</b> x ' + matchedPos.amount + '<br>' +
+        'Current: <b>' + priceLabel + '</b><br>' +
+        'P&L: <b style="color:' + (pnl >= 0 ? '#22c55e' : '#ef4444') + ';">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + '% ($' + (profit >= 0 ? '+' : '') + profit.toFixed(2) + ')</b><br>' +
+        'Held: <b>' + holdingDays + ' days</b><br>' +
+        'RSI: ' + rsi + ' | Trend: ' + trend + '<br><br>' +
+        '<div style="display:inline-block;padding:10px 20px;border-radius:10px;font-size:1.1rem;font-weight:800;background:' + (shouldSell ? 'rgba(239,68,68,0.15)' : shouldHold ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)') + ';color:' + verdictColor + ';border:1px solid ' + verdictColor + '33;">' + verdict + '</div><br><br>' +
+        reasons.join('<br>');
+    }
+    if (lower.includes('portfolio') || lower.includes('my')) {
+      if (portfolio.length === 0) return 'Your portfolio is empty. Add some positions first!';
+      var reply = '<b>Your Portfolio:</b><br><br>';
+      var totalCost = 0, totalValue = 0;
+      portfolio.forEach(function(p) {
+        var cur = getCurrentPrice(p.symbol);
+        var pnl = cur > 0 ? ((cur - p.entryPrice) / p.entryPrice * 100) : 0;
+        var days = Math.floor((Date.now() - new Date(p.date).getTime()) / 86400000);
+        var cost = p.entryPrice * p.amount;
+        var val = cur * p.amount;
+        totalCost += cost;
+        totalValue += val;
+        reply += '<b>' + p.symbol + '</b>: ' + (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + '% | ' + days + 'd held<br>';
+      });
+      var totalPnl = totalValue - totalCost;
+      reply += '<br>Total P&L: <b style="color:' + (totalPnl >= 0 ? '#22c55e' : '#ef4444') + ';">' + (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2) + '</b>';
+      return reply;
+    }
+  }
+
   if (['hello','hi','hey','sup','yo'].some(function(g) { return lower.startsWith(g); })) {
     var preds = getTodayPredictions();
     var stockList = preds.filter(function(p) { return p.type === 'stock'; }).slice(0, 5);
