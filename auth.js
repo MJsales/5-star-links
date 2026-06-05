@@ -87,6 +87,7 @@ function getOrders() {
 }
 
 function handleSignUp(name, email, password) {
+  localStorage.setItem('savedEmail', email);
   return firebase.auth().createUserWithEmailAndPassword(email, password).then(function(cred) {
     return cred.user.updateProfile({ displayName: name }).then(function() {
       updateAuthUI();
@@ -96,6 +97,7 @@ function handleSignUp(name, email, password) {
 }
 
 function handleSignIn(email, password) {
+  localStorage.setItem('savedEmail', email);
   return firebase.auth().signInWithEmailAndPassword(email, password).then(function(cred) {
     updateAuthUI();
     syncFromCloud(window._fbAuth, window._fbDb);
@@ -114,10 +116,24 @@ function handleSignOut() {
 
 function showAuthModal() {
   document.getElementById('authOverlay').classList.add('active');
+  setTimeout(fillEmailInputs, 100);
 }
 
 function hideAuthModal() {
   document.getElementById('authOverlay').classList.remove('active');
+}
+
+function getSavedEmail() {
+  return localStorage.getItem('savedEmail') || '';
+}
+
+function fillEmailInputs() {
+  var email = getSavedEmail();
+  if (email) {
+    document.querySelectorAll('.auth-input[type="email"], #authEmail').forEach(function(el) {
+      el.value = email;
+    });
+  }
 }
 
 window.authModule = {
@@ -129,7 +145,9 @@ window.authModule = {
   hideAuth: hideAuthModal,
   syncToCloud: syncToCloud,
   saveOrder: saveOrder,
-  getOrders: getOrders
+  getOrders: getOrders,
+  getSavedEmail: getSavedEmail,
+  fillEmailInputs: fillEmailInputs
 };
 
 initFirebase();

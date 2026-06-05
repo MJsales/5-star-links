@@ -503,6 +503,65 @@ function generatePrediction(input) {
     }
   }
 
+  if ((lower.includes('predict') || lower.includes('future') || lower.includes('price target') || lower.includes('where will') || lower.includes('going to') || lower.includes('next week') || lower.includes('next month')) && !lower.includes('sport')) {
+    var matchAsset = null;
+    var all = stocksData ? (stocksData.stocks || []).concat(stocksData.crypto || []) : [];
+    all.forEach(function(a) {
+      if (lower.includes(a.symbol.toLowerCase()) || lower.includes(a.name.toLowerCase())) matchAsset = a;
+    });
+    if (matchAsset) {
+      var cur = matchAsset.price;
+      var rsi = matchAsset.rsi;
+      var trend = matchAsset.trend;
+      var change = matchAsset.change;
+      var momentum = change > 2 ? 'strong' : change > 0 ? 'moderate' : change < -2 ? 'weak' : 'flat';
+      var days = lower.includes('week') ? 7 : lower.includes('month') ? 30 : lower.includes('day') ? 1 : 7;
+      var dailyMove = (trend === 'bullish' ? 0.8 : trend === 'bearish' ? -0.6 : 0.1);
+      var volatility = momentum === 'strong' ? 1.5 : momentum === 'weak' ? 1.2 : 0.8;
+      var predictedPrices = [];
+      var tempPrice = cur;
+      for (var i = 1; i <= days; i++) {
+        var dailyChange = dailyMove * volatility + (Math.sin(i * 0.5) * 0.5);
+        tempPrice = tempPrice * (1 + dailyChange / 100);
+        if (i === 1 || i === 3 || i === 7 || i === 14 || i === 30) {
+          predictedPrices.push({ day: i, price: tempPrice });
+        }
+      }
+      var finalPrice = tempPrice;
+      var totalMove = ((finalPrice - cur) / cur * 100);
+      var sellPrice = cur * 1.05;
+      var stopLoss = cur * 0.92;
+      var posInPortfolio2 = portfolio.find(function(p) { return p.symbol === matchAsset.symbol; });
+      var posLine = '';
+      if (posInPortfolio2) {
+        var myPnl = ((finalPrice - posInPortfolio2.entryPrice) / posInPortfolio2.entryPrice * 100);
+        var myProfit = (finalPrice - posInPortfolio2.entryPrice) * posInPortfolio2.amount;
+        posLine = '<br><b>If you hold ' + days + ' days:</b> P&L would be <span style="color:' + (myPnl >= 0 ? '#22c55e' : '#ef4444') + ';">' + (myPnl >= 0 ? '+' : '') + myPnl.toFixed(1) + '% ($' + (myProfit >= 0 ? '+' : '') + myProfit.toFixed(2) + ')</span>';
+      }
+      var priceLabel2 = cur > 1000 ? '$' + cur.toLocaleString() : '$' + cur;
+      var finalLabel = finalPrice > 1000 ? '$' + finalPrice.toLocaleString(undefined, {maximumFractionDigits: 0}) : '$' + finalPrice.toFixed(2);
+      var sellLabel = sellPrice > 1000 ? '$' + sellPrice.toLocaleString(undefined, {maximumFractionDigits: 0}) : '$' + sellPrice.toFixed(2);
+      var stopLabel = stopLoss > 1000 ? '$' + stopLoss.toLocaleString(undefined, {maximumFractionDigits: 0}) : '$' + stopLoss.toFixed(2);
+      var verdict2 = totalMove > 2 ? '🟢 BULLISH' : totalMove < -2 ? '🔴 BEARISH' : '🟡 NEUTRAL';
+      var verdictColor2 = totalMove > 2 ? '#22c55e' : totalMove < -2 ? '#ef4444' : '#f59e0b';
+      return '<b>' + matchAsset.symbol + ' Price Prediction (' + days + '-Day)</b><br><br>' +
+        'Current Price: <b>' + priceLabel2 + '</b><br>' +
+        'Trend: ' + trend + ' | Momentum: ' + momentum + '<br><br>' +
+        '<b>Projected Prices:</b><br>' +
+        predictedPrices.map(function(p) {
+          var pLabel = p.price > 1000 ? '$' + p.price.toLocaleString(undefined, {maximumFractionDigits:0}) : '$' + p.price.toFixed(2);
+          return 'Day ' + p.day + ': <b>' + pLabel + '</b>';
+        }).join('<br>') + '<br><br>' +
+        '<b>Verdict:</b> <span style="color:' + verdictColor2 + ';">' + verdict2 + '</span> — ' + (totalMove > 0 ? '+' : '') + totalMove.toFixed(1) + '% expected<br><br>' +
+        '<b>🎯 Sell Target:</b> ' + sellLabel + ' (+5%)<br>' +
+        '<b>🛑 Stop Loss:</b> ' + stopLabel + ' (-8%)<br>' +
+        posLine + '<br><br>' +
+        '<div style="padding:10px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2);border-radius:8px;font-size:0.85rem;color:#ccc;">' +
+        '<b>My recommendation:</b> ' + (totalMove > 2 ? 'Price looks headed up — hold or buy. Sell at ' + sellLabel : totalMove < -2 ? 'Price may drop — consider selling now or setting stop loss at ' + stopLabel : 'Price is consolidating — wait for a clearer signal before acting.') +
+        '</div>';
+    }
+  }
+
   if (['hello','hi','hey','sup','yo'].some(function(g) { return lower.startsWith(g); })) {
     var preds = getTodayPredictions();
     var stockList = preds.filter(function(p) { return p.type === 'stock'; }).slice(0, 5);
