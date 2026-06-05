@@ -279,8 +279,8 @@
     <button onclick="closeAddWallet()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:1.5rem;cursor:pointer;">&times;</button>
     <h2 style="margin-bottom:1.2rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Link Wallet</h2>
     <p style="text-align:center;font-size:0.8rem;color:#555;margin-bottom:1rem;">Your public address is stored securely. No private keys are ever requested.</p>
-    <select id="walletChain" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;">
-      <optgroup label="Layer 1">
+    <div id="walletChainWrap">
+      <select id="walletChain" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;max-height:200px;overflow-y:auto;">
         <option value="BTC">Bitcoin (BTC)</option>
         <option value="ETH">Ethereum (ETH)</option>
         <option value="SOL">Solana (SOL)</option>
@@ -289,55 +289,31 @@
         <option value="ADA">Cardano (ADA)</option>
         <option value="AVAX">Avalanche (AVAX)</option>
         <option value="DOT">Polkadot (DOT)</option>
-        <option value="ATOM">Cosmos (ATOM)</option>
-        <option value="APT">Aptos (APT)</option>
-        <option value="NEAR">NEAR (NEAR)</option>
-        <option value="HBAR">Hedera (HBAR)</option>
-        <option value="LTC">Litecoin (LTC)</option>
-        <option value="BCH">Bitcoin Cash (BCH)</option>
         <option value="DOGE">Dogecoin (DOGE)</option>
         <option value="SHIB">Shiba Inu (SHIB)</option>
         <option value="TRX">Tron (TRX)</option>
-      </optgroup>
-      <optgroup label="Layer 2 / Scaling">
         <option value="MATIC">Polygon (MATIC)</option>
         <option value="ARB">Arbitrum (ARB)</option>
         <option value="OP">Optimism (OP)</option>
-        <option value="BASE">Base (ETH on Base)</option>
-        <option value="IMX">ImmutableX (IMX)</option>
-      </optgroup>
-      <optgroup label="Stablecoins">
+        <option value="BASE">Base (BASE)</option>
         <option value="USDC">USD Coin (USDC)</option>
         <option value="USDT">Tether (USDT)</option>
-        <option value="DAI">Dai (DAI)</option>
-        <option value="BUSD">Binance USD (BUSD)</option>
-      </optgroup>
-      <optgroup label="DeFi / Tokens">
         <option value="LINK">Chainlink (LINK)</option>
         <option value="UNI">Uniswap (UNI)</option>
-        <option value="AAVE">Aave (AAVE)</option>
-        <option value="MKR">Maker (MKR)</option>
-        <option value="CRV">Curve (CRV)</option>
-        <option value="LDO">Lido (LDO)</option>
-        <option value="SUSHI">SushiSwap (SUSHI)</option>
-      </optgroup>
-      <optgroup label="Meme / Community">
         <option value="PEPE">Pepe (PEPE)</option>
-        <option value="FLOKI">Floki (FLOKI)</option>
-        <option value="WIF">dogwifhat (WIF)</option>
         <option value="BONK">Bonk (BONK)</option>
-      </optgroup>
-      <optgroup label="Other">
+        <option value="LTC">Litecoin (LTC)</option>
+        <option value="NEAR">NEAR (NEAR)</option>
+        <option value="SUI">Sui (SUI)</option>
+        <option value="INJ">Injective (INJ)</option>
+        <option value="RENDER">Render (RENDER)</option>
+        <option value="ATOM">Cosmos (ATOM)</option>
+        <option value="APT">Aptos (APT)</option>
         <option value="FIL">Filecoin (FIL)</option>
         <option value="GRT">The Graph (GRT)</option>
-        <option value="INJ">Injective (INJ)</option>
-        <option value="SUI">Sui (SUI)</option>
-        <option value="SEI">Sei (SEI)</option>
-        <option value="TIA">Celestia (TIA)</option>
-        <option value="JUP">Jupiter (JUP)</option>
-        <option value="RENDER">Render (RENDER)</option>
-      </optgroup>
-    </select>
+      </select>
+    </div>
+    <div id="walletDetected" style="display:none;padding:10px 14px;margin-bottom:10px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:10px;color:#22c55e;font-size:0.9rem;font-weight:600;"></div>
     <div id="walletHint" style="font-size:0.75rem;color:#a855f7;margin-bottom:6px;min-height:1rem;"></div>
     <input type="text" id="walletAddress" placeholder="Paste any wallet address — auto-detects chain" oninput="autoDetectChain()" style="width:100%;padding:12px;margin-bottom:14px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;word-break:break-all;" />
     <button onclick="addWallet()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Link Wallet</button>
@@ -1005,6 +981,9 @@ function openAddWallet() {
     return;
   }
   document.getElementById('walletAddress').value = '';
+  document.getElementById('walletDetected').style.display = 'none';
+  document.getElementById('walletChainWrap').style.display = 'block';
+  document.getElementById('walletHint').textContent = '';
   document.getElementById('addWalletOverlay').style.display = 'flex';
 }
 
@@ -1017,11 +996,17 @@ function autoDetectChain() {
   var detected = detectChain(address);
   var sel = document.getElementById('walletChain');
   var hint = document.getElementById('walletHint');
+  var detectedEl = document.getElementById('walletDetected');
+  var wrap = document.getElementById('walletChainWrap');
   if (detected) {
     sel.value = detected;
-    if (hint) hint.textContent = 'Detected: ' + detected;
+    if (hint) hint.textContent = '';
+    if (detectedEl) { detectedEl.style.display = 'block'; detectedEl.textContent = '✓ ' + detected + ' detected'; }
+    if (wrap) wrap.style.display = 'none';
   } else {
     if (hint) hint.textContent = '';
+    if (detectedEl) detectedEl.style.display = 'none';
+    if (wrap) wrap.style.display = 'block';
   }
 }
 
@@ -1403,7 +1388,8 @@ function drawChart() {
       }
     });
 
-    var asset = all.find(function(a) { return a.symbol === chartAsset.symbol; });
+    var allAssets = stocksData ? (stocksData.stocks || []).concat(stocksData.crypto || []) : [];
+    var asset = allAssets.find(function(a) { return a.symbol === chartAsset.symbol; });
     if (asset && asset.rsi) {
       var rsi = asset.rsi;
       var rsiX = w - 40;
