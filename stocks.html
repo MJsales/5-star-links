@@ -235,6 +235,33 @@
 </div>
 
 <div style="max-width:700px;margin:0 auto;width:100%;padding:1rem;">
+  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.15);border-radius:16px;padding:1.2rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h2 style="font-size:1.1rem;color:#a855f7;font-weight:700;">My Portfolio</h2>
+      <button onclick="openAddPosition()" style="padding:6px 14px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ Add Position</button>
+    </div>
+    <div id="portfolioList" style="color:#555;font-size:0.9rem;">Sign in to track your portfolio</div>
+  </div>
+
+  <div style="margin-top:1.5rem;background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.15);border-radius:16px;padding:1.2rem;">
+    <h2 style="font-size:1.1rem;color:#f59e0b;font-weight:700;margin-bottom:0.8rem;">Sell Alerts</h2>
+    <div id="sellAlertsList" style="color:#555;font-size:0.9rem;">No alerts yet — add positions to track</div>
+  </div>
+</div>
+
+<div id="addPositionOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.25);border-radius:18px;padding:2rem;width:90%;max-width:400px;position:relative;">
+    <button onclick="closeAddPosition()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:1.5rem;cursor:pointer;">&times;</button>
+    <h2 style="margin-bottom:1.2rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Add Position</h2>
+    <input type="text" id="posSymbol" placeholder="Symbol (e.g. BTC, AAPL)" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
+    <input type="number" id="posAmount" placeholder="Amount you bought" step="any" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
+    <input type="number" id="posPrice" placeholder="Price per unit ($)" step="any" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
+    <input type="date" id="posDate" style="width:100%;padding:12px;margin-bottom:14px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
+    <button onclick="addPosition()" style="width:100%;padding:12px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Add to Portfolio</button>
+  </div>
+</div>
+
+<div style="max-width:700px;margin:0 auto;width:100%;padding:1rem;">
   <h2 style="font-size:1.1rem;color:#a855f7;margin-bottom:1rem;font-weight:700;">Customer Reviews</h2>
   <div id="reviewsContainer"></div>
   <div style="margin-top:1rem;">
@@ -605,6 +632,171 @@ function submitReview() {
 }
 
 renderReviews();
+
+var portfolio = [];
+
+function getPortfolio() {
+  if (window.authModule && window.authModule.getCurrentUser()) {
+    var db = window._fbDb;
+    var uid = window.authModule.getCurrentUser().uid;
+    if (db && uid) {
+      return db.collection('users').doc(uid).collection('portfolio').get().then(function(snap) {
+        var items = [];
+        snap.forEach(function(doc) { items.push(doc.data()); });
+        return items;
+      }).catch(function() { return []; });
+    }
+  }
+  return Promise.resolve(JSON.parse(localStorage.getItem('portfolio') || '[]'));
+}
+
+function savePortfolio(items) {
+  portfolio = items;
+  if (window.authModule && window.authModule.getCurrentUser()) {
+    var db = window._fbDb;
+    var uid = window.authModule.getCurrentUser().uid;
+    if (db && uid) {
+      var batch = db.batch();
+      var ref = db.collection('users').doc(uid).collection('portfolio');
+      ref.get().then(function(snap) {
+        snap.forEach(function(doc) { batch.delete(doc.ref); });
+        items.forEach(function(item) {
+          batch.set(ref.doc(item.symbol), item);
+        });
+        return batch.commit();
+      }).catch(function(e) { console.error('Portfolio save error:', e); });
+    }
+  } else {
+    localStorage.setItem('portfolio', JSON.stringify(items));
+  }
+  renderPortfolio();
+  checkSellAlerts();
+}
+
+function openAddPosition() {
+  if (!window.authModule || !window.authModule.getCurrentUser()) {
+    authModule.showAuth();
+    return;
+  }
+  document.getElementById('posDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('addPositionOverlay').style.display = 'flex';
+}
+
+function closeAddPosition() {
+  document.getElementById('addPositionOverlay').style.display = 'none';
+}
+
+function addPosition() {
+  var symbol = document.getElementById('posSymbol').value.trim().toUpperCase();
+  var amount = parseFloat(document.getElementById('posAmount').value);
+  var price = parseFloat(document.getElementById('posPrice').value);
+  var date = document.getElementById('posDate').value;
+  if (!symbol || !amount || !price || !date) return;
+  var existing = portfolio.find(function(p) { return p.symbol === symbol; });
+  if (existing) {
+    var totalAmount = existing.amount + amount;
+    var avgPrice = ((existing.amount * existing.entryPrice) + (amount * price)) / totalAmount;
+    existing.amount = totalAmount;
+    existing.entryPrice = avgPrice;
+    existing.date = date;
+  } else {
+    portfolio.push({ symbol: symbol, amount: amount, entryPrice: price, date: date });
+  }
+  savePortfolio(portfolio);
+  closeAddPosition();
+  document.getElementById('posSymbol').value = '';
+  document.getElementById('posAmount').value = '';
+  document.getElementById('posPrice').value = '';
+  showToast(symbol + ' added to portfolio');
+}
+
+function removePosition(symbol) {
+  portfolio = portfolio.filter(function(p) { return p.symbol !== symbol; });
+  savePortfolio(portfolio);
+}
+
+function getCurrentPrice(symbol) {
+  if (!stocksData) return 0;
+  var all = (stocksData.stocks || []).concat(stocksData.crypto || []);
+  var asset = all.find(function(a) { return a.symbol === symbol; });
+  return asset ? asset.price : 0;
+}
+
+function renderPortfolio() {
+  var el = document.getElementById('portfolioList');
+  if (portfolio.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:1rem;color:#555;">No positions yet. Click "Add Position" to start tracking.</div>';
+    return;
+  }
+  el.innerHTML = portfolio.map(function(p) {
+    var current = getCurrentPrice(p.symbol);
+    var pnl = current > 0 ? ((current - p.entryPrice) / p.entryPrice * 100) : 0;
+    var pnlColor = pnl >= 0 ? '#22c55e' : '#ef4444';
+    var holdingDays = Math.floor((Date.now() - new Date(p.date).getTime()) / 86400000);
+    var value = current * p.amount;
+    var cost = p.entryPrice * p.amount;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#050208;border:1px solid rgba(168,85,247,0.1);border-radius:10px;margin-bottom:8px;">' +
+      '<div>' +
+        '<div style="font-weight:700;color:#fff;font-size:1rem;">' + p.symbol + ' <span style="font-size:0.8rem;color:#555;font-weight:400;">x' + p.amount + '</span></div>' +
+        '<div style="font-size:0.8rem;color:#555;">Bought at $' + (p.entryPrice > 1000 ? p.entryPrice.toLocaleString() : p.entryPrice) + ' | ' + holdingDays + 'd ago</div>' +
+      '</div>' +
+      '<div style="text-align:right;">' +
+        '<div style="font-weight:700;color:' + pnlColor + ';">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + '%</div>' +
+        '<div style="font-size:0.8rem;color:#555;">$' + (value > 1000 ? value.toLocaleString(undefined, {maximumFractionDigits:0}) : value.toFixed(2)) + '</div>' +
+      '</div>' +
+      '<button onclick="removePosition(\'' + p.symbol + '\')" style="background:none;border:none;color:#555;cursor:pointer;font-size:1.2rem;padding:0 8px;">&times;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function checkSellAlerts() {
+  var el = document.getElementById('sellAlertsList');
+  if (portfolio.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:1rem;color:#555;">No alerts yet</div>';
+    return;
+  }
+  var alerts = [];
+  portfolio.forEach(function(p) {
+    var current = getCurrentPrice(p.symbol);
+    if (current === 0) return;
+    var pnl = (current - p.entryPrice) / p.entryPrice * 100;
+    var holdingDays = Math.floor((Date.now() - new Date(p.date).getTime()) / 86400000);
+    var allAssets = stocksData ? (stocksData.stocks || []).concat(stocksData.crypto || []) : [];
+    var asset = allAssets.find(function(a) { return a.symbol === p.symbol; });
+    var rsi = asset ? asset.rsi : 50;
+    var shouldSell = false;
+    var reason = '';
+    if (pnl >= 10) { shouldSell = true; reason = 'Up ' + pnl.toFixed(1) + '% — consider taking profit'; }
+    else if (pnl >= 5 && holdingDays >= 3) { shouldSell = true; reason = 'Up ' + pnl.toFixed(1) + '% after ' + holdingDays + ' days — good exit'; }
+    else if (pnl <= -10) { shouldSell = true; reason = 'Down ' + pnl.toFixed(1) + '% — cut losses?'; }
+    else if (rsi > 75) { shouldSell = true; reason = 'RSI at ' + rsi + ' — overbought, may pull back'; }
+    else if (holdingDays >= 7 && pnl > 0) { reason = 'Held ' + holdingDays + ' days, up ' + pnl.toFixed(1) + '% — consider selling'; }
+    if (shouldSell || reason) {
+      alerts.push({ symbol: p.symbol, shouldSell: shouldSell, reason: reason, pnl: pnl, rsi: rsi });
+    }
+  });
+  if (alerts.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:1rem;color:#555;">All positions look good — no action needed</div>';
+    return;
+  }
+  el.innerHTML = alerts.map(function(a) {
+    var bg = a.shouldSell ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)';
+    var border = a.shouldSell ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)';
+    var icon = a.shouldSell ? '&#9888;' : '&#8505;';
+    return '<div style="padding:12px;background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;margin-bottom:8px;">' +
+      '<div style="font-weight:700;color:#fff;">' + icon + ' ' + a.symbol + '</div>' +
+      '<div style="font-size:0.85rem;color:#ccc;margin-top:4px;">' + a.reason + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+getPortfolio().then(function(items) {
+  portfolio = items;
+  renderPortfolio();
+  checkSellAlerts();
+});
+
+setInterval(checkSellAlerts, 60000);
 
 var chartAsset = null;
 var priceHistory = [];
