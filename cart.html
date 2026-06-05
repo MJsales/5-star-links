@@ -444,6 +444,21 @@
       return spiderHoodieSVG();
     } else if (item.id === 'bape-hoodie') {
       return bapeHoodieSVG();
+    } else if (item.id === 'ai-picks') {
+      return `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#a855f7" stroke-width="3"/>
+        <text x="100" y="85" text-anchor="middle" fill="#a855f7" font-size="40" font-weight="900" font-family="Inter,sans-serif">AI</text>
+        <text x="100" y="115" text-anchor="middle" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">SPORTS</text>
+        <text x="100" y="135" text-anchor="middle" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">PICKS</text>
+      </svg>`;
+    } else if (item.id === 'ai-stocks') {
+      return `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#22c55e" stroke-width="3"/>
+        <text x="100" y="78" text-anchor="middle" fill="#22c55e" font-size="22" font-weight="900" font-family="Inter,sans-serif">STOCKS</text>
+        <text x="100" y="100" text-anchor="middle" fill="#fff" font-size="18" font-weight="900" font-family="Inter,sans-serif">&amp;</text>
+        <text x="100" y="122" text-anchor="middle" fill="#f59e0b" font-size="22" font-weight="900" font-family="Inter,sans-serif">CRYPTO</text>
+        <polyline points="40,140 70,110 90,125 130,70 160,90" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+      </svg>`;
     }
     return balaclavaSVG('#1a1a1a', '#000');
   }

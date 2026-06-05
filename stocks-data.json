@@ -37,7 +37,7 @@
     { "symbol": "JPM", "name": "JPMorgan Chase", "price": 215.80, "change": 0.7, "marketCap": "620B", "pe": 12.8, "sector": "Banking", "trend": "bullish", "support": 208.00, "resistance": 222.00, "rsi": 54, "volume": "12M", "sentiment": "Rate environment favorable, strong NII" },
     { "symbol": "V", "name": "Visa Inc.", "price": 295.60, "change": 0.4, "marketCap": "600B", "pe": 30.5, "sector": "Fintech", "trend": "bullish", "support": 288.00, "resistance": 302.00, "rsi": 56, "volume": "7M", "sentiment": "Payment volume growth, cross-border strength" },
     { "symbol": "DIS", "name": "Walt Disney Co.", "price": 115.20, "change": -2.1, "marketCap": "210B", "pe": 42.3, "sector": "Entertainment", "trend": "bearish", "support": 110.00, "resistance": 120.00, "rsi": 38, "volume": "14M", "sentiment": "Streaming losses, parks revenue soft" },
-    { "symbol": "PLTR", "name": "Palantir Tech.", "price": 28.40, "change: 8.5", "marketCap": "65B", "pe": 210.5, "sector": "Software", "trend": "volatile", "support": 25.00, "resistance": 32.00, "rsi": 75, "volume": "85M", "sentiment": "Government contracts, AI platform growth" },
+    { "symbol": "PLTR", "name": "Palantir Tech.", "price": 28.40, "change": 8.5, "marketCap": "65B", "pe": 210.5, "sector": "Software", "trend": "volatile", "support": 25.00, "resistance": 32.00, "rsi": 75, "volume": "85M", "sentiment": "Government contracts, AI platform growth" },
     { "symbol": "SOFI", "name": "SoFi Technologies", "price": 9.85, "change": 3.2, "marketCap": "11B", "pe": 85.2, "sector": "Fintech", "trend": "bullish", "support": 9.00, "resistance": 10.50, "rsi": 63, "volume": "42M", "sentiment": "Bank charter advantage, member growth" }
   ],
   "crypto": [
