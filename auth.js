@@ -62,6 +62,30 @@ function syncToCloud() {
   }, { merge: true }).catch(function(e) { console.error('Sync error:', e); });
 }
 
+function saveOrder(orderItems) {
+  if (!currentUser || !window._fbDb) return Promise.resolve();
+  var order = {
+    id: 'ORD-' + Date.now(),
+    items: orderItems,
+    date: new Date().toISOString(),
+    total: orderItems.length * 5
+  };
+  return window._fbDb.collection('users').doc(currentUser.uid).collection('orders').doc(order.id).set(order)
+    .then(function() {
+      return syncToCloud();
+    }).catch(function(e) { console.error('Save order error:', e); });
+}
+
+function getOrders() {
+  if (!currentUser || !window._fbDb) return Promise.resolve([]);
+  return window._fbDb.collection('users').doc(currentUser.uid).collection('orders').orderBy('date', 'desc').get()
+    .then(function(snapshot) {
+      var orders = [];
+      snapshot.forEach(function(doc) { orders.push(doc.data()); });
+      return orders;
+    }).catch(function(e) { console.error('Get orders error:', e); return []; });
+}
+
 function handleSignUp(name, email, password) {
   return firebase.auth().createUserWithEmailAndPassword(email, password).then(function(cred) {
     return cred.user.updateProfile({ displayName: name }).then(function() {
@@ -103,7 +127,9 @@ window.authModule = {
   signOut: handleSignOut,
   showAuth: showAuthModal,
   hideAuth: hideAuthModal,
-  syncToCloud: syncToCloud
+  syncToCloud: syncToCloud,
+  saveOrder: saveOrder,
+  getOrders: getOrders
 };
 
 initFirebase();

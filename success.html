@@ -121,6 +121,10 @@
     const cart = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
     const container = document.getElementById('products');
 
+    if (window.authModule && window.authModule.getCurrentUser() && cart.length > 0) {
+      window.authModule.saveOrder(cart);
+    }
+
     const seen = {};
     cart.forEach(item => {
       const link = links[item.id];

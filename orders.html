@@ -159,22 +159,24 @@
     'ski-mask': { name: 'Ski Mask', url: 'https://sale.dhgate.com/1rr3Zj83' },
     'spider-hoodie': { name: 'Spider Hoodie', url: 'https://sale.dhgate.com/7uzPO282' },
     'bape-hoodie': { name: 'Bape Hoodie', url: 'https://sale.dhgate.com/UMbuBr56' },
-    'ai-picks': { name: 'AI Sports Picks', url: 'ai.html' }
+    'ai-picks': { name: 'AI Sports Picks', url: 'ai.html' },
+    'ai-stocks': { name: 'AI Stock Picks', url: 'stocks.html' }
   };
 
-  const cart = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
   const container = document.getElementById('orders');
 
-  if (cart.length === 0) {
-    container.innerHTML = `
-      <div class="empty">
-        <h2>No orders yet</h2>
-        <p>When you buy something, it will show up here.</p>
-        <p style="margin-top:1.5rem"><a href="index.html">Shop now &rarr;</a></p>
-      </div>`;
-  } else {
+  function renderOrders(items) {
+    if (items.length === 0) {
+      container.innerHTML = `
+        <div class="empty">
+          <h2>No orders yet</h2>
+          <p>When you buy something, it will show up here.</p>
+          <p style="margin-top:1.5rem"><a href="index.html">Shop now &rarr;</a></p>
+        </div>`;
+      return;
+    }
     const seen = {};
-    cart.forEach(item => {
+    items.forEach(item => {
       const link = links[item.id];
       if (link && !seen[item.id]) {
         seen[item.id] = true;
@@ -188,6 +190,25 @@
       }
     });
   }
+
+  function loadOrders() {
+    if (window.authModule && window.authModule.getCurrentUser()) {
+      window.authModule.getOrders().then(function(firebaseOrders) {
+        var allItems = [];
+        firebaseOrders.forEach(function(order) {
+          if (order.items) allItems = allItems.concat(order.items);
+        });
+        var localItems = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+        var combined = allItems.concat(localItems);
+        renderOrders(combined);
+      });
+    } else {
+      var cart = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+      renderOrders(cart);
+    }
+  }
+
+  loadOrders();
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
