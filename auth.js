@@ -8,36 +8,30 @@ const firebaseConfig = {
   measurementId: "G-BYF34LLMB9"
 };
 
-let firebaseApp = null;
-let firebaseAuth = null;
-let firebaseDb = null;
 let currentUser = null;
-let firebaseReady = false;
 
-async function initFirebase() {
+function initFirebase() {
   try {
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
-    const { getFirestore, doc, getDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    firebaseApp = initializeApp(firebaseConfig);
-    firebaseAuth = getAuth(firebaseApp);
-    firebaseDb = getFirestore(firebaseApp);
-    firebaseReady = true;
-
-    onAuthStateChanged(firebaseAuth, (user) => {
+    auth.onAuthStateChanged(function(user) {
       currentUser = user;
       updateAuthUI();
-      if (user) syncFromCloud();
+      if (user) syncFromCloud(auth, db);
     });
+
+    window._fbAuth = auth;
+    window._fbDb = db;
   } catch (e) {
     console.error('Firebase init failed:', e);
   }
 }
 
 function updateAuthUI() {
-  const authBtns = document.querySelectorAll('[id="authBtn"]');
-  authBtns.forEach(authBtn => {
+  var authBtns = document.querySelectorAll('[id="authBtn"]');
+  authBtns.forEach(function(authBtn) {
     if (currentUser) {
       authBtn.textContent = currentUser.displayName || currentUser.email.split('@')[0];
       authBtn.onclick = handleSignOut;
@@ -48,59 +42,50 @@ function updateAuthUI() {
   });
 }
 
-async function syncFromCloud() {
-  if (!currentUser || !firebaseReady) return;
-  try {
-    const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    const docRef = doc(firebaseDb, 'users', currentUser.uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
+function syncFromCloud(auth, db) {
+  if (!currentUser) return;
+  db.collection('users').doc(currentUser.uid).get().then(function(doc) {
+    if (doc.exists) {
+      var data = doc.data();
       if (data.cart) localStorage.setItem('cart', JSON.stringify(data.cart));
       if (data.purchasedItems) localStorage.setItem('purchasedItems', JSON.stringify(data.purchasedItems));
     }
-  } catch (e) { console.error('Sync error:', e); }
+  }).catch(function(e) { console.error('Sync error:', e); });
 }
 
-async function syncToCloud() {
-  if (!currentUser || !firebaseReady) return;
-  try {
-    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    const docRef = doc(firebaseDb, 'users', currentUser.uid);
-    await setDoc(docRef, {
-      cart: JSON.parse(localStorage.getItem('cart') || '[]'),
-      purchasedItems: JSON.parse(localStorage.getItem('purchasedItems') || '[]'),
-      lastUpdated: new Date().toISOString()
-    }, { merge: true });
-  } catch (e) { console.error('Sync error:', e); }
+function syncToCloud() {
+  if (!currentUser || !window._fbDb) return;
+  return window._fbDb.collection('users').doc(currentUser.uid).set({
+    cart: JSON.parse(localStorage.getItem('cart') || '[]'),
+    purchasedItems: JSON.parse(localStorage.getItem('purchasedItems') || '[]'),
+    lastUpdated: new Date().toISOString()
+  }, { merge: true }).catch(function(e) { console.error('Sync error:', e); });
 }
 
-async function handleSignUp(name, email, password) {
-  if (!firebaseReady) throw new Error('Firebase not ready. Try again.');
-  const { createUserWithEmailAndPassword, updateProfile } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
-  const cred = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-  await updateProfile(cred.user, { displayName: name });
-  updateAuthUI();
-  await syncToCloud();
-  return cred;
+function handleSignUp(name, email, password) {
+  return firebase.auth().createUserWithEmailAndPassword(email, password).then(function(cred) {
+    return cred.user.updateProfile({ displayName: name }).then(function() {
+      updateAuthUI();
+      return syncToCloud().then(function() { return cred; });
+    });
+  });
 }
 
-async function handleSignIn(email, password) {
-  if (!firebaseReady) throw new Error('Firebase not ready. Try again.');
-  const { signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
-  const cred = await signInWithEmailAndPassword(firebaseAuth, email, password);
-  updateAuthUI();
-  await syncFromCloud();
-  return cred;
+function handleSignIn(email, password) {
+  return firebase.auth().signInWithEmailAndPassword(email, password).then(function(cred) {
+    updateAuthUI();
+    syncFromCloud(window._fbAuth, window._fbDb);
+    return cred;
+  });
 }
 
-async function handleSignOut() {
-  if (!firebaseReady) return;
-  const { signOut } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
-  await syncToCloud();
-  await signOut(firebaseAuth);
-  currentUser = null;
-  updateAuthUI();
+function handleSignOut() {
+  return syncToCloud().then(function() {
+    return firebase.auth().signOut();
+  }).then(function() {
+    currentUser = null;
+    updateAuthUI();
+  });
 }
 
 function showAuthModal() {
@@ -112,13 +97,13 @@ function hideAuthModal() {
 }
 
 window.authModule = {
-  getCurrentUser: () => currentUser,
+  getCurrentUser: function() { return currentUser; },
   signUp: handleSignUp,
   signIn: handleSignIn,
   signOut: handleSignOut,
   showAuth: showAuthModal,
   hideAuth: hideAuthModal,
-  syncToCloud
+  syncToCloud: syncToCloud
 };
 
 initFirebase();
