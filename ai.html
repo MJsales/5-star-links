@@ -238,7 +238,7 @@ function showChat() {
 async function startPayment() {
   const btn = document.getElementById('payBtn');
   const err = document.getElementById('payError');
-  btn.disabled = true; btn.textContent = 'Processing...'; err.textContent = '';
+  err.textContent = '';
 
   const promoInput = document.getElementById('promoInput');
   const promoCode = promoInput ? promoInput.value.trim().toUpperCase() : '';
@@ -251,6 +251,8 @@ async function startPayment() {
     showChat();
     return;
   }
+
+  btn.disabled = true; btn.textContent = 'Processing...';
 
   try {
     const res = await fetch('/api/create-payment-intent', {
