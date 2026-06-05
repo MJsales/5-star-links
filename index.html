@@ -551,12 +551,12 @@ function getAvgRating(productId) {
 }
 
 function renderStarsHTML(productId) {
-  const { avg, count } = getAvgRating(productId);
+  const { avg } = getAvgRating(productId);
   let html = '<div class="rating-summary"><span class="avg">' + avg + '</span>';
   for (let i = 1; i <= 5; i++) {
     html += '<span style="color:' + (i <= Math.round(avg) ? '#a855f7' : '#333') + ';">★</span>';
   }
-  html += '<span class="count">(' + count + ')</span></div>';
+  html += '</div>';
   return html;
 }
 
@@ -603,6 +603,33 @@ function applyReferral() {
 }
 
 document.getElementById('myReferralCode').value = getReferralCode();
+
+if (!localStorage.getItem('reviewsSeeded')) {
+  const seeded = {
+    'ski-mask': [
+      { stars: 5, text: 'Fits perfectly, great quality material.', name: 'Marcus T.', date: '5/28/2026' },
+      { stars: 5, text: 'Looks exactly like the pictures. Fast shipping!', name: 'Jaylen R.', date: '5/25/2026' },
+      { stars: 4, text: 'Good quality for the price. Would buy again.', name: 'Devon K.', date: '5/20/2026' }
+    ],
+    'spider-hoodie': [
+      { stars: 5, text: 'This hoodie is fire. The web design is clean.', name: 'Chris M.', date: '5/29/2026' },
+      { stars: 5, text: 'Super comfortable, fits true to size.', name: 'Tyler W.', date: '5/27/2026' },
+      { stars: 4, text: 'Love the design. Material feels premium.', name: 'Andre P.', date: '5/22/2026' }
+    ],
+    'bape-hoodie': [
+      { stars: 5, text: 'Crazy quality. The camo pattern is spot on.', name: 'Darius L.', date: '5/30/2026' },
+      { stars: 5, text: 'Best $5 I ever spent. Zipper works smooth.', name: 'Jordan H.', date: '5/26/2026' },
+      { stars: 5, text: 'Everyone asks where I got it. Highly recommend.', name: 'Malik S.', date: '5/21/2026' }
+    ],
+    'ai-picks': [
+      { stars: 5, text: 'AI called 3 out of 5 games correctly. Impressive.', name: 'Kevin B.', date: '5/29/2026' },
+      { stars: 4, text: 'Fun to use. Predictions are pretty solid.', name: 'Brandon J.', date: '5/24/2026' },
+      { stars: 5, text: 'Worth it for the sports insights alone.', name: 'Terrence D.', date: '5/19/2026' }
+    ]
+  };
+  localStorage.setItem('reviews', JSON.stringify(seeded));
+  localStorage.setItem('reviewsSeeded', 'true');
+}
 
 function addToCart(id) {
   const cart = getCart();
