@@ -130,9 +130,11 @@ function getSavedEmail() {
 function fillEmailInputs() {
   var email = getSavedEmail();
   if (email) {
-    document.querySelectorAll('.auth-input[type="email"], #authEmail').forEach(function(el) {
-      el.value = email;
-    });
+    var overlay = document.getElementById('authOverlay');
+    if (overlay) {
+      var emailInput = overlay.querySelector('#authEmail');
+      if (emailInput) emailInput.value = email;
+    }
   }
 }
 

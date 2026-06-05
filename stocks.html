@@ -474,6 +474,18 @@ function generatePrediction(input) {
       var priceLabel = current > 1000 ? '$' + current.toLocaleString() : '$' + current;
       var entryLabel = matchedPos.entryPrice > 1000 ? '$' + matchedPos.entryPrice.toLocaleString() : '$' + matchedPos.entryPrice;
 
+      var futureDays = 7;
+      var dailyGrowth = trend === 'bullish' ? 1.2 : trend === 'bearish' ? -0.8 : 0.3;
+      var futurePrice = current * Math.pow(1 + dailyGrowth / 100, futureDays);
+      var futurePnl = ((futurePrice - matchedPos.entryPrice) / matchedPos.entryPrice * 100);
+      var futureProfit = (futurePrice - matchedPos.entryPrice) * matchedPos.amount;
+      var futureLabel = futurePrice > 1000 ? '$' + futurePrice.toLocaleString(undefined, {maximumFractionDigits:0}) : '$' + futurePrice.toFixed(2);
+
+      var sellNowProfit = profit;
+      var holdProfit = futureProfit;
+      var betterAction = holdProfit > sellNowProfit ? 'hold' : 'sell';
+      var potentialGain = Math.abs(holdProfit - sellNowProfit).toFixed(2);
+
       return '<b>Your ' + matchedPos.symbol + ' Position</b><br><br>' +
         'Entry: <b>' + entryLabel + '</b> x ' + matchedPos.amount + '<br>' +
         'Current: <b>' + priceLabel + '</b><br>' +
@@ -481,6 +493,11 @@ function generatePrediction(input) {
         'Held: <b>' + holdingDays + ' days</b><br>' +
         'RSI: ' + rsi + ' | Trend: ' + trend + '<br><br>' +
         '<div style="display:inline-block;padding:10px 20px;border-radius:10px;font-size:1.1rem;font-weight:800;background:' + (shouldSell ? 'rgba(239,68,68,0.15)' : shouldHold ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)') + ';color:' + verdictColor + ';border:1px solid ' + verdictColor + '33;">' + verdict + '</div><br><br>' +
+        '<b>Sell Now:</b> You pocket <b style="color:' + (sellNowProfit >= 0 ? '#22c55e' : '#ef4444') + ';">$' + (sellNowProfit >= 0 ? '+' : '') + sellNowProfit.toFixed(2) + '</b><br>' +
+        '<b>Hold 7 Days:</b> Projected <b style="color:' + (futurePnl >= 0 ? '#22c55e' : '#ef4444') + ';">$' + (futureProfit >= 0 ? '+' : '') + futureProfit.toFixed(2) + '</b> (' + (futurePnl >= 0 ? '+' : '') + futurePnl.toFixed(1) + '%)<br><br>' +
+        '<div style="padding:10px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2);border-radius:8px;font-size:0.9rem;color:#ccc;">' +
+        '<b>Bottom line:</b> ' + (betterAction === 'hold' ? 'You\'d make $' + potentialGain + ' more by holding 7 days — patience pays.' : 'Sell now — holding could cost you $' + potentialGain + '.') +
+        '</div><br>' +
         reasons.join('<br>');
     }
     if (lower.includes('portfolio') || lower.includes('my')) {
