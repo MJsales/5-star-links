@@ -276,10 +276,63 @@
     <h2 style="margin-bottom:1.2rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Link Wallet</h2>
     <p style="text-align:center;font-size:0.8rem;color:#555;margin-bottom:1rem;">Your public address is stored securely. No private keys are ever requested.</p>
     <select id="walletChain" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;">
-      <option value="BTC">Bitcoin (BTC)</option>
-      <option value="ETH">Ethereum (ETH)</option>
-      <option value="SOL">Solana (SOL)</option>
-      <option value="DOGE">Dogecoin (DOGE)</option>
+      <optgroup label="Layer 1">
+        <option value="BTC">Bitcoin (BTC)</option>
+        <option value="ETH">Ethereum (ETH)</option>
+        <option value="SOL">Solana (SOL)</option>
+        <option value="BNB">BNB (BNB)</option>
+        <option value="XRP">XRP (XRP)</option>
+        <option value="ADA">Cardano (ADA)</option>
+        <option value="AVAX">Avalanche (AVAX)</option>
+        <option value="DOT">Polkadot (DOT)</option>
+        <option value="ATOM">Cosmos (ATOM)</option>
+        <option value="APT">Aptos (APT)</option>
+        <option value="NEAR">NEAR (NEAR)</option>
+        <option value="HBAR">Hedera (HBAR)</option>
+        <option value="LTC">Litecoin (LTC)</option>
+        <option value="BCH">Bitcoin Cash (BCH)</option>
+        <option value="DOGE">Dogecoin (DOGE)</option>
+        <option value="SHIB">Shiba Inu (SHIB)</option>
+        <option value="TRX">Tron (TRX)</option>
+      </optgroup>
+      <optgroup label="Layer 2 / Scaling">
+        <option value="MATIC">Polygon (MATIC)</option>
+        <option value="ARB">Arbitrum (ARB)</option>
+        <option value="OP">Optimism (OP)</option>
+        <option value="BASE">Base (ETH on Base)</option>
+        <option value="IMX">ImmutableX (IMX)</option>
+      </optgroup>
+      <optgroup label="Stablecoins">
+        <option value="USDC">USD Coin (USDC)</option>
+        <option value="USDT">Tether (USDT)</option>
+        <option value="DAI">Dai (DAI)</option>
+        <option value="BUSD">Binance USD (BUSD)</option>
+      </optgroup>
+      <optgroup label="DeFi / Tokens">
+        <option value="LINK">Chainlink (LINK)</option>
+        <option value="UNI">Uniswap (UNI)</option>
+        <option value="AAVE">Aave (AAVE)</option>
+        <option value="MKR">Maker (MKR)</option>
+        <option value="CRV">Curve (CRV)</option>
+        <option value="LDO">Lido (LDO)</option>
+        <option value="SUSHI">SushiSwap (SUSHI)</option>
+      </optgroup>
+      <optgroup label="Meme / Community">
+        <option value="PEPE">Pepe (PEPE)</option>
+        <option value="FLOKI">Floki (FLOKI)</option>
+        <option value="WIF">dogwifhat (WIF)</option>
+        <option value="BONK">Bonk (BONK)</option>
+      </optgroup>
+      <optgroup label="Other">
+        <option value="FIL">Filecoin (FIL)</option>
+        <option value="GRT">The Graph (GRT)</option>
+        <option value="INJ">Injective (INJ)</option>
+        <option value="SUI">Sui (SUI)</option>
+        <option value="SEI">Sei (SEI)</option>
+        <option value="TIA">Celestia (TIA)</option>
+        <option value="JUP">Jupiter (JUP)</option>
+        <option value="RENDER">Render (RENDER)</option>
+      </optgroup>
     </select>
     <input type="text" id="walletAddress" placeholder="Public wallet address" style="width:100%;padding:12px;margin-bottom:14px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;word-break:break-all;" />
     <button onclick="addWallet()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Link Wallet</button>
@@ -929,7 +982,7 @@ async function fetchWalletBalance(address, chain) {
     if (chain === 'BTC') {
       var res = await fetch('https://blockchain.info/q/addressbalance/' + address);
       if (res.ok) balance = parseInt(await res.text()) / 100000000;
-    } else if (chain === 'ETH') {
+    } else if (chain === 'ETH' || chain === 'USDC' || chain === 'USDT' || chain === 'DAI' || chain === 'BUSD' || chain === 'LINK' || chain === 'UNI' || chain === 'AAVE' || chain === 'MKR' || chain === 'CRV' || chain === 'LDO' || chain === 'SUSHI' || chain === 'SHIB' || chain === 'PEPE' || chain === 'FLOKI' || chain === 'WIF' || chain === 'BONK' || chain === 'GRT' || chain === 'RENDER') {
       var res = await fetch('https://api.etherscan.io/api?module=account&action=balance&address=' + address + '&tag=latest');
       var data = await res.json();
       if (data.status === '1') balance = parseInt(data.result) / 1e18;
@@ -937,7 +990,7 @@ async function fetchWalletBalance(address, chain) {
       var res = await fetch('https://dogechain.info/api/v1/address/balance/' + address);
       var data = await res.json();
       if (data.balance !== undefined) balance = parseFloat(data.balance);
-    } else if (chain === 'SOL') {
+    } else if (chain === 'SOL' || chain === 'JUP') {
       var res = await fetch('https://api.mainnet-beta.solana.com', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -945,6 +998,90 @@ async function fetchWalletBalance(address, chain) {
       });
       var data = await res.json();
       if (data.result) balance = data.result.value / 1e9;
+    } else if (chain === 'BNB' || chain === 'MATIC' || chain === 'ARB' || chain === 'OP' || chain === 'AVAX' || chain === 'FTM' || chain === 'CRONOS') {
+      var apis = { BNB: 'bscscan', MATIC: 'polygonscan', ARB: 'arbiscan', OP: 'optimistic.etherscan', AVAX: 'snowtrace' };
+      var base = apis[chain] || 'etherscan';
+      var res = await fetch('https://api.' + base + '.io/api?module=account&action=balance&address=' + address + '&tag=latest');
+      var data = await res.json();
+      if (data.status === '1') balance = parseInt(data.result) / 1e18;
+    } else if (chain === 'XRP') {
+      var res = await fetch('https://api.xrpscan.com/api/v1/account/' + address);
+      var data = await res.json();
+      if (data.balance) balance = parseFloat(data.balance);
+    } else if (chain === 'ADA') {
+      var res = await fetch('https://cardano-mainnet.blockfrost.io/api/v0/addresses/' + address, { headers: { 'project_id': 'demo' } });
+      var data = await res.json();
+      if (data.amount) {
+        var lovelace = data.amount.find(function(a) { return a.unit === 'lovelace'; });
+        if (lovelace) balance = parseInt(lovelace.quantity) / 1e6;
+      }
+    } else if (chain === 'DOT' || chain === 'KSM') {
+      var res = await fetch('https://polkadot.api.subscan.io/api/v1/account?address=' + address, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      var data = await res.json();
+      if (data.data && data.data.account) balance = parseInt(data.data.account.data.free) / 1e10;
+    } else if (chain === 'ATOM') {
+      var res = await fetch('https://api.cosmos.network/cosmos/bank/v1beta1/balances/' + address);
+      var data = await res.json();
+      if (data.balances) {
+        var uatom = data.balances.find(function(b) { return b.denom === 'uatom'; });
+        if (uatom) balance = parseInt(uatom.amount) / 1e6;
+      }
+    } else if (chain === 'NEAR') {
+      var res = await fetch('https://rpc.mainnet.near.org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'query', params: [address, 'account'] })
+      });
+      var data = await res.json();
+      if (data.result && data.result.amount) balance = parseInt(data.result.amount) / 1e24;
+    } else if (chain === 'HBAR') {
+      balance = null;
+    } else if (chain === 'LTC') {
+      var res = await fetch('https://api.blockcypher.com/v1/ltc/main/addrs/' + address + '/balance');
+      var data = await res.json();
+      if (data.balance) balance = data.balance / 1e8;
+    } else if (chain === 'BCH') {
+      var res = await fetch('https://api.blockcypher.com/v1/btc/main/addrs/' + address + '/balance');
+      var data = await res.json();
+      if (data.balance) balance = data.balance / 1e8;
+    } else if (chain === 'TRX') {
+      var res = await fetch('https://api.trongrid.io/v1/accounts/' + address);
+      var data = await res.json();
+      if (data.data && data.data[0]) balance = data.data[0].balance / 1e6;
+    } else if (chain === 'FIL') {
+      balance = null;
+    } else if (chain === 'INJ') {
+      var res = await fetch('https://lcd-injective.cosmosia.nested.tech/cosmos/bank/v1beta1/balances/' + address);
+      var data = await res.json();
+      if (data.balances) {
+        var inj = data.balances.find(function(b) { return b.denom === 'inj'; });
+        if (inj) balance = parseInt(inj.amount) / 1e18;
+      }
+    } else if (chain === 'SUI') {
+      var res = await fetch('https://fullnode.mainnet.sui.io:443', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'suix_getBalance', params: [address] })
+      });
+      var data = await res.json();
+      if (data.result && data.result.totalBalance) balance = parseInt(data.result.totalBalance) / 1e9;
+    } else if (chain === 'SEI') {
+      balance = null;
+    } else if (chain === 'TIA') {
+      balance = null;
+    } else if (chain === 'APT') {
+      var res = await fetch('https://fullnode.mainnet.aptoslabs.com/v1/accounts/' + address + '/resources');
+      var data = await res.json();
+      if (Array.isArray(data)) {
+        var coin = data.find(function(r) { return r.type && r.type.includes('CoinStore') && r.type.includes('APT'); });
+        if (coin && coin.data && coin.data.coin) balance = parseInt(coin.data.coin.value) / 1e8;
+      }
+    } else if (chain === 'IMX') {
+      balance = null;
+    } else if (chain === 'BASE') {
+      var res = await fetch('https://api.basescan.org/api?module=account&action=balance&address=' + address + '&tag=latest');
+      var data = await res.json();
+      if (data.status === '1') balance = parseInt(data.result) / 1e18;
     }
     wallet.balance = balance;
     wallet.lastChecked = Date.now();
@@ -977,7 +1114,7 @@ function renderWallets() {
         balanceUsd = ' ($' + usd.toFixed(2) + ')';
       }
     }
-    var chainColors = { BTC: '#f7931a', ETH: '#627eea', SOL: '#9945ff', DOGE: '#c2a633' };
+    var chainColors = { BTC: '#f7931a', ETH: '#627eea', SOL: '#9945ff', DOGE: '#c2a633', USDC: '#2775ca', USDT: '#26a17b', DAI: '#f5ac37', BNB: '#f3ba2f', XRP: '#23292f', ADA: '#0033ad', AVAX: '#e84142', DOT: '#e6007a', LINK: '#2a5ada', UNI: '#ff007a', ATOM: '#2e3148', SHIB: '#ffa409', MATIC: '#8247e5', ARB: '#28a0f0', OP: '#ff0420', AAVE: '#b6509e', MKR: '#1aab9b', CRV: '#000', LDO: '#00a3ff', SUSHI: '#fa52a0', PEPE: '#005e20', FLOKI: '#f5841f', WIF: '#c92d39', BONK: '#ff6600', NEAR: '#000', HBAR: '#000', LTC: '#bfbbbb', BCH: '#8dc351', TRX: '#ff0013', FIL: '#0090ff', GRT: '#6f4cb5', INJ: '#0095ff', SUI: '#6fbcf0', SEI: '#000', TIA: '#000', JUP: '#000', RENDER: '#000', BASE: '#0052ff', IMX: '#000', BUSD: '#f0b90b', DAI: '#f5ac37' };
     var color = chainColors[w.chain] || '#f59e0b';
     var shortAddr = w.address.slice(0, 6) + '...' + w.address.slice(-4);
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#050208;border:1px solid rgba(245,158,11,0.1);border-radius:10px;margin-bottom:8px;">' +
