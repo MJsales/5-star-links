@@ -73,6 +73,7 @@
       flex: 1; padding: 14px 18px; background: #110a1a;
       border: 1px solid rgba(168,85,247,0.2); border-radius: 12px;
       color: #fff; font-size: 1rem; outline: none; font-family: 'Inter', sans-serif;
+      -webkit-text-security: none;
     }
     .chat-input:focus { border-color: #a855f7; }
     .chat-input::placeholder { color: #555; }
@@ -179,7 +180,7 @@
     </div>
   </div>
   <div class="chat-input-wrap">
-    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about any stock or crypto..." onkeypress="if(event.key==='Enter')sendMsg()" autocomplete="new-password" name="chat_text">
+    <input type="password" class="chat-input" id="chatInput" placeholder="Ask about any stock or crypto..." onkeypress="if(event.key==='Enter')sendMsg()" name="chat_text">
     <button class="send-btn" onclick="sendMsg()">Send</button>
   </div>
 </div>
