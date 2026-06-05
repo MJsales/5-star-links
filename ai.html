@@ -571,12 +571,20 @@ async function handleAuthSubmit() {
 }
 </script>
 <script>
-document.getElementById('chatInput').addEventListener('focus', function() {
-  if (this.value && this.value.includes('@')) { this.value = ''; }
-});
-document.getElementById('chatInput').addEventListener('input', function() {
-  if (this.dataset.autofilled) { this.value = ''; this.dataset.autofilled = ''; }
-});
+(function() {
+  var input = document.getElementById('chatInput');
+  var lastVal = input.value;
+  function checkAutofill() {
+    var v = input.value;
+    if (v && v.includes('@')) { input.value = ''; lastVal = ''; return; }
+    lastVal = v;
+  }
+  input.addEventListener('focus', checkAutofill);
+  input.addEventListener('blur', checkAutofill);
+  setInterval(checkAutofill, 200);
+  input.addEventListener('input', function() { lastVal = this.value; });
+  input.addEventListener('keydown', function() { setTimeout(checkAutofill, 50); });
+})();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
