@@ -288,8 +288,14 @@ function findGameByTeams(input) {
   var oddsKeys = Object.keys(liveOdds);
   for (var i = 0; i < oddsKeys.length; i++) {
     var key = oddsKeys[i];
-    if (lower.includes(key.split(' vs ')[0]) && lower.includes(key.split(' vs ')[1]) ||
-        lower.includes(key.split(' vs ')[1]) && lower.includes(key.split(' vs ')[0])) {
+    var parts = key.split(' vs ');
+    var homeLower = parts[0].toLowerCase();
+    var awayLower = parts[1].toLowerCase();
+    var homeWords = homeLower.split(' ');
+    var awayWords = awayLower.split(' ');
+    var homeMatch = homeWords.some(function(w) { return w.length > 2 && lower.includes(w); });
+    var awayMatch = awayWords.some(function(w) { return w.length > 2 && lower.includes(w); });
+    if (homeMatch && awayMatch) {
       var game = liveOdds[key];
       var sportMap = { 'americanfootball_nfl': 'nfl', 'basketball_nba': 'nba', 'baseball_mlb': 'mlb', 'icehockey_nhl': 'nhl' };
       return {
@@ -306,7 +312,18 @@ function findGameByTeams(input) {
 
 function findOddsForGame(home, away) {
   var key = (home + ' vs ' + away).toLowerCase();
-  return liveOdds[key] || null;
+  if (liveOdds[key]) return liveOdds[key];
+  var oddsKeys = Object.keys(liveOdds);
+  for (var i = 0; i < oddsKeys.length; i++) {
+    var k = oddsKeys[i];
+    var parts = k.split(' vs ');
+    var homeWords = parts[0].toLowerCase().split(' ');
+    var awayWords = parts[1].toLowerCase().split(' ');
+    var homeMatch = homeWords.some(function(w) { return w.length > 2 && home.toLowerCase().includes(w); });
+    var awayMatch = awayWords.some(function(w) { return w.length > 2 && away.toLowerCase().includes(w); });
+    if (homeMatch && awayMatch) return liveOdds[k];
+  }
+  return null;
 }
 
 function formatOdds(odds) {
