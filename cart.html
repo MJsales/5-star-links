@@ -562,6 +562,16 @@
       return;
     }
 
+    const referralCredits = parseInt(localStorage.getItem('referralCredits') || '0');
+    if (referralCredits > 0) {
+      localStorage.setItem('referralCredits', '0');
+      localStorage.setItem('purchasedItems', JSON.stringify(cart));
+      localStorage.removeItem('cart');
+      if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
+      window.location.href = 'success.html?free=1';
+      return;
+    }
+
     const items = cart.map(item => ({
       id: item.id,
       color: item.color || null,

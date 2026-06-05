@@ -201,6 +201,28 @@
       pointer-events: none; z-index: 999; white-space: nowrap;
     }
     .toast.show { opacity: 1; }
+    .stars { color: #a855f7; font-size: 1.1rem; cursor: pointer; }
+    .stars .star { cursor: pointer; transition: color 0.2s; }
+    .stars .star:hover, .stars .star.active { color: #c084fc; }
+    .rating-summary { display: flex; align-items: center; gap: 6px; margin-top: 0.3rem; }
+    .rating-summary .avg { font-weight: 800; color: #a855f7; }
+    .rating-summary .count { color: #666; font-size: 0.85rem; }
+    .review-form { margin-top: 0.8rem; }
+    .review-form textarea { width: 100%; padding: 8px; background: #050208; border: 1px solid rgba(168,85,247,0.2); border-radius: 8px; color: #fff; font-size: 0.85rem; resize: none; height: 60px; outline: none; font-family: 'Inter', sans-serif; }
+    .review-form textarea:focus { border-color: #a855f7; }
+    .review-form button { margin-top: 6px; padding: 6px 14px; background: rgba(168,85,247,0.2); color: #a855f7; border: 1px solid rgba(168,85,247,0.3); border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+    .review-list { margin-top: 0.5rem; }
+    .review-item { padding: 6px 0; border-top: 1px solid rgba(168,85,247,0.1); font-size: 0.85rem; }
+    .review-item .review-stars { color: #a855f7; font-size: 0.8rem; }
+    .review-item .review-text { color: #aaa; margin-top: 2px; }
+    .review-item .review-name { color: #666; font-size: 0.75rem; }
+    .referral-box { margin-top: 1.5rem; padding: 1.2rem; background: linear-gradient(145deg, #0d0815, #110a1a); border: 1px solid rgba(168,85,247,0.2); border-radius: 12px; }
+    .referral-box h3 { font-size: 1rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #fff, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .referral-box p { color: #888; font-size: 0.85rem; margin-bottom: 0.8rem; }
+    .referral-code { display: flex; gap: 8px; align-items: center; }
+    .referral-code input { flex: 1; padding: 8px 12px; background: #050208; border: 1px solid rgba(168,85,247,0.2); border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none; font-family: 'Inter', sans-serif; }
+    .referral-code button { padding: 8px 14px; background: rgba(168,85,247,0.2); color: #a855f7; border: 1px solid rgba(168,85,247,0.3); border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+    .referral-code button:hover { background: rgba(168,85,247,0.3); }
     .auth-btn {
       position: fixed; top: 1.2rem; right: 14rem; z-index: 100;
       background: rgba(168,85,247,0.15); backdrop-filter: blur(12px);
@@ -298,6 +320,19 @@
 <div class="container">
   <div class="tagline"><span>Everything $5</span></div>
   <div class="grid" id="productGrid"></div>
+  <div class="referral-box" id="referralBox">
+    <h3>Refer a Friend, Get $5 Off</h3>
+    <p>Share your code. When they buy, you both get $5 off your next order.</p>
+    <div class="referral-code">
+      <input type="text" id="myReferralCode" readonly>
+      <button onclick="copyReferral()">Copy Code</button>
+    </div>
+    <div style="margin-top:10px;">
+      <input type="text" id="friendReferralInput" placeholder="Got a code? Enter it here" style="width:100%;padding:8px 12px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:8px;color:#fff;font-size:0.85rem;outline:none;font-family:'Inter',sans-serif;">
+      <button onclick="applyReferral()" style="margin-top:6px;padding:6px 14px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;">Apply Code</button>
+    </div>
+    <div id="referralMsg" style="margin-top:6px;font-size:0.85rem;color:#a855f7;"></div>
+  </div>
 </div>
 
 <div class="footer">
@@ -305,6 +340,16 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div id="reviewOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.25);border-radius:18px;padding:2rem;width:90%;max-width:400px;position:relative;">
+    <button onclick="closeReviewModal()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:1.5rem;cursor:pointer;">&times;</button>
+    <h2 style="margin-bottom:1rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Write a Review</h2>
+    <div id="reviewModalStars" class="stars" style="text-align:center;font-size:2rem;margin-bottom:1rem;"></div>
+    <textarea id="reviewModalText" placeholder="Tell us what you think..." style="width:100%;padding:12px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;height:80px;resize:none;font-family:'Inter',sans-serif;margin-bottom:12px;"></textarea>
+    <button onclick="submitReview()" style="width:100%;padding:12px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Submit Review</button>
+  </div>
+</div>
 
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-modal">
@@ -450,6 +495,115 @@ function updateCount() {
   document.getElementById('cartCount').textContent = count;
 }
 
+function getReviews() { return JSON.parse(localStorage.getItem('reviews') || '{}'); }
+function saveReviews(r) { localStorage.setItem('reviews', JSON.stringify(r)); }
+
+let reviewProductId = null;
+let reviewRating = 0;
+
+function openReviewModal(productId) {
+  reviewProductId = productId;
+  reviewRating = 0;
+  document.getElementById('reviewModalText').value = '';
+  renderReviewStars(0);
+  document.getElementById('reviewOverlay').style.display = 'flex';
+}
+
+function closeReviewModal() {
+  document.getElementById('reviewOverlay').style.display = 'none';
+}
+
+function renderReviewStars(rating) {
+  const container = document.getElementById('reviewModalStars');
+  container.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const star = document.createElement('span');
+    star.textContent = i <= rating ? '★' : '☆';
+    star.style.color = i <= rating ? '#c084fc' : '#555';
+    star.style.cursor = 'pointer';
+    star.onclick = function() { reviewRating = i; renderReviewStars(i); };
+    container.appendChild(star);
+  }
+}
+
+function submitReview() {
+  if (!reviewProductId || reviewRating === 0) return;
+  const text = document.getElementById('reviewModalText').value.trim();
+  if (!text) return;
+  const reviews = getReviews();
+  if (!reviews[reviewProductId]) reviews[reviewProductId] = [];
+  const name = (window.authModule && window.authModule.getCurrentUser())
+    ? (window.authModule.getCurrentUser().displayName || 'User')
+    : 'Anonymous';
+  reviews[reviewProductId].push({ stars: reviewRating, text: text, name: name, date: new Date().toLocaleDateString() });
+  saveReviews(reviews);
+  closeReviewModal();
+  render();
+  showToast('Review submitted!');
+}
+
+function getAvgRating(productId) {
+  const reviews = getReviews();
+  const list = reviews[productId] || [];
+  if (list.length === 0) return { avg: 0, count: 0 };
+  const sum = list.reduce((s, r) => s + r.stars, 0);
+  return { avg: (sum / list.length).toFixed(1), count: list.length };
+}
+
+function renderStarsHTML(productId) {
+  const { avg, count } = getAvgRating(productId);
+  let html = '<div class="rating-summary"><span class="avg">' + avg + '</span>';
+  for (let i = 1; i <= 5; i++) {
+    html += '<span style="color:' + (i <= Math.round(avg) ? '#a855f7' : '#333') + ';">★</span>';
+  }
+  html += '<span class="count">(' + count + ')</span></div>';
+  return html;
+}
+
+function renderReviewsHTML(productId) {
+  const reviews = (getReviews()[productId] || []).slice(-3).reverse();
+  if (reviews.length === 0) return '<div style="color:#555;font-size:0.8rem;margin-top:0.5rem;">No reviews yet. Be the first!</div>';
+  return '<div class="review-list">' + reviews.map(function(r) {
+    let stars = '';
+    for (let i = 1; i <= 5; i++) stars += i <= r.stars ? '★' : '☆';
+    return '<div class="review-item"><div class="review-stars">' + stars + '</div><div class="review-text">' + r.text + '</div><div class="review-name">' + r.name + ' &bull; ' + r.date + '</div></div>';
+  }).join('') + '</div>';
+}
+
+function getReferralCode() {
+  let code = localStorage.getItem('myReferralCode');
+  if (!code) {
+    code = '5STAR' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    localStorage.setItem('myReferralCode', code);
+  }
+  return code;
+}
+
+function getReferralCredits() { return parseInt(localStorage.getItem('referralCredits') || '0'); }
+function setReferralCredits(n) { localStorage.setItem('referralCredits', String(n)); }
+
+function copyReferral() {
+  navigator.clipboard.writeText(getReferralCode());
+  showToast('Code copied!');
+}
+
+function applyReferral() {
+  const input = document.getElementById('friendReferralInput');
+  const code = input.value.trim().toUpperCase();
+  const msg = document.getElementById('referralMsg');
+  if (!code) { msg.textContent = 'Enter a code'; return; }
+  if (code === getReferralCode()) { msg.textContent = "You can't use your own code"; return; }
+  const used = JSON.parse(localStorage.getItem('usedReferrals') || '[]');
+  if (used.includes(code)) { msg.textContent = 'Code already used'; return; }
+  used.push(code);
+  localStorage.setItem('usedReferrals', JSON.stringify(used));
+  setReferralCredits(getReferralCredits() + 5);
+  msg.textContent = '$5 credit added to your account!';
+  input.value = '';
+}
+
+document.getElementById('myReferralCode').value = getReferralCode();
+
 function addToCart(id) {
   const cart = getCart();
   const color = selectedColors[id] || null;
@@ -480,12 +634,15 @@ function render() {
       <h3>${p.name}</h3>
       <div class="price">$${p.price}</div>
       <div class="desc">${p.desc}</div>
+      ${renderStarsHTML(p.id)}
       ${p.hasColors ? `<div class="color-picker">${maskColors.map(c =>
         `<div class="color-dot${(selectedColors[p.id] || maskColors[0].id) === c.id ? ' active' : ''}"
           style="background:${c.fill}" title="${c.name}"
           onclick="selectColor('${p.id}','${c.id}')"></div>`
       ).join('')}</div>` : ''}
       <button class="add-btn" onclick="addToCart('${p.id}')">Add to Cart</button>
+      <button onclick="openReviewModal('${p.id}')" style="margin-top:6px;width:100%;padding:8px;background:rgba(168,85,247,0.1);color:#a855f7;border:1px solid rgba(168,85,247,0.2);border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">Write a Review</button>
+      ${renderReviewsHTML(p.id)}
     </div>`;
   }).join('');
 }
