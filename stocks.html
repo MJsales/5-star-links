@@ -179,7 +179,7 @@
     </div>
   </div>
   <div class="chat-input-wrap">
-    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about any stock or crypto..." onkeypress="if(event.key==='Enter')sendMsg()">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about any stock or crypto..." onkeypress="if(event.key==='Enter')sendMsg()" autocomplete="off">
     <button class="send-btn" onclick="sendMsg()">Send</button>
   </div>
 </div>
@@ -253,7 +253,7 @@
     <button onclick="closeAddPosition()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:1.5rem;cursor:pointer;">&times;</button>
     <h2 style="margin-bottom:1.2rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Add Position</h2>
     <input type="text" id="posSymbol" placeholder="Symbol (e.g. BTC, AAPL)" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
-    <input type="number" id="posAmount" placeholder="Amount you bought" step="any" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
+    <input type="number" id="posAmount" placeholder="USD spent ($)" step="any" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
     <input type="number" id="posPrice" placeholder="Price per unit ($)" step="any" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
     <input type="date" id="posDate" style="width:100%;padding:12px;margin-bottom:14px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
     <button onclick="addPosition()" style="width:100%;padding:12px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Add to Portfolio</button>
@@ -841,19 +841,21 @@ function closeAddPosition() {
 
 function addPosition() {
   var symbol = document.getElementById('posSymbol').value.trim().toUpperCase();
-  var amount = parseFloat(document.getElementById('posAmount').value);
+  var usdSpent = parseFloat(document.getElementById('posAmount').value);
   var price = parseFloat(document.getElementById('posPrice').value);
   var date = document.getElementById('posDate').value;
-  if (!symbol || !amount || !price || !date) return;
+  if (!symbol || !usdSpent || !price || !date) return;
+  var coinAmount = usdSpent / price;
   var existing = portfolio.find(function(p) { return p.symbol === symbol; });
   if (existing) {
-    var totalAmount = existing.amount + amount;
-    var avgPrice = ((existing.amount * existing.entryPrice) + (amount * price)) / totalAmount;
-    existing.amount = totalAmount;
-    existing.entryPrice = avgPrice;
+    var totalUsd = existing.usdSpent + usdSpent;
+    var totalCoins = existing.amount + coinAmount;
+    existing.usdSpent = totalUsd;
+    existing.amount = totalCoins;
+    existing.entryPrice = totalUsd / totalCoins;
     existing.date = date;
   } else {
-    portfolio.push({ symbol: symbol, amount: amount, entryPrice: price, date: date });
+    portfolio.push({ symbol: symbol, amount: coinAmount, usdSpent: usdSpent, entryPrice: price, date: date });
   }
   savePortfolio(portfolio);
   closeAddPosition();
@@ -887,15 +889,16 @@ function renderPortfolio() {
     var pnlColor = pnl >= 0 ? '#22c55e' : '#ef4444';
     var holdingDays = Math.floor((Date.now() - new Date(p.date).getTime()) / 86400000);
     var value = current * p.amount;
-    var cost = p.entryPrice * p.amount;
+    var usdSpent = p.usdSpent || (p.entryPrice * p.amount);
+    var profit = value - usdSpent;
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#050208;border:1px solid rgba(168,85,247,0.1);border-radius:10px;margin-bottom:8px;">' +
       '<div>' +
-        '<div style="font-weight:700;color:#fff;font-size:1rem;">' + p.symbol + ' <span style="font-size:0.8rem;color:#555;font-weight:400;">x' + p.amount + '</span></div>' +
-        '<div style="font-size:0.8rem;color:#555;">Bought at $' + (p.entryPrice > 1000 ? p.entryPrice.toLocaleString() : p.entryPrice) + ' | ' + holdingDays + 'd ago</div>' +
+        '<div style="font-weight:700;color:#fff;font-size:1rem;">' + p.symbol + '</div>' +
+        '<div style="font-size:0.8rem;color:#555;">Spent $' + usdSpent.toFixed(2) + ' @ $' + (p.entryPrice > 1000 ? p.entryPrice.toLocaleString() : p.entryPrice) + ' | ' + holdingDays + 'd ago</div>' +
       '</div>' +
       '<div style="text-align:right;">' +
         '<div style="font-weight:700;color:' + pnlColor + ';">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + '%</div>' +
-        '<div style="font-size:0.8rem;color:#555;">$' + (value > 1000 ? value.toLocaleString(undefined, {maximumFractionDigits:0}) : value.toFixed(2)) + '</div>' +
+        '<div style="font-size:0.8rem;color:' + (profit >= 0 ? '#22c55e' : '#ef4444') + ';">$' + (profit >= 0 ? '+' : '') + profit.toFixed(2) + '</div>' +
       '</div>' +
       '<button onclick="removePosition(\'' + p.symbol + '\')" style="background:none;border:none;color:#555;cursor:pointer;font-size:1.2rem;padding:0 8px;">&times;</button>' +
     '</div>';
