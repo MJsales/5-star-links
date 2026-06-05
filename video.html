@@ -34,6 +34,14 @@
     .clip-card .desc { color: #ccc; font-size: 0.9rem; margin-top: 0.3rem; }
     .part-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); margin-right: 6px; }
     .viral-score { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+    .dl-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: linear-gradient(135deg, #ef4444, #b91c1c); border: none; border-radius: 8px; color: #fff; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-top: 8px; }
+    .dl-btn:hover { box-shadow: 0 4px 15px rgba(239,68,68,0.4); transform: translateY(-1px); }
+    .dl-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .dl-btn.downloaded { background: linear-gradient(135deg, #22c55e, #16a34a); }
+    .dl-all-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: linear-gradient(135deg, #a855f7, #7c3aed); border: none; border-radius: 10px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s; margin: 0.5rem 0; }
+    .dl-all-btn:hover { box-shadow: 0 6px 20px rgba(168,85,247,0.4); }
+    .dl-all-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .dl-progress { font-size: 0.8rem; color: #a855f7; margin-top: 4px; }
     .tip-box { background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.2); border-radius: 12px; padding: 1rem; margin: 0.5rem 0; font-size: 0.9rem; color: #ccc; }
     .tip-box b { color: #a855f7; }
     .video-embed { border-radius: 12px; overflow: hidden; margin: 0.5rem 0; border: 1px solid rgba(168,85,247,0.2); }
@@ -116,6 +124,18 @@
 <script>
 var today = new Date();
 var todayStr = today.toISOString().slice(0, 10);
+
+// Download state
+var currentVideoUrl = '';
+var currentVideoTitle = '';
+var currentSplices = [];
+var downloadedClips = {};
+var isLocalServer = false;
+
+// Check if local server is running
+fetch('/api/video-info', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url:'https://www.youtube.com/watch?v=dQw4w9WgXcQ'}) })
+  .then(function(r) { isLocalServer = r.ok || r.status === 500; })
+  .catch(function() { isLocalServer = false; });
 
 function seededRandom(seed) {
   var s = seed;
@@ -368,6 +388,12 @@ async function processYouTubeUrl(url) {
     splices = generateFallbackSplices(videoData);
   }
 
+  // Store for downloads
+  currentVideoUrl = url;
+  currentVideoTitle = videoData.title;
+  currentSplices = splices;
+  downloadedClips = {};
+
   removeLoadingMsg();
 
   // Build the response
@@ -403,11 +429,16 @@ async function processYouTubeUrl(url) {
 
   reply += '<br><b>🎬 Spliced into ' + splices.length + ' Parts!</b><br><br>';
 
-  splices.forEach(function(s) {
+  // Download All button
+  reply += '<button class="dl-all-btn" onclick="downloadAllClips()" id="dlAllBtn">⬇ Download All Clips</button>';
+  reply += '<div class="dl-progress" id="dlAllProgress"></div>';
+  reply += '<br>';
+
+  splices.forEach(function(s, idx) {
     var scoreColor = s.viralScore >= 75 ? '#22c55e' : s.viralScore >= 50 ? '#f59e0b' : '#ef4444';
     var peakLabel = s.peakMoment === 'hook' ? '🪝 HOOK' : s.peakMoment === 'climax' ? '🔥 CLIMAX' : s.peakMoment === 'cliffhanger' ? '🪢 CLIFFHANGER' : '📈 BUILDUP';
 
-    reply += '<div class="clip-card">';
+    reply += '<div class="clip-card" id="clipCard' + idx + '">';
     reply += '<div style="display:flex;justify-content:space-between;align-items:center;">';
     reply += '<h3><span class="part-badge">Part ' + s.part + '</span>' + peakLabel + '</h3>';
     reply += '<span class="viral-score" style="color:' + scoreColor + ';border-color:' + scoreColor + '33;">Viral: ' + s.viralScore + '%</span>';
@@ -422,6 +453,8 @@ async function processYouTubeUrl(url) {
     reply += '<div style="margin-top:8px;font-size:0.8rem;color:#555;">Caption: ' + s.caption + '</div>';
     reply += '<div style="font-size:0.75rem;color:#444;margin-top:4px;">' + s.hashtags + '</div>';
     reply += '<div style="font-size:0.8rem;color:#a855f7;margin-top:6px;">📊 Predicted: ' + s.predictedViews.toLocaleString() + ' views</div>';
+    reply += '<button class="dl-btn" id="dlBtn' + idx + '" onclick="downloadClip(' + idx + ')">⬇ Download Clip</button>';
+    reply += '<div class="dl-progress" id="dlProgress' + idx + '"></div>';
     reply += '</div>';
   });
 
@@ -637,6 +670,156 @@ function generateReply(input) {
   reply += '&#8226; <b>Ask "length"</b> → optimal video durations<br><br>';
   reply += '<div class="tip-box"><b>💡 Try it:</b> Paste any YouTube URL and say "splice this" — I\'ll analyze the real video, pull its transcript, and find the most viral moments automatically!</div>';
   return reply;
+}
+
+// Download a single clip
+async function downloadClip(idx) {
+  if (!isLocalServer) {
+    addAiMsg('<b>⚠ Download requires the local server.</b><br><br>Run <code>node server.js</code> in the project folder, then access the site at <code>http://localhost:4242</code><br><br>For now, you can copy the timestamps and use them in CapCut or any video editor.');
+    return;
+  }
+
+  var btn = document.getElementById('dlBtn' + idx);
+  var progress = document.getElementById('dlProgress' + idx);
+  if (!btn || !currentSplices[idx]) return;
+
+  var clip = currentSplices[idx];
+  btn.disabled = true;
+  btn.textContent = '⏳ Downloading...';
+  progress.textContent = 'Fetching clip from YouTube...';
+
+  try {
+    // Convert MM:SS to seconds
+    var startSec = parseTimeToSeconds(clip.clipStart);
+    var endSec = parseTimeToSeconds(clip.clipEnd);
+
+    var res = await fetch('/api/download-clip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: currentVideoUrl,
+        start: startSec,
+        end: endSec,
+        title: currentVideoTitle + '_part' + clip.part
+      })
+    });
+
+    var data = await res.json();
+
+    if (data.success) {
+      // Trigger download
+      var a = document.createElement('a');
+      a.href = data.downloadUrl;
+      a.download = data.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      btn.textContent = '✅ Downloaded';
+      btn.classList.add('downloaded');
+      progress.textContent = 'Size: ' + formatBytes(data.size);
+      downloadedClips[idx] = data;
+    } else {
+      btn.textContent = '❌ Failed';
+      btn.disabled = false;
+      progress.textContent = data.error || 'Download failed';
+    }
+  } catch (e) {
+    btn.textContent = '❌ Error';
+    btn.disabled = false;
+    progress.textContent = 'Server error: ' + e.message;
+  }
+}
+
+// Download all clips
+async function downloadAllClips() {
+  if (!isLocalServer) {
+    addAiMsg('<b>⚠ Download requires the local server.</b><br><br>Run <code>node server.js</code> in the project folder, then access the site at <code>http://localhost:4242</code>');
+    return;
+  }
+
+  var btn = document.getElementById('dlAllBtn');
+  var progress = document.getElementById('dlAllProgress');
+  if (!btn || currentSplices.length === 0) return;
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Downloading all clips...';
+  progress.textContent = 'Processing ' + currentSplices.length + ' clips...';
+
+  var clips = currentSplices.map(function(s) {
+    return { start: parseTimeToSeconds(s.clipStart), end: parseTimeToSeconds(s.clipEnd) };
+  });
+
+  try {
+    var res = await fetch('/api/download-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: currentVideoUrl,
+        clips: clips,
+        title: currentVideoTitle
+      })
+    });
+
+    var data = await res.json();
+
+    if (data.success) {
+      var successCount = 0;
+      var totalSize = 0;
+
+      for (var i = 0; i < data.clips.length; i++) {
+        var clip = data.clips[i];
+        var clipBtn = document.getElementById('dlBtn' + i);
+        var clipProgress = document.getElementById('dlProgress' + i);
+
+        if (clip.error) {
+          if (clipBtn) { clipBtn.textContent = '❌ Failed'; clipBtn.disabled = false; }
+          if (clipProgress) clipProgress.textContent = clip.error;
+        } else {
+          successCount++;
+          totalSize += clip.size;
+
+          // Trigger download
+          var a = document.createElement('a');
+          a.href = clip.downloadUrl;
+          a.download = clip.filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+
+          if (clipBtn) { clipBtn.textContent = '✅ Downloaded'; clipBtn.classList.add('downloaded'); }
+          if (clipProgress) clipProgress.textContent = 'Size: ' + formatBytes(clip.size);
+
+          // Small delay between downloads
+          await new Promise(function(r) { setTimeout(r, 500); });
+        }
+      }
+
+      btn.textContent = '✅ All Done (' + successCount + '/' + data.clips.length + ')';
+      btn.classList.add('downloaded');
+      progress.textContent = 'Total size: ' + formatBytes(totalSize);
+    } else {
+      btn.textContent = '❌ Failed';
+      btn.disabled = false;
+      progress.textContent = data.error || 'Download failed';
+    }
+  } catch (e) {
+    btn.textContent = '❌ Error';
+    btn.disabled = false;
+    progress.textContent = 'Server error: ' + e.message;
+  }
+}
+
+function parseTimeToSeconds(timeStr) {
+  var parts = timeStr.split(':').map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return parts[0] * 60 + parts[1];
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
 }
 
 var authMode = 'signin';
