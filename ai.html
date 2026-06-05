@@ -218,11 +218,36 @@ function sendMsg() {
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 var sportsData = null;
+var liveOdds = {};
 
 fetch('sports-data.json').then(function(r) { return r.json(); }).then(function(d) {
   sportsData = d;
   if (d.scheduledGames) scheduledGames = d.scheduledGames;
+  fetchAllOdds();
 }).catch(function(e) { console.error('Failed to load sports data:', e); });
+
+function fetchAllOdds() {
+  var sports = ['americanfootball_nfl', 'basketball_nba', 'baseball_mlb', 'icehockey_nhl'];
+  sports.forEach(function(sport) {
+    fetchOdds(sport);
+  });
+}
+
+function fetchOdds(sport) {
+  fetch('/api/get-odds?sport=' + sport + '&regions=us&markets=h2h,spreads,totals')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (Array.isArray(data)) {
+        data.forEach(function(game) {
+          var key = (game.home_team + ' vs ' + game.away_team).toLowerCase();
+          liveOdds[key] = game;
+        });
+      }
+    })
+    .catch(function(e) { console.error('Odds fetch failed for ' + sport + ':', e); });
+}
+
+setInterval(fetchAllOdds, 300000);
 
 var teams = {
   nfl: ['Chiefs','Bills','Ravens','49ers','Cowboys','Eagles','Lions','Dolphins','Bengals','Texans','Jets','Browns','Jaguars','Chargers','Broncos','Raiders','Steelers','Colts','Seahawks','Rams','Packers','Vikings','Buccaneers','Saints','Falcons','Panthers','Cardinals','Commanders','Giants','Patriots','Titans'],
@@ -254,10 +279,66 @@ function pickSeeded(arr, rng) { return arr[Math.floor(rng() * arr.length)]; }
 
 function findGameByTeams(input) {
   var lower = input.toLowerCase();
-  return scheduledGames.find(function(g) {
+  var fromScheduled = scheduledGames.find(function(g) {
     return lower.includes(g.home.toLowerCase()) && lower.includes(g.away.toLowerCase()) ||
            lower.includes(g.away.toLowerCase()) && lower.includes(g.home.toLowerCase());
   });
+  if (fromScheduled) return fromScheduled;
+
+  var oddsKeys = Object.keys(liveOdds);
+  for (var i = 0; i < oddsKeys.length; i++) {
+    var key = oddsKeys[i];
+    if (lower.includes(key.split(' vs ')[0]) && lower.includes(key.split(' vs ')[1]) ||
+        lower.includes(key.split(' vs ')[1]) && lower.includes(key.split(' vs ')[0])) {
+      var game = liveOdds[key];
+      var sportMap = { 'americanfootball_nfl': 'nfl', 'basketball_nba': 'nba', 'baseball_mlb': 'mlb', 'icehockey_nhl': 'nhl' };
+      return {
+        sport: sportMap[game.sport_key] || 'nfl',
+        home: game.home_team,
+        away: game.away_team,
+        date: game.commence_time ? new Date(game.commence_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'TBD',
+        liveOdds: game
+      };
+    }
+  }
+  return null;
+}
+
+function findOddsForGame(home, away) {
+  var key = (home + ' vs ' + away).toLowerCase();
+  return liveOdds[key] || null;
+}
+
+function formatOdds(odds) {
+  if (!odds) return '';
+  var result = '<br><br><b>Live Betting Odds:</b><br>';
+  var sites = odds.bookmakers || [];
+  if (sites.length === 0) return '';
+  var site = sites[0];
+  var h2h = site.markets.find(function(m) { return m.key === 'h2h'; });
+  var spreads = site.markets.find(function(m) { return m.key === 'spreads'; });
+  var totals = site.markets.find(function(m) { return m.key === 'totals'; });
+  if (h2h) {
+    result += '<b>' + site.title + ':</b><br>';
+    h2h.outcomes.forEach(function(o) {
+      var american = o.price;
+      var decimal = american > 0 ? (1 + american / 100) : (1 + 100 / Math.abs(american));
+      result += o.name + ': ' + (american > 0 ? '+' : '') + american + ' (' + decimal.toFixed(2) + ')<br>';
+    });
+  }
+  if (spreads) {
+    result += '<br><b>Spread:</b><br>';
+    spreads.outcomes.forEach(function(o) {
+      result += o.name + ': ' + (o.point > 0 ? '+' : '') + o.point + ' (' + (o.price > 0 ? '+' : '') + o.price + ')<br>';
+    });
+  }
+  if (totals) {
+    result += '<br><b>Total:</b><br>';
+    totals.outcomes.forEach(function(o) {
+      result += o.name + ' ' + o.point + ' (' + (o.price > 0 ? '+' : '') + o.price + ')<br>';
+    });
+  }
+  return result;
 }
 
 function findSportFromInput(input) {
@@ -304,17 +385,42 @@ function generatePrediction(input) {
   var game = findGameByTeams(input);
   if (game) {
     var pickTeam, confidence, reason;
+    var oddsData = game.liveOdds || findOddsForGame(game.home, game.away);
+
     if (sportsData && sportsData[game.sport]) {
       var t1Data = sportsData[game.sport].teams.find(function(t) { return t.name === game.home; });
       var t2Data = sportsData[game.sport].teams.find(function(t) { return t.name === game.away; });
       if (t1Data && t2Data) {
         var score1 = t1Data.offense + t1Data.defense + (t1Data.rank <= 10 ? 2 : 0);
         var score2 = t2Data.offense + t2Data.defense + (t2Data.rank <= 10 ? 2 : 0);
+
+        if (oddsData && oddsData.bookmakers && oddsData.bookmakers.length > 0) {
+          var h2hMarket = oddsData.bookmakers[0].markets.find(function(m) { return m.key === 'h2h'; });
+          if (h2hMarket) {
+            var homeOdds = h2hMarket.outcomes.find(function(o) { return o.name === game.home; });
+            var awayOdds = h2hMarket.outcomes.find(function(o) { return o.name === game.away; });
+            if (homeOdds && awayOdds) {
+              var impliedHome = homeOdds.price > 0 ? 100 / (homeOdds.price + 100) : Math.abs(homeOdds.price) / (Math.abs(homeOdds.price) + 100);
+              var impliedAway = awayOdds.price > 0 ? 100 / (awayOdds.price + 100) : Math.abs(awayOdds.price) / (Math.abs(awayOdds.price) + 100);
+              score1 += impliedHome * 3;
+              score2 += impliedAway * 3;
+            }
+          }
+        }
+
         var diff = Math.abs(score1 - score2);
         if (score1 > score2) { pickTeam = game.home; } else if (score2 > score1) { pickTeam = game.away; } else { pickTeam = rng() > 0.5 ? game.home : game.away; }
         confidence = Math.min(89, 55 + diff * 3 + Math.floor(rng() * 10));
         var margins = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal'];
         var reasonPool = [];
+        if (oddsData && oddsData.bookmakers && oddsData.bookmakers.length > 0) {
+          var h2hCheck = oddsData.bookmakers[0].markets.find(function(m) { return m.key === 'h2h'; });
+          if (h2hCheck) {
+            var favOdds = h2hCheck.outcomes.find(function(o) { return o.name === pickTeam; });
+            if (favOdds && favOdds.price < -150) reasonPool.push(pickTeam + ' is a strong favorite (odds: ' + favOdds.price + ').');
+            else if (favOdds) reasonPool.push('Market has ' + pickTeam + ' as a mild favorite (odds: ' + favOdds.price + ').');
+          }
+        }
         if (t1Data.streak && t1Data.streak.startsWith('W')) reasonPool.push(game.home + ' are on a ' + t1Data.streak + ' streak.');
         if (t2Data.streak && t2Data.streak.startsWith('W')) reasonPool.push(game.away + ' are on a ' + t2Data.streak + ' streak.');
         if (t1Data.offense >= 8) reasonPool.push(game.home + ' have a strong offense (rated ' + t1Data.offense + '/10).');
@@ -323,18 +429,20 @@ function generatePrediction(input) {
         if (t2Data.defense >= 8) reasonPool.push(game.away + ' defense is elite (rated ' + t2Data.defense + '/10).');
         if (reasonPool.length === 0) reasonPool.push('This is a toss-up game.');
         reason = pickSeeded(reasonPool, rng);
+        var oddsHTML = oddsData ? formatOdds(oddsData) : '';
         return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + '<br><br>' +
           '<b>' + game.home + ':</b> ' + (t1Data.record || '') + ' Rank #' + t1Data.rank + ' | Off: ' + t1Data.offense + '/10 | Def: ' + t1Data.defense + '/10<br>' +
           '<b>' + game.away + ':</b> ' + (t2Data.record || '') + ' Rank #' + t2Data.rank + ' | Off: ' + t2Data.offense + '/10 | Def: ' + t2Data.defense + '/10<br><br>' +
-          'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins, rng) + '<br><br>' +
-          reason;
+          'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins, rng) +
+          oddsHTML + '<br><br>' + reason;
       }
     }
     pickTeam = rng() > 0.5 ? game.home : game.away;
     confidence = 51 + Math.floor(rng() * 39);
     var margins2 = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal'];
+    var oddsHTML2 = oddsData ? formatOdds(oddsData) : '';
     return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + '<br><br>' +
-      'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins2, rng);
+      'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins2, rng) + oddsHTML2;
   }
 
   var sport3 = findSportFromInput(lower);
