@@ -143,6 +143,82 @@
       pointer-events: none; z-index: 999; white-space: nowrap;
     }
     .toast.show { opacity: 1; }
+    .auth-btn-sm {
+      background: rgba(168,85,247,0.15); backdrop-filter: blur(12px);
+      border: 1px solid rgba(168,85,247,0.3); color: #fff;
+      padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.85rem;
+      font-weight: 600; cursor: pointer; transition: all 0.3s;
+    }
+    .auth-btn-sm:hover { background: rgba(168,85,247,0.3); }
+    .auth-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88); z-index: 2000;
+      align-items: center; justify-content: center;
+    }
+    .auth-overlay.active { display: flex; }
+    .auth-modal {
+      background: linear-gradient(145deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.25); border-radius: 18px;
+      padding: 2rem; width: 90%; max-width: 380px; position: relative;
+    }
+    .auth-modal h2 {
+      margin-bottom: 1.5rem; font-size: 1.3rem; text-align: center;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .auth-close {
+      position: absolute; top: 12px; right: 16px;
+      background: none; border: none; color: #555; font-size: 1.5rem; cursor: pointer;
+    }
+    .auth-close:hover { color: #fff; }
+    .auth-input {
+      width: 100%; padding: 12px; margin-bottom: 12px;
+      background: #050208; border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 10px; color: #fff; font-size: 0.95rem; outline: none;
+    }
+    .auth-input:focus { border-color: #a855f7; }
+    .auth-input::placeholder { color: #555; }
+    .auth-error { color: #c02828; font-size: 0.85rem; margin-bottom: 12px; min-height: 1.2em; }
+    .auth-submit-btn {
+      width: 100%; padding: 14px; margin-bottom: 12px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
+      cursor: pointer;
+    }
+    .auth-submit-btn:hover { box-shadow: 0 6px 20px rgba(168,85,247,0.4); }
+    .auth-switch { text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 16px; }
+    .auth-switch a { color: #a855f7; text-decoration: none; font-weight: 600; }
+    .auth-switch a:hover { text-decoration: underline; }
+    .auth-divider { text-align: center; color: #444; margin-bottom: 16px; font-size: 0.85rem; }
+    .auth-guest-btn {
+      width: 100%; padding: 12px;
+      background: rgba(168,85,247,0.1); color: #a855f7;
+      border: 1px solid rgba(168,85,247,0.2); border-radius: 10px;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    }
+    .auth-guest-btn:hover { background: rgba(168,85,247,0.2); }
+    .promo-section { margin-top: 1rem; }
+    .promo-input-wrap { display: flex; gap: 8px; }
+    .promo-input {
+      flex: 1; padding: 10px 14px; background: #050208;
+      border: 1px solid rgba(168,85,247,0.2); border-radius: 8px;
+      color: #fff; font-size: 0.9rem; outline: none;
+    }
+    .promo-input:focus { border-color: #a855f7; }
+    .promo-input::placeholder { color: #555; }
+    .promo-btn {
+      padding: 10px 16px; background: rgba(168,85,247,0.2); color: #a855f7;
+      border: 1px solid rgba(168,85,247,0.3); border-radius: 8px;
+      font-size: 0.85rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    .promo-btn:hover { background: rgba(168,85,247,0.3); }
+    .promo-msg { margin-top: 6px; font-size: 0.85rem; }
+    .promo-msg.success { color: #4caf50; }
+    .promo-msg.error { color: #c02828; }
+    .free-badge {
+      display: inline-block; padding: 4px 12px; background: #4caf50; color: #fff;
+      border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-top: 6px;
+    }
 
     .payment-overlay {
       display: none; position: fixed; inset: 0;
@@ -220,7 +296,11 @@
     </div>
     <h1>5 Star Links</h1>
   </div>
-  <a href="index.html" class="back-btn">&larr; Continue Shopping</a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="orders.html" class="back-btn">My Orders</a>
+    <button class="auth-btn-sm" id="authBtn" onclick="authModule.showAuth()">Sign In</button>
+    <a href="index.html" class="back-btn">&larr; Continue Shopping</a>
+  </div>
 </div>
 
 <div class="container">
@@ -232,6 +312,26 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-modal">
+    <button class="auth-close" onclick="authModule.hideAuth()">&times;</button>
+    <h2 id="authTitle">Sign In</h2>
+    <div id="authNameWrap" style="display:none">
+      <input type="text" id="authName" class="auth-input" placeholder="Name" />
+    </div>
+    <input type="email" id="authEmail" class="auth-input" placeholder="Email" />
+    <input type="password" id="authPass" class="auth-input" placeholder="Password" />
+    <div id="authError" class="auth-error"></div>
+    <button class="auth-submit-btn" id="authSubmit" onclick="handleAuthSubmit()">Sign In</button>
+    <div class="auth-switch">
+      <span id="authSwitchText">Don't have an account?</span>
+      <a href="#" id="authSwitchLink" onclick="toggleAuthMode(event)">Sign Up</a>
+    </div>
+    <div class="auth-divider">or</div>
+    <button class="auth-guest-btn" onclick="authModule.hideAuth()">Continue as Guest</button>
+  </div>
+</div>
 
 <div class="payment-overlay" id="paymentOverlay">
   <div class="payment-modal">
@@ -363,13 +463,15 @@
     const total = cart.length * 5;
     let itemsHTML = '';
 
+    const nameMap = { 'ski-mask': 'Ski Mask', 'spider-hoodie': 'Spider Hoodie', 'bape-hoodie': 'Bape Hoodie' };
     cart.forEach((item, i) => {
       const colorLabel = item.color ? ` &mdash; ${item.color}` : '';
+      const itemName = item.name || nameMap[item.id] || item.id;
       itemsHTML += `
         <div class="cart-item">
           <div>${getItemSVG(item)}</div>
           <div class="details">
-            <h3>${item.name}${colorLabel}</h3>
+            <h3>${itemName}${colorLabel}</h3>
             <div class="color-tag">${item.id}</div>
           </div>
           <div class="item-price">$${item.price || 5}</div>
@@ -382,10 +484,17 @@
       <div class="summary">
         <div class="row"><span>Subtotal (${cart.length} item${cart.length > 1 ? 's' : ''})</span><span>$${total}</span></div>
         <div class="row"><span>Shipping</span><span style="color:#a855f7">FREE</span></div>
-        <div class="row total"><span>Total</span><span>$${total}</span></div>
+        <div class="promo-section">
+          <div class="promo-input-wrap">
+            <input type="text" class="promo-input" id="promoInput" placeholder="Promo code" />
+            <button class="promo-btn" onclick="applyPromo()">Apply</button>
+          </div>
+          <div class="promo-msg" id="promoMsg"></div>
+        </div>
+        <div class="row total"><span>Total</span><span id="totalDisplay">$${total}</span></div>
       </div>
-      <button class="checkout-btn" onclick="checkout()">
-        Checkout &mdash; $${total}
+      <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">
+        Checkout &mdash; $<span id="checkoutTotal">${total}</span>
       </button>`;
   }
 
@@ -393,6 +502,7 @@
     const cart = getCart();
     const removed = cart.splice(index, 1)[0];
     saveCart(cart);
+    if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
     render();
     showToast(`${removed.name} removed from cart`);
   }
@@ -404,12 +514,51 @@
     toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
   }
 
+  let promoApplied = false;
+  let promoDiscount = 0;
+
+  function applyPromo() {
+    const code = document.getElementById('promoInput').value.trim().toUpperCase();
+    const msg = document.getElementById('promoMsg');
+    const cart = getCart();
+    const total = cart.length * 5;
+
+    if (code === 'JOHNABBY') {
+      promoApplied = true;
+      promoDiscount = total;
+      msg.className = 'promo-msg success';
+      msg.innerHTML = 'Promo applied! Your order is FREE!';
+      document.getElementById('totalDisplay').innerHTML = '<span style="text-decoration:line-through">$' + total + '</span> $0';
+      document.getElementById('checkoutTotal').textContent = '0';
+      document.querySelector('.checkout-btn').innerHTML = 'Checkout &mdash; FREE';
+    } else if (code === '') {
+      msg.className = 'promo-msg error';
+      msg.textContent = 'Enter a promo code';
+    } else {
+      promoApplied = false;
+      promoDiscount = 0;
+      msg.className = 'promo-msg error';
+      msg.textContent = 'Invalid promo code';
+      document.getElementById('totalDisplay').textContent = '$' + total;
+      document.getElementById('checkoutTotal').textContent = total;
+      document.querySelector('.checkout-btn').innerHTML = 'Checkout &mdash; $' + total;
+    }
+  }
+
   const publishableKey = 'pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3';
   let stripe, cardElement, clientSecret;
 
   async function checkout() {
     const cart = getCart();
     if (cart.length === 0) { showToast('Cart is empty'); return; }
+
+    if (promoApplied && promoDiscount > 0) {
+      localStorage.setItem('purchasedItems', JSON.stringify(cart));
+      localStorage.removeItem('cart');
+      if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
+      window.location.href = 'success.html?free=1';
+      return;
+    }
 
     const items = cart.map(item => ({
       id: item.id,
@@ -421,7 +570,7 @@
     document.getElementById('payAmount').textContent = total;
 
     try {
-      const res = await fetch('/create-payment-intent', {
+      const res = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items })
@@ -481,6 +630,8 @@
         showToast(error.message);
       } else {
         e.complete('success');
+        localStorage.setItem('purchasedItems', JSON.stringify(getCart()));
+        localStorage.removeItem('cart');
         window.location.href = 'success.html';
       }
     });
@@ -500,6 +651,8 @@
       btn.disabled = false;
       btn.textContent = 'Pay Now';
     } else if (paymentIntent.status === 'succeeded') {
+      localStorage.setItem('purchasedItems', JSON.stringify(getCart()));
+      localStorage.removeItem('cart');
       window.location.href = 'success.html';
     }
   }
@@ -509,6 +662,44 @@
   }
 
   render();
+
+  let authMode = 'signin';
+  function toggleAuthMode(e) {
+    e.preventDefault();
+    authMode = authMode === 'signin' ? 'signup' : 'signin';
+    document.getElementById('authTitle').textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+    document.getElementById('authNameWrap').style.display = authMode === 'signup' ? 'block' : 'none';
+    document.getElementById('authSubmit').textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+    document.getElementById('authSwitchText').textContent = authMode === 'signin' ? "Don't have an account?" : "Already have an account?";
+    document.getElementById('authSwitchLink').textContent = authMode === 'signin' ? 'Sign Up' : 'Sign In';
+    document.getElementById('authError').textContent = '';
+  }
+
+  async function handleAuthSubmit() {
+    const name = document.getElementById('authName').value.trim();
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value;
+    const err = document.getElementById('authError');
+    err.textContent = '';
+
+    if (!email || !pass) { err.textContent = 'Fill in all fields'; return; }
+    if (authMode === 'signup' && !name) { err.textContent = 'Enter your name'; return; }
+    if (pass.length < 6) { err.textContent = 'Password must be 6+ characters'; return; }
+
+    try {
+      if (authMode === 'signup') {
+        await authModule.signUp(name, email, pass);
+      } else {
+        await authModule.signIn(email, pass);
+      }
+      authModule.hideAuth();
+      showToast('Signed in!');
+    } catch (e) {
+      err.textContent = e.message.replace('Firebase: ', '').replace(/\(auth\/.*?\)\.?/, '');
+    }
+  }
 </script>
+
+<script type="module" src="auth.js"></script>
 </body>
 </html>

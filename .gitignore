@@ -3,3 +3,5 @@ node_modules/
 Open Generative AI/
 pics/logo/Open.Generative.AI.Setup.2.0.0.exe
 package-lock.json
+
+.vercel

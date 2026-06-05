@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Orders - 5 Star Links</title>
+  <link rel="icon" type="image/png" href="pics/logo/logo.png.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050208;
+      color: #fff;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: rgba(13,8,21,0.9); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding: 1rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 800px; margin: 0 auto;
+    }
+    .topbar h1 {
+      font-size: 1.3rem; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .back-btn {
+      color: #a78bfa; text-decoration: none; font-weight: 600; font-size: 0.9rem;
+    }
+    .back-btn:hover { color: #fff; }
+    .container { max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+    .empty { text-align: center; padding: 4rem 1rem; }
+    .empty h2 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .empty p { color: #666; margin-top: 0.5rem; }
+    .empty a { color: #a855f7; text-decoration: none; font-weight: 700; }
+    .empty a:hover { text-decoration: underline; }
+    .order-card {
+      background: linear-gradient(145deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.12); border-radius: 14px;
+      padding: 1.2rem; margin-bottom: 1rem;
+    }
+    .order-card h3 {
+      font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+    }
+    .order-card .price { color: #a855f7; font-weight: 800; font-size: 1rem; }
+    .order-link {
+      display: inline-block; margin-top: 0.8rem; padding: 10px 20px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.9rem;
+      transition: all 0.3s;
+    }
+    .order-link:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(168,85,247,0.4); }
+    .footer {
+      text-align: center; padding: 3rem 1rem; font-size: 0.85rem;
+      color: #444; border-top: 1px solid rgba(168,85,247,0.1); margin-top: 2rem;
+    }
+    .footer strong { color: #a855f7; }
+    .auth-btn-sm {
+      background: rgba(168,85,247,0.15); backdrop-filter: blur(12px);
+      border: 1px solid rgba(168,85,247,0.3); color: #fff;
+      padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.85rem;
+      font-weight: 600; cursor: pointer; transition: all 0.3s;
+    }
+    .auth-btn-sm:hover { background: rgba(168,85,247,0.3); }
+    .auth-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88); z-index: 2000;
+      align-items: center; justify-content: center;
+    }
+    .auth-overlay.active { display: flex; }
+    .auth-modal {
+      background: linear-gradient(145deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.25); border-radius: 18px;
+      padding: 2rem; width: 90%; max-width: 380px; position: relative;
+    }
+    .auth-modal h2 {
+      margin-bottom: 1.5rem; font-size: 1.3rem; text-align: center;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .auth-close {
+      position: absolute; top: 12px; right: 16px;
+      background: none; border: none; color: #555; font-size: 1.5rem; cursor: pointer;
+    }
+    .auth-close:hover { color: #fff; }
+    .auth-input {
+      width: 100%; padding: 12px; margin-bottom: 12px;
+      background: #050208; border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 10px; color: #fff; font-size: 0.95rem; outline: none;
+    }
+    .auth-input:focus { border-color: #a855f7; }
+    .auth-input::placeholder { color: #555; }
+    .auth-error { color: #c02828; font-size: 0.85rem; margin-bottom: 12px; min-height: 1.2em; }
+    .auth-submit-btn {
+      width: 100%; padding: 14px; margin-bottom: 12px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
+      cursor: pointer;
+    }
+    .auth-submit-btn:hover { box-shadow: 0 6px 20px rgba(168,85,247,0.4); }
+    .auth-switch { text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 16px; }
+    .auth-switch a { color: #a855f7; text-decoration: none; font-weight: 600; }
+    .auth-switch a:hover { text-decoration: underline; }
+    .auth-divider { text-align: center; color: #444; margin-bottom: 16px; font-size: 0.85rem; }
+    .auth-guest-btn {
+      width: 100%; padding: 12px;
+      background: rgba(168,85,247,0.1); color: #a855f7;
+      border: 1px solid rgba(168,85,247,0.2); border-radius: 10px;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    }
+    .auth-guest-btn:hover { background: rgba(168,85,247,0.2); }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>My Orders</h1>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <button class="auth-btn-sm" id="authBtn" onclick="authModule.showAuth()">Sign In</button>
+    <a href="index.html" class="back-btn">&larr; Shop</a>
+  </div>
+</div>
+
+<div class="container">
+  <div id="orders"></div>
+</div>
+
+<div class="footer">
+  &copy; 2026 <strong>5 Star Links</strong> &bull; All rights reserved
+</div>
+
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-modal">
+    <button class="auth-close" onclick="authModule.hideAuth()">&times;</button>
+    <h2 id="authTitle">Sign In</h2>
+    <div id="authNameWrap" style="display:none">
+      <input type="text" id="authName" class="auth-input" placeholder="Name" />
+    </div>
+    <input type="email" id="authEmail" class="auth-input" placeholder="Email" />
+    <input type="password" id="authPass" class="auth-input" placeholder="Password" />
+    <div id="authError" class="auth-error"></div>
+    <button class="auth-submit-btn" id="authSubmit" onclick="handleAuthSubmit()">Sign In</button>
+    <div class="auth-switch">
+      <span id="authSwitchText">Don't have an account?</span>
+      <a href="#" id="authSwitchLink" onclick="toggleAuthMode(event)">Sign Up</a>
+    </div>
+    <div class="auth-divider">or</div>
+    <button class="auth-guest-btn" onclick="authModule.hideAuth()">Continue as Guest</button>
+  </div>
+</div>
+
+<script>
+  const links = {
+    'ski-mask': { name: 'Ski Mask', url: 'https://sale.dhgate.com/1rr3Zj83' },
+    'spider-hoodie': { name: 'Spider Hoodie', url: 'https://sale.dhgate.com/7uzPO282' },
+    'bape-hoodie': { name: 'Bape Hoodie', url: 'https://sale.dhgate.com/UMbuBr56' }
+  };
+
+  const cart = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+  const container = document.getElementById('orders');
+
+  if (cart.length === 0) {
+    container.innerHTML = `
+      <div class="empty">
+        <h2>No orders yet</h2>
+        <p>When you buy something, it will show up here.</p>
+        <p style="margin-top:1.5rem"><a href="index.html">Shop now &rarr;</a></p>
+      </div>`;
+  } else {
+    const seen = {};
+    cart.forEach(item => {
+      const link = links[item.id];
+      if (link && !seen[item.id]) {
+        seen[item.id] = true;
+        const div = document.createElement('div');
+        div.className = 'order-card';
+        div.innerHTML = `
+          <h3>${link.name}</h3>
+          <div class="price">$5</div>
+          <a href="${link.url}" target="_blank" class="order-link">Buy Now &rarr;</a>`;
+        container.appendChild(div);
+      }
+    });
+  }
+</script>
+
+<script type="module" src="auth.js"></script>
+
+<script>
+  let authMode = 'signin';
+  function toggleAuthMode(e) {
+    e.preventDefault();
+    authMode = authMode === 'signin' ? 'signup' : 'signin';
+    document.getElementById('authTitle').textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+    document.getElementById('authNameWrap').style.display = authMode === 'signup' ? 'block' : 'none';
+    document.getElementById('authSubmit').textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+    document.getElementById('authSwitchText').textContent = authMode === 'signin' ? "Don't have an account?" : "Already have an account?";
+    document.getElementById('authSwitchLink').textContent = authMode === 'signin' ? 'Sign Up' : 'Sign In';
+    document.getElementById('authError').textContent = '';
+  }
+
+  async function handleAuthSubmit() {
+    const name = document.getElementById('authName').value.trim();
+    const email = document.getElementById('authEmail').value.trim();
+    const pass = document.getElementById('authPass').value;
+    const err = document.getElementById('authError');
+    err.textContent = '';
+
+    if (!email || !pass) { err.textContent = 'Fill in all fields'; return; }
+    if (authMode === 'signup' && !name) { err.textContent = 'Enter your name'; return; }
+    if (pass.length < 6) { err.textContent = 'Password must be 6+ characters'; return; }
+
+    try {
+      if (authMode === 'signup') {
+        await authModule.signUp(name, email, pass);
+      } else {
+        await authModule.signIn(email, pass);
+      }
+      authModule.hideAuth();
+    } catch (e) {
+      err.textContent = e.message.replace('Firebase: ', '').replace(/\(auth\/.*?\)\.?/, '');
+    }
+  }
+</script>
+
+</body>
+</html>

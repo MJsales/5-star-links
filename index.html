@@ -199,6 +199,61 @@
       pointer-events: none; z-index: 999; white-space: nowrap;
     }
     .toast.show { opacity: 1; }
+    .auth-btn {
+      position: fixed; top: 1.2rem; right: 14rem; z-index: 100;
+      background: rgba(168,85,247,0.15); backdrop-filter: blur(12px);
+      border: 1px solid rgba(168,85,247,0.3); color: #fff;
+      padding: 0.6rem 1.2rem; border-radius: 50px; font-size: 0.9rem;
+      font-weight: 600; cursor: pointer; transition: all 0.3s;
+    }
+    .auth-btn:hover { background: rgba(168,85,247,0.3); transform: scale(1.05); }
+    .auth-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88); z-index: 2000;
+      align-items: center; justify-content: center;
+    }
+    .auth-overlay.active { display: flex; }
+    .auth-modal {
+      background: linear-gradient(145deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.25); border-radius: 18px;
+      padding: 2rem; width: 90%; max-width: 380px; position: relative;
+    }
+    .auth-modal h2 {
+      margin-bottom: 1.5rem; font-size: 1.3rem; text-align: center;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .auth-close {
+      position: absolute; top: 12px; right: 16px;
+      background: none; border: none; color: #555; font-size: 1.5rem; cursor: pointer;
+    }
+    .auth-close:hover { color: #fff; }
+    .auth-input {
+      width: 100%; padding: 12px; margin-bottom: 12px;
+      background: #050208; border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 10px; color: #fff; font-size: 0.95rem; outline: none;
+    }
+    .auth-input:focus { border-color: #a855f7; }
+    .auth-input::placeholder { color: #555; }
+    .auth-error { color: #c02828; font-size: 0.85rem; margin-bottom: 12px; min-height: 1.2em; }
+    .auth-submit-btn {
+      width: 100%; padding: 14px; margin-bottom: 12px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
+      cursor: pointer;
+    }
+    .auth-submit-btn:hover { box-shadow: 0 6px 20px rgba(168,85,247,0.4); }
+    .auth-switch { text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 16px; }
+    .auth-switch a { color: #a855f7; text-decoration: none; font-weight: 600; }
+    .auth-switch a:hover { text-decoration: underline; }
+    .auth-divider { text-align: center; color: #444; margin-bottom: 16px; font-size: 0.85rem; }
+    .auth-guest-btn {
+      width: 100%; padding: 12px;
+      background: rgba(168,85,247,0.1); color: #a855f7;
+      border: 1px solid rgba(168,85,247,0.2); border-radius: 10px;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    }
+    .auth-guest-btn:hover { background: rgba(168,85,247,0.2); }
   </style>
 </head>
 <body>
@@ -206,6 +261,8 @@
 <button class="cart-btn" onclick="location.href='cart.html'">
   &#128722; Cart <span class="count" id="cartCount">0</span>
 </button>
+<a href="orders.html" style="position:fixed;top:1.2rem;right:8rem;z-index:100;background:rgba(168,85,247,0.15);backdrop-filter:blur(12px);border:1px solid rgba(168,85,247,0.3);color:#fff;padding:0.6rem 1.2rem;border-radius:50px;font-size:0.9rem;font-weight:600;text-decoration:none;">My Orders</a>
+<button class="auth-btn" id="authBtn" onclick="authModule.showAuth()">Sign In</button>
 
 <div class="header">
   <div class="logo-wrap">
@@ -247,6 +304,27 @@
 
 <div class="toast" id="toast"></div>
 
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-modal">
+    <button class="auth-close" onclick="authModule.hideAuth()">&times;</button>
+    <h2 id="authTitle">Sign In</h2>
+    <div id="authNameWrap" style="display:none">
+      <input type="text" id="authName" class="auth-input" placeholder="Name" />
+    </div>
+    <input type="email" id="authEmail" class="auth-input" placeholder="Email" />
+    <input type="password" id="authPass" class="auth-input" placeholder="Password" />
+    <div id="authError" class="auth-error"></div>
+    <button class="auth-btn" id="authSubmit" onclick="handleAuthSubmit()">Sign In</button>
+    <div class="auth-switch">
+      <span id="authSwitchText">Don't have an account?</span>
+      <a href="#" id="authSwitchLink" onclick="toggleAuthMode(event)">Sign Up</a>
+    </div>
+    <div class="auth-divider">or</div>
+    <button class="auth-guest-btn" onclick="authModule.hideAuth()">Continue as Guest</button>
+  </div>
+</div>
+
+<script type="module" src="auth.js"></script>
 <script>
 const maskColors = [
   { id:'black',  name:'Black',  fill:'#1a1a1a', stroke:'#000' },
@@ -332,8 +410,8 @@ function bapeHoodieSVG() {
 
 const products = [
   {
-    id: 'ski-mask', name: 'Ski Mask', price: 5, desc: 'Available in 6 colors',
-    hasColors: true, svg: (c) => balaclavaSVG(c.fill, c.stroke)
+    id: 'ski-mask', name: 'Ski Mask', price: 5, desc: 'Black ski mask',
+    hasColors: false, svg: () => balaclavaSVG('#1a1a1a', '#000')
   },
   {
     id: 'spider-hoodie', name: 'Spider Hoodie', price: 5, desc: 'Black with white spider web design',
@@ -357,13 +435,14 @@ function updateCount() {
 function addToCart(id) {
   const cart = getCart();
   const color = selectedColors[id] || null;
+  const product = products.find(p => p.id === id);
   const existing = cart.find(i => i.id === id && i.color === color);
   if (existing) { existing.quantity = (existing.quantity || 1) + 1; }
-  else { cart.push({ id, color, quantity: 1 }); }
+  else { cart.push({ id, name: product.name, color, quantity: 1 }); }
   saveCart(cart);
   updateCount();
-  const name = products.find(p => p.id === id).name;
-  showToast(`${name} added to cart!`);
+  if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
+  showToast(`${product.name} added to cart!`);
 }
 
 function showToast(msg) {
@@ -400,6 +479,42 @@ function selectColor(productId, colorId) {
 
 updateCount();
 render();
+
+let authMode = 'signin';
+function toggleAuthMode(e) {
+  e.preventDefault();
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  document.getElementById('authTitle').textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+  document.getElementById('authNameWrap').style.display = authMode === 'signup' ? 'block' : 'none';
+  document.getElementById('authSubmit').textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+  document.getElementById('authSwitchText').textContent = authMode === 'signin' ? "Don't have an account?" : "Already have an account?";
+  document.getElementById('authSwitchLink').textContent = authMode === 'signin' ? 'Sign Up' : 'Sign In';
+  document.getElementById('authError').textContent = '';
+}
+
+async function handleAuthSubmit() {
+  const name = document.getElementById('authName').value.trim();
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  const err = document.getElementById('authError');
+  err.textContent = '';
+
+  if (!email || !pass) { err.textContent = 'Fill in all fields'; return; }
+  if (authMode === 'signup' && !name) { err.textContent = 'Enter your name'; return; }
+  if (pass.length < 6) { err.textContent = 'Password must be 6+ characters'; return; }
+
+  try {
+    if (authMode === 'signup') {
+      await authModule.signUp(name, email, pass);
+    } else {
+      await authModule.signIn(email, pass);
+    }
+    authModule.hideAuth();
+    showToast('Signed in!');
+  } catch (e) {
+    err.textContent = e.message.replace('Firebase: ', '').replace(/\(auth\/.*?\)\.?/, '');
+  }
+}
 </script>
 
 </body>
