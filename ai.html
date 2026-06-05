@@ -236,8 +236,17 @@
 <script src="https://js.stripe.com/v3/"></script>
 <script src="auth.js"></script>
 <script>
-const stripe = Stripe('pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3');
+let stripe, elements, card;
 let paid = localStorage.getItem('aiPicksPaid') === 'true';
+
+function initStripe() {
+  try {
+    if (typeof Stripe === 'undefined') return false;
+    stripe = Stripe('pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3');
+    elements = stripe.elements();
+    return true;
+  } catch(e) { console.error('Stripe init error:', e); return false; }
+}
 
 if (paid) showChat();
 
@@ -246,13 +255,13 @@ function showChat() {
   document.getElementById('chatContainer').classList.add('active');
 }
 
-const elements = stripe.elements();
-let card = null;
-
 function openPayment() {
-  const overlay = document.getElementById('paymentOverlay');
-  overlay.style.display = 'flex';
+  document.getElementById('paymentOverlay').style.display = 'flex';
   if (!card) {
+    if (!elements && !initStripe()) {
+      document.getElementById('payError2').textContent = 'Payment system loading... try again in a moment.';
+      return;
+    }
     try {
       card = elements.create('card', {
         style: {
