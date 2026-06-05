@@ -313,133 +313,214 @@ const teams = {
   nhl: ['Panthers','Oilers','Rangers','Stars','Bruins','Canucks','Avalanche','Jets','Hurricanes','Wild','Knights','Kings','Blues','Flames','Lightning','Maple Leafs','Devils','Capitals','Islanders','Predators','Senators','Sabres','Red Wings','Flyers','Blackhawks','Ducks','Sharks','Coyotes','Blue Jackets','Penguins']
 };
 
+const today = new Date();
+function futureDate(daysAhead) {
+  const d = new Date(today);
+  d.setDate(d.getDate() + daysAhead);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+const upcomingGames = {
+  nfl: [
+    { home: 'Chiefs', away: 'Bills', date: futureDate(2) },
+    { home: 'Cowboys', away: 'Eagles', date: futureDate(3) },
+    { home: 'Lions', away: '49ers', date: futureDate(4) },
+    { home: 'Ravens', away: 'Bengals', date: futureDate(5) },
+    { home: 'Dolphins', away: 'Jets', date: futureDate(6) },
+    { home: 'Steelers', away: 'Ravens', date: futureDate(8) },
+    { home: 'Packers', away: 'Vikings', date: futureDate(9) },
+    { home: 'Buccaneers', away: 'Saints', date: futureDate(10) },
+    { home: 'Rams', away: 'Seahawks', date: futureDate(11) },
+    { home: 'Chargers', away: 'Broncos', date: futureDate(12) },
+    { home: 'Texans', away: 'Colts', date: futureDate(13) },
+    { home: 'Commanders', away: 'Giants', date: futureDate(14) },
+  ],
+  nba: [
+    { home: 'Lakers', away: 'Celtics', date: futureDate(1) },
+    { home: 'Warriors', away: 'Nuggets', date: futureDate(2) },
+    { home: 'Knicks', away: 'Bucks', date: futureDate(3) },
+    { home: 'Thunder', away: 'Mavericks', date: futureDate(4) },
+    { home: 'Suns', away: 'Clippers', date: futureDate(5) },
+    { home: 'Heat', away: '76ers', date: futureDate(6) },
+    { home: 'Kings', away: 'Timberwolves', date: futureDate(7) },
+    { home: 'Cavaliers', away: 'Pacers', date: futureDate(8) },
+    { home: 'Hawks', away: 'Hornets', date: futureDate(9) },
+    { home: 'Bulls', away: 'Raptors', date: futureDate(10) },
+    { home: 'Spurs', away: 'Blazers', date: futureDate(11) },
+    { home: 'Wizards', away: 'Pistons', date: futureDate(12) },
+  ],
+  mlb: [
+    { home: 'Yankees', away: 'Red Sox', date: futureDate(1) },
+    { home: 'Dodgers', away: 'Giants', date: futureDate(2) },
+    { home: 'Astros', away: 'Rangers', date: futureDate(3) },
+    { home: 'Braves', away: 'Phillies', date: futureDate(4) },
+    { home: 'Cubs', away: 'Cardinals', date: futureDate(5) },
+    { home: 'Mariners', away: 'Blue Jays', date: futureDate(6) },
+    { home: 'Padres', away: 'Diamondbacks', date: futureDate(7) },
+    { home: 'Mets', away: 'Brewers', date: futureDate(8) },
+    { home: 'Orioles', away: 'Guardians', date: futureDate(9) },
+    { home: 'Twins', away: 'Royals', date: futureDate(10) },
+  ],
+  nhl: [
+    { home: 'Panthers', away: 'Rangers', date: futureDate(1) },
+    { home: 'Oilers', away: 'Stars', date: futureDate(2) },
+    { home: 'Bruins', away: 'Maple Leafs', date: futureDate(3) },
+    { home: 'Avalanche', away: 'Jets', date: futureDate(4) },
+    { home: 'Hurricanes', away: 'Devils', date: futureDate(5) },
+    { home: 'Lightning', away: 'Capitals', date: futureDate(6) },
+    { home: 'Golden Knights', away: 'Kings', date: futureDate(7) },
+    { home: 'Wild', away: 'Blues', date: futureDate(8) },
+    { home: 'Penguins', away: 'Flyers', date: futureDate(9) },
+    { home: 'Canucks', away: 'Flames', date: futureDate(10) },
+  ]
+};
+
 const sports = ['NFL','NBA','MLB','NHL','College Football','UFC','Soccer','Tennis'];
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function randInt(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
 function pct() { return randInt(51,89); }
 
+function findSport(teamName) {
+  const t = teamName.toLowerCase();
+  const allTeams = { nfl: teams.nfl, nba: teams.nba, mlb: teams.mlb, nhl: teams.nhl };
+  for (const [key, list] of Object.entries(allTeams)) {
+    if (list.some(n => t.includes(n.toLowerCase()))) return key;
+  }
+  return null;
+}
+
+function getUpcomingGame(sport) {
+  const games = upcomingGames[sport];
+  return games ? pick(games) : null;
+}
+
+function findGameByTeams(input) {
+  const lower = input.toLowerCase();
+  for (const [sport, games] of Object.entries(upcomingGames)) {
+    for (const game of games) {
+      const home = game.home.toLowerCase();
+      const away = game.away.toLowerCase();
+      if ((lower.includes(home) && lower.includes(away)) || (lower.includes(away) && lower.includes(home))) {
+        return { ...game, sport };
+      }
+    }
+  }
+  return null;
+}
+
 function generatePrediction(input) {
   const lower = input.toLowerCase();
 
-  if (lower.includes('super bowl') || lower.includes('championship')) {
-    const t1 = pick(teams.nfl); const t2 = pick(teams.nfl.filter(t=>t!==t1));
-    return `🏆 <b>Super Bowl / Championship Prediction</b><br><br>` +
-      `${t1} vs ${t2}<br><br>` +
-      `My pick: <b>${Math.random()>0.5?t1:t2}</b><br>` +
-      `Confidence: ${pct()}%<br><br>` +
-      `This one's going to be a battle. Both teams have shown they can perform when it matters most. I'm leaning toward the team with the better defensive matchup.`;
-  }
-
-  const sportKeywords = {
-    'nfl': teams.nfl, 'football': teams.nfl, 'nba': teams.nba, 'basketball': teams.nba,
-    'mlb': teams.mlb, 'baseball': teams.mlb, 'nhl': teams.nhl, 'hockey': teams.nhl,
-    'ufc': ['Fighter A','Fighter B'], 'soccer': ['Team A','Team B'], 'tennis': ['Player A','Player B']
-  };
-
-  function findSport(teamName) {
-    const t = teamName.toLowerCase();
-    for (const [key, list] of Object.entries(sportKeywords)) {
-      if (list.some(n => t.includes(n.toLowerCase()))) return key;
-    }
-    return null;
-  }
-
-  let t1, t2, sport1, sport2;
-  const vsMatch = lower.match(/([\w\s]+?)\s*(?:vs?\.?|or|over|against)\s*([\w\s]+?)[\?\!\.\s]*$/);
-
-  if (vsMatch) {
-    t1 = vsMatch[1].trim();
-    t2 = vsMatch[2].trim();
-    sport1 = findSport(t1);
-    sport2 = findSport(t2);
-
-    if (sport1 && sport2 && sport1 !== sport2) {
-      const s1 = sport1.toUpperCase();
-      const s2 = sport2.toUpperCase();
-      const responses = [
-        `Those two teams don't play each other — <b>${t1}</b> is ${s1} and <b>${t2}</b> is ${s2}. Different sports entirely.`,
-        `I can't predict that one. <b>${t1}</b> (${s1}) and <b>${t2}</b> (${s2}) are in different leagues and never face off.`,
-        `That's a cross-sport matchup that doesn't exist. <b>${t1}</b> plays ${s1}, <b>${t2}</b> plays ${s2}.`,
-        `Good question, but those teams are from different sports. <b>${t1}</b> (${s1}) won't ever play <b>${t2}</b> (${s2}).`
-      ];
-      return pick(responses) + `<br><br>Want me to predict a game within one sport? Try something like "Lakers vs Celtics" or "Chiefs vs Bills".`;
-    }
-
-    if (!sport1 && !sport2) {
-      const randSport = pick(Object.keys(sportKeywords));
-      const list = sportKeywords[randSport];
-      t1 = pick(list);
-      t2 = pick(list.filter(x => x !== t1));
-      sport1 = randSport;
-    } else if (!sport1) {
-      const list = sportKeywords[sport2];
-      t1 = pick(list);
-    } else if (!sport2) {
-      const list = sportKeywords[sport1];
-      t2 = pick(list);
-    }
-
-    if (sport1 === sport2 || (!sport1 && sport2) || (sport1 && !sport2)) {
-      return generateGamePrediction(t1, t2);
-    }
-  }
-
-  let sport = null;
-  for (const [key, arr] of Object.entries(sportKeywords)) {
-    if (lower.includes(key)) { sport = key; break; }
-  }
-
-  if (sport) {
-    const list = sportKeywords[sport];
-    t1 = pick(list);
-    t2 = pick(list.filter(x => x !== t1));
-    return generateGamePrediction(t1, t2);
-  }
-
   const greetings = ['hello','hi','hey','sup','yo'];
   if (greetings.some(g => lower.startsWith(g))) {
-    return `Hey! Ask me about any upcoming game and I'll give you my prediction.<br><br>Try:<br>• "Lakers vs Celtics"<br>• "Chiefs vs Bills"<br>• "Yankees vs Red Sox"<br>• "Who wins the Super Bowl?"`;
+    const sampleGames = [];
+    for (const sport of ['nfl','nba','mlb','nhl']) {
+      const g = getUpcomingGame(sport);
+      if (g) sampleGames.push(`${g.away} @ ${g.home} (${g.date})`);
+    }
+    return `Hey! Here are some upcoming games I can predict:<br><br>` +
+      sampleGames.map(g => `• ${g}`).join('<br>') +
+      `<br><br>Ask me about any game and I'll give you my pick!`;
   }
 
-  if (lower.includes('who') && lower.includes('win')) {
-    const randSport = pick(['nfl','nba','mlb','nhl']);
-    const list = sportKeywords[randSport];
-    t1 = pick(list);
-    t2 = pick(list.filter(x => x !== t1));
-    return generateGamePrediction(t1, t2);
+  if (lower.includes('super bowl') || lower.includes('championship')) {
+    const game = getUpcomingGame('nfl');
+    return `🏆 <b>Super Bowl Prediction</b><br><br>` +
+      `${game.away} @ ${game.home}<br>Date: ${game.date}<br><br>` +
+      `My pick: <b>${Math.random()>0.5?game.home:game.away}</b><br>` +
+      `Confidence: ${pct()}%<br><br>` +
+      `This one's going to be a battle. Both teams have shown they can perform when it matters most.`;
   }
 
-  const randSport = pick(['nfl','nba','mlb','nhl']);
-  const list = sportKeywords[randSport];
-  t1 = pick(list);
-  t2 = pick(list.filter(x => x !== t1));
-  return `I'm not sure what game you mean. But here's a random pick:<br><br>` + generateGamePrediction(t1, t2);
-}
+  if (lower.includes('today') || lower.includes('tonight')) {
+    const todayGames = [];
+    for (const [sport, games] of Object.entries(upcomingGames)) {
+      const todayGame = games.find(g => {
+        const gDate = new Date(g.date);
+        return gDate.toDateString() === today.toDateString();
+      });
+      if (todayGame) todayGames.push({ ...todayGame, sport });
+    }
+    if (todayGames.length > 0) {
+      const game = pick(todayGames);
+      return `📅 <b>Today's Game</b><br><br>` +
+        `<b>${game.away} @ ${game.home}</b> (${game.sport.toUpperCase()})<br>Date: ${game.date}<br><br>` +
+        `My pick: <b>${Math.random()>0.5?game.home:game.away}</b><br>` +
+        `Confidence: <b>${pct()}%</b><br><br>` +
+        `Let's go! This should be a great matchup tonight.`;
+    }
+    return `No games scheduled for today. Check back tomorrow! Here's what's coming up:<br><br>` +
+      `• ${pick(upcomingGames.nfl).away} @ ${pick(upcomingGames.nfl).home} (NFL)<br>` +
+      `• ${pick(upcomingGames.nba).away} @ ${pick(upcomingGames.nba).home} (NBA)`;
+  }
 
-function generateGamePrediction(t1, t2) {
-  const pickTeam = Math.random() > 0.5 ? t1 : t2;
-  const confidence = pct();
-  const margin = pick(['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal','in extra innings','in a shootout']);
-  const reason = pick([
-    'The home crowd advantage and recent form give them the edge.',
-    'Their defense has been stifling lately and I expect that to continue.',
-    'Offensive firepower wins games. They have the better scoring attack.',
-    'Head-to-head history favors them, and I think that trend continues.',
-    'Injuries are stacking up for the other side. This is the spot.',
-    'They are the more experienced team in big moments.',
-    'The momentum from last week carries over here.',
-    'Coaching adjustments will be the difference maker.',
-    'The stats and advanced metrics all point this direction.',
-    'Gut feeling on this one — they show up big tonight.'
-  ]);
+  if (lower.includes('schedule') || lower.includes('upcoming') || lower.includes('next')) {
+    const sportKey = lower.includes('nfl') ? 'nfl' : lower.includes('nba') ? 'nba' : lower.includes('mlb') ? 'mlb' : lower.includes('nhl') ? 'nhl' : null;
+    if (sportKey) {
+      const games = upcomingGames[sportKey].slice(0, 5);
+      return `📅 <b>Upcoming ${sportKey.toUpperCase()} Games</b><br><br>` +
+        games.map(g => `${g.date}: ${g.away} @ ${g.home}`).join('<br>');
+    }
+    const allGames = [];
+    for (const [sport, games] of Object.entries(upcomingGames)) {
+      allGames.push(`• ${games[0].away} @ ${games[0].home} (${sport.toUpperCase()}) - ${games[0].date}`);
+    }
+    return `📅 <b>Upcoming Games</b><br><br>` + allGames.join('<br>');
+  }
 
-  return `<b>${t1} vs ${t2}</b><br><br>` +
+  const game = findGameByTeams(input);
+  if (game) {
+    const pickTeam = Math.random() > 0.5 ? game.home : game.away;
+    const confidence = pct();
+    const margin = pick(['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal','in extra innings','in a shootout']);
+    const reason = pick([
+      'The home crowd advantage and recent form give them the edge.',
+      'Their defense has been stifling lately and I expect that to continue.',
+      'Offensive firepower wins games. They have the better scoring attack.',
+      'Head-to-head history favors them, and I think that trend continues.',
+      'Injuries are stacking up for the other side. This is the spot.',
+      'They are the more experienced team in big moments.',
+      'The momentum from last week carries over here.',
+      'Coaching adjustments will be the difference maker.',
+      'The stats and advanced metrics all point this direction.',
+      'Gut feeling on this one — they show up big tonight.'
+    ]);
+    return `<b>${game.away} @ ${game.home}</b> (${game.sport.toUpperCase()})<br>Date: ${game.date}<br><br>` +
+      `My pick: <b>${pickTeam}</b><br>` +
+      `Confidence: <b>${confidence}%</b><br>` +
+      `Predicted margin: ${margin}<br><br>` +
+      `${reason}<br><br>` +
+      `<i>Disclaimer: These are AI-generated predictions for entertainment purposes only. Bet responsibly.</i>`;
+  }
+
+  const sportKeywords = { nfl: 'nfl', football: 'nfl', nba: 'nba', basketball: 'nba', mlb: 'mlb', baseball: 'mlb', nhl: 'nhl', hockey: 'nhl' };
+  let detectedSport = null;
+  for (const [key, val] of Object.entries(sportKeywords)) {
+    if (lower.includes(key)) { detectedSport = val; break; }
+  }
+
+  if (detectedSport) {
+    const upcomingGame = getUpcomingGame(detectedSport);
+    if (upcomingGame) {
+      const pickTeam = Math.random() > 0.5 ? upcomingGame.home : upcomingGame.away;
+      return `<b>${upcomingGame.away} @ ${upcomingGame.home}</b> (${detectedSport.toUpperCase()})<br>Date: ${upcomingGame.date}<br><br>` +
+        `My pick: <b>${pickTeam}</b><br>` +
+        `Confidence: <b>${pct()}%</b><br><br>` +
+        `This is the next big ${detectedSport.toUpperCase()} matchup. Should be a good one!<br><br>` +
+        `<i>Disclaimer: AI-generated predictions for entertainment only.</i>`;
+    }
+  }
+
+  const randomSport = pick(['nfl','nba','mlb','nhl']);
+  const randomGame = getUpcomingGame(randomSport);
+  const pickTeam = Math.random() > 0.5 ? randomGame.home : randomGame.away;
+  return `Here's an upcoming game I can predict:<br><br>` +
+    `<b>${randomGame.away} @ ${randomGame.home}</b> (${randomSport.toUpperCase()})<br>Date: ${randomGame.date}<br><br>` +
     `My pick: <b>${pickTeam}</b><br>` +
-    `Confidence: <b>${confidence}%</b><br>` +
-    `Predicted margin: ${margin}<br><br>` +
-    `${reason}<br><br>` +
-    `<i>Disclaimer: These are AI-generated predictions for entertainment purposes only. Bet responsibly.</i>`;
+    `Confidence: <b>${pct()}%</b><br><br>` +
+    `Try asking about a specific game like "Lakers vs Celtics" or "Yankees vs Red Sox"!<br><br>` +
+    `<i>Disclaimer: AI-generated predictions for entertainment only.</i>`;
 }
 
 let authMode = 'signin';
