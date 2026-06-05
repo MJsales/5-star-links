@@ -137,6 +137,7 @@
 <div class="topbar">
   <h1>AI Sports Picks</h1>
   <div style="display:flex;gap:12px;align-items:center;">
+    <a href="terms.html" class="back-btn" style="font-size:0.8rem;">Terms</a>
     <button class="auth-btn-sm" id="authBtn" onclick="authModule.showAuth()">Sign In</button>
     <a href="index.html" class="back-btn">&larr; Shop</a>
   </div>
@@ -200,7 +201,10 @@ function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 
 var sportsData = null;
 
-fetch('sports-data.json').then(function(r) { return r.json(); }).then(function(d) { sportsData = d; }).catch(function(e) { console.error('Failed to load sports data:', e); });
+fetch('sports-data.json').then(function(r) { return r.json(); }).then(function(d) {
+  sportsData = d;
+  if (d.scheduledGames) scheduledGames = d.scheduledGames;
+}).catch(function(e) { console.error('Failed to load sports data:', e); });
 
 var teams = {
   nfl: ['Chiefs','Bills','Ravens','49ers','Cowboys','Eagles','Lions','Dolphins','Bengals','Texans','Jets','Browns','Jaguars','Chargers','Broncos','Raiders','Steelers','Colts','Seahawks','Rams','Packers','Vikings','Buccaneers','Saints','Falcons','Panthers','Cardinals','Commanders','Giants','Patriots','Titans'],
@@ -216,40 +220,7 @@ function futureDate(daysAhead) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-var scheduledGames = [
-  { sport: 'nfl', home: 'Chiefs', away: 'Bills', date: futureDate(2) },
-  { sport: 'nfl', home: 'Cowboys', away: 'Eagles', date: futureDate(3) },
-  { sport: 'nfl', home: 'Lions', away: '49ers', date: futureDate(4) },
-  { sport: 'nfl', home: 'Ravens', away: 'Bengals', date: futureDate(5) },
-  { sport: 'nfl', home: 'Dolphins', away: 'Jets', date: futureDate(6) },
-  { sport: 'nfl', home: 'Steelers', away: 'Colts', date: futureDate(8) },
-  { sport: 'nfl', home: 'Packers', away: 'Vikings', date: futureDate(9) },
-  { sport: 'nfl', home: 'Buccaneers', away: 'Saints', date: futureDate(10) },
-  { sport: 'nba', home: 'Lakers', away: 'Celtics', date: futureDate(1) },
-  { sport: 'nba', home: 'Warriors', away: 'Nuggets', date: futureDate(2) },
-  { sport: 'nba', home: 'Knicks', away: 'Bucks', date: futureDate(3) },
-  { sport: 'nba', home: 'Thunder', away: 'Mavericks', date: futureDate(4) },
-  { sport: 'nba', home: 'Suns', away: 'Clippers', date: futureDate(5) },
-  { sport: 'nba', home: 'Heat', away: '76ers', date: futureDate(6) },
-  { sport: 'nba', home: 'Kings', away: 'Timberwolves', date: futureDate(7) },
-  { sport: 'nba', home: 'Cavaliers', away: 'Pacers', date: futureDate(8) },
-  { sport: 'mlb', home: 'Yankees', away: 'Red Sox', date: futureDate(1) },
-  { sport: 'mlb', home: 'Dodgers', away: 'Giants', date: futureDate(2) },
-  { sport: 'mlb', home: 'Astros', away: 'Rangers', date: futureDate(3) },
-  { sport: 'mlb', home: 'Braves', away: 'Phillies', date: futureDate(4) },
-  { sport: 'mlb', home: 'Cubs', away: 'Cardinals', date: futureDate(5) },
-  { sport: 'mlb', home: 'Mariners', away: 'Blue Jays', date: futureDate(6) },
-  { sport: 'mlb', home: 'Padres', away: 'Diamondbacks', date: futureDate(7) },
-  { sport: 'mlb', home: 'Mets', away: 'Brewers', date: futureDate(8) },
-  { sport: 'nhl', home: 'Panthers', away: 'Rangers', date: futureDate(1) },
-  { sport: 'nhl', home: 'Oilers', away: 'Stars', date: futureDate(2) },
-  { sport: 'nhl', home: 'Bruins', away: 'Maple Leafs', date: futureDate(3) },
-  { sport: 'nhl', home: 'Avalanche', away: 'Jets', date: futureDate(4) },
-  { sport: 'nhl', home: 'Hurricanes', away: 'Devils', date: futureDate(5) },
-  { sport: 'nhl', home: 'Lightning', away: 'Capitals', date: futureDate(6) },
-  { sport: 'nhl', home: 'Golden Knights', away: 'Kings', date: futureDate(7) },
-  { sport: 'nhl', home: 'Penguins', away: 'Flyers', date: futureDate(9) }
-];
+var scheduledGames = [];
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function seededRandom(seed) {
@@ -338,15 +309,14 @@ function generatePrediction(input) {
           '<b>' + game.home + ':</b> ' + (t1Data.record || '') + ' Rank #' + t1Data.rank + ' | Off: ' + t1Data.offense + '/10 | Def: ' + t1Data.defense + '/10<br>' +
           '<b>' + game.away + ':</b> ' + (t2Data.record || '') + ' Rank #' + t2Data.rank + ' | Off: ' + t2Data.offense + '/10 | Def: ' + t2Data.defense + '/10<br><br>' +
           'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins, rng) + '<br><br>' +
-          reason + '<br><br><i>Disclaimer: AI-generated predictions for entertainment only.</i>';
+          reason;
       }
     }
     pickTeam = rng() > 0.5 ? game.home : game.away;
     confidence = 51 + Math.floor(rng() * 39);
     var margins2 = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal'];
     return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + '<br><br>' +
-      'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins2, rng) + '<br><br>' +
-      '<i>Disclaimer: AI-generated predictions for entertainment only.</i>';
+      'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins2, rng);
   }
 
   var sport3 = findSportFromInput(lower);
@@ -355,8 +325,7 @@ function generatePrediction(input) {
     var game2 = pickSeeded(games2, rng);
     var pickTeam2 = rng() > 0.5 ? game2.home : game2.away;
     return '<b>' + game2.away + ' @ ' + game2.home + '</b><br>Date: ' + game2.date + '<br><br>' +
-      'My pick: <b>' + pickTeam2 + '</b><br>Confidence: <b>' + (51 + Math.floor(rng() * 39)) + '%</b><br><br>' +
-      '<i>Disclaimer: AI-generated predictions for entertainment only.</i>';
+      'My pick: <b>' + pickTeam2 + '</b><br>Confidence: <b>' + (51 + Math.floor(rng() * 39)) + '%</b>';
   }
 
   var game3 = pickSeeded(scheduledGames, rng);
