@@ -198,6 +198,10 @@ function sendMsg() {
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+var sportsData = null;
+
+fetch('sports-data.json').then(function(r) { return r.json(); }).then(function(d) { sportsData = d; }).catch(function(e) { console.error('Failed to load sports data:', e); });
+
 var teams = {
   nfl: ['Chiefs','Bills','Ravens','49ers','Cowboys','Eagles','Lions','Dolphins','Bengals','Texans','Jets','Browns','Jaguars','Chargers','Broncos','Raiders','Steelers','Colts','Seahawks','Rams','Packers','Vikings','Buccaneers','Saints','Falcons','Panthers','Cardinals','Commanders','Giants','Patriots','Titans'],
   nba: ['Lakers','Celtics','Nuggets','Thunder','Timberwolves','Knicks','Cavaliers','Warriors','Suns','Mavericks','Bucks','76ers','Clippers','Kings','Heat','Pacers','Pelicans','Rockets','Bulls','Hawks','Hornets','Nets','Raptors','Spurs','Blazers','Jazz','Pistons','Wizards','Magic'],
@@ -298,20 +302,56 @@ function generatePrediction(input) {
     return 'All Confirmed Games:<br><br>' + scheduledGames.map(function(g) { return g.date + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>');
   }
 
-  var game = findGameByTeams(input);
-  if (game) {
-    var pickTeam = rng() > 0.5 ? game.home : game.away;
-    var confidence = 51 + Math.floor(rng() * 39);
-    var margins = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal','in extra innings'];
-    var reasons = ['The home crowd advantage and recent form give them the edge.','Their defense has been stifling lately.','Offensive firepower wins games.','Head-to-head history favors them.','Injuries are stacking up for the other side.','They are the more experienced team.','The momentum carries over.','Coaching adjustments will be the difference.','The stats all point this direction.','Gut feeling — they show up big tonight.'];
-    return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + '<br><br>' +
-      'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins, rng) + '<br><br>' +
-      pickSeeded(reasons, rng) + '<br><br><i>Disclaimer: AI-generated predictions for entertainment only.</i>';
+  if (lower.includes('record') || lower.includes('rank') || lower.includes('stats') || lower.includes('standing')) {
+    var sport2 = findSportFromInput(lower);
+    if (sport2 && sportsData && sportsData[sport2]) {
+      var teamList = sportsData[sport2].teams.slice(0, 10);
+      return '<b>Top 10 ' + sport2.toUpperCase() + ' Teams:</b><br><br>' +
+        teamList.map(function(t) { return '#' + t.rank + ' ' + t.city + ' ' + t.name + ' (' + t.record + ') Off:' + t.offense + ' Def:' + t.defense; }).join('<br>');
+    }
+    return 'Tell me which sport! Try "NFL records" or "NBA standings".';
   }
 
-  var sport2 = findSportFromInput(lower);
-  if (sport2) {
-    var games2 = getGamesBySport(sport2);
+  var game = findGameByTeams(input);
+  if (game) {
+    var pickTeam, confidence, reason;
+    if (sportsData && sportsData[game.sport]) {
+      var t1Data = sportsData[game.sport].teams.find(function(t) { return t.name === game.home; });
+      var t2Data = sportsData[game.sport].teams.find(function(t) { return t.name === game.away; });
+      if (t1Data && t2Data) {
+        var score1 = t1Data.offense + t1Data.defense + (t1Data.rank <= 10 ? 2 : 0);
+        var score2 = t2Data.offense + t2Data.defense + (t2Data.rank <= 10 ? 2 : 0);
+        var diff = Math.abs(score1 - score2);
+        if (score1 > score2) { pickTeam = game.home; } else if (score2 > score1) { pickTeam = game.away; } else { pickTeam = rng() > 0.5 ? game.home : game.away; }
+        confidence = Math.min(89, 55 + diff * 3 + Math.floor(rng() * 10));
+        var margins = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal'];
+        var reasonPool = [];
+        if (t1Data.streak && t1Data.streak.startsWith('W')) reasonPool.push(game.home + ' are on a ' + t1Data.streak + ' streak.');
+        if (t2Data.streak && t2Data.streak.startsWith('W')) reasonPool.push(game.away + ' are on a ' + t2Data.streak + ' streak.');
+        if (t1Data.offense >= 8) reasonPool.push(game.home + ' have a strong offense (rated ' + t1Data.offense + '/10).');
+        if (t2Data.offense >= 8) reasonPool.push(game.away + ' have a strong offense (rated ' + t2Data.offense + '/10).');
+        if (t1Data.defense >= 8) reasonPool.push(game.home + ' defense is elite (rated ' + t1Data.defense + '/10).');
+        if (t2Data.defense >= 8) reasonPool.push(game.away + ' defense is elite (rated ' + t2Data.defense + '/10).');
+        if (reasonPool.length === 0) reasonPool.push('This is a toss-up game.');
+        reason = pickSeeded(reasonPool, rng);
+        return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + '<br><br>' +
+          '<b>' + game.home + ':</b> ' + (t1Data.record || '') + ' Rank #' + t1Data.rank + ' | Off: ' + t1Data.offense + '/10 | Def: ' + t1Data.defense + '/10<br>' +
+          '<b>' + game.away + ':</b> ' + (t2Data.record || '') + ' Rank #' + t2Data.rank + ' | Off: ' + t2Data.offense + '/10 | Def: ' + t2Data.defense + '/10<br><br>' +
+          'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins, rng) + '<br><br>' +
+          reason + '<br><br><i>Disclaimer: AI-generated predictions for entertainment only.</i>';
+      }
+    }
+    pickTeam = rng() > 0.5 ? game.home : game.away;
+    confidence = 51 + Math.floor(rng() * 39);
+    var margins2 = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal'];
+    return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + '<br><br>' +
+      'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins2, rng) + '<br><br>' +
+      '<i>Disclaimer: AI-generated predictions for entertainment only.</i>';
+  }
+
+  var sport3 = findSportFromInput(lower);
+  if (sport3) {
+    var games2 = getGamesBySport(sport3);
     var game2 = pickSeeded(games2, rng);
     var pickTeam2 = rng() > 0.5 ? game2.home : game2.away;
     return '<b>' + game2.away + ' @ ' + game2.home + '</b><br>Date: ' + game2.date + '<br><br>' +
