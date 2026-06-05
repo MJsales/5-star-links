@@ -154,7 +154,7 @@
     </div>
   </div>
   <div class="chat-input-wrap">
-    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about any game..." onkeypress="if(event.key==='Enter')sendMsg()" autocomplete="off">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about any game..." onkeypress="if(event.key==='Enter')sendMsg()" autocomplete="new-password" name="chat_text">
     <button class="send-btn" onclick="sendMsg()">Send</button>
   </div>
 </div>
@@ -567,6 +567,14 @@ async function handleAuthSubmit() {
     err.textContent = e.message.replace('Firebase: ', '').replace(/\(auth\/.*?\)\.?/, '');
   }
 }
+</script>
+<script>
+document.getElementById('chatInput').addEventListener('focus', function() {
+  if (this.value && this.value.includes('@')) { this.value = ''; }
+});
+document.getElementById('chatInput').addEventListener('input', function() {
+  if (this.dataset.autofilled) { this.value = ''; this.dataset.autofilled = ''; }
+});
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
