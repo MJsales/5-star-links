@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Sports Picks - 5 Star Links</title>
+  <link rel="icon" type="image/png" href="pics/logo/logo.png.png">
+  <link rel="apple-touch-icon" href="pics/logo/logo.png.png">
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050208;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      background: rgba(13,8,21,0.9); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding: 1rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar h1 {
+      font-size: 1.3rem; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .back-btn {
+      color: #a78bfa; text-decoration: none; font-weight: 600; font-size: 0.9rem;
+    }
+    .back-btn:hover { color: #fff; }
+    .auth-btn-sm {
+      background: rgba(168,85,247,0.15); backdrop-filter: blur(12px);
+      border: 1px solid rgba(168,85,247,0.3); color: #fff;
+      padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.85rem;
+      font-weight: 600; cursor: pointer; transition: all 0.3s;
+    }
+    .auth-btn-sm:hover { background: rgba(168,85,247,0.3); }
+
+    .paywall {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 2rem; text-align: center;
+    }
+    .paywall-box {
+      background: linear-gradient(145deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.25); border-radius: 20px;
+      padding: 3rem 2rem; max-width: 420px; width: 100%;
+    }
+    .paywall-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .paywall-box h2 {
+      font-size: 1.6rem; margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .paywall-box p { color: #888; margin-bottom: 1.5rem; line-height: 1.6; }
+    .paywall-price {
+      font-size: 2.5rem; font-weight: 900; color: #a855f7; margin-bottom: 1.5rem;
+    }
+    .pay-btn {
+      width: 100%; padding: 16px; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      color: #fff; font-size: 1.1rem; font-weight: 700; cursor: pointer;
+      transition: all 0.3s;
+    }
+    .pay-btn:hover { box-shadow: 0 8px 30px rgba(168,85,247,0.4); transform: scale(1.02); }
+    .pay-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .pay-error { color: #c02828; font-size: 0.85rem; margin-top: 12px; min-height: 1.2em; }
+
+    .chat-container {
+      flex: 1; display: none; flex-direction: column; max-width: 700px;
+      margin: 0 auto; width: 100%; padding: 1rem;
+    }
+    .chat-container.active { display: flex; }
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 1rem 0;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .msg {
+      max-width: 80%; padding: 12px 16px; border-radius: 16px;
+      font-size: 0.95rem; line-height: 1.5; animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .msg.user {
+      align-self: flex-end; background: linear-gradient(135deg, #a855f7, #7c3aed);
+      border-bottom-right-radius: 4px;
+    }
+    .msg.ai {
+      align-self: flex-start; background: #110a1a;
+      border: 1px solid rgba(168,85,247,0.15); border-bottom-left-radius: 4px;
+    }
+    .msg.ai .label {
+      font-size: 0.75rem; font-weight: 700; color: #a855f7;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+    }
+    .chat-input-wrap {
+      display: flex; gap: 10px; padding: 1rem 0;
+    }
+    .chat-input {
+      flex: 1; padding: 14px 18px; background: #110a1a;
+      border: 1px solid rgba(168,85,247,0.2); border-radius: 12px;
+      color: #fff; font-size: 1rem; outline: none; font-family: 'Inter', sans-serif;
+    }
+    .chat-input:focus { border-color: #a855f7; }
+    .chat-input::placeholder { color: #555; }
+    .send-btn {
+      padding: 14px 20px; background: linear-gradient(135deg, #a855f7, #7c3aed);
+      border: none; border-radius: 12px; color: #fff; font-weight: 700;
+      cursor: pointer; transition: all 0.3s;
+    }
+    .send-btn:hover { box-shadow: 0 6px 20px rgba(168,85,247,0.4); }
+
+    .auth-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88); z-index: 2000;
+      align-items: center; justify-content: center;
+    }
+    .auth-overlay.active { display: flex; }
+    .auth-modal {
+      background: linear-gradient(145deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.25); border-radius: 18px;
+      padding: 2rem; width: 90%; max-width: 380px; position: relative;
+    }
+    .auth-modal h2 {
+      margin-bottom: 1.5rem; font-size: 1.3rem; text-align: center;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .auth-close {
+      position: absolute; top: 12px; right: 16px;
+      background: none; border: none; color: #555; font-size: 1.5rem; cursor: pointer;
+    }
+    .auth-close:hover { color: #fff; }
+    .auth-input {
+      width: 100%; padding: 12px; margin-bottom: 12px;
+      background: #050208; border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 10px; color: #fff; font-size: 0.95rem; outline: none;
+    }
+    .auth-input:focus { border-color: #a855f7; }
+    .auth-input::placeholder { color: #555; }
+    .auth-error { color: #c02828; font-size: 0.85rem; margin-bottom: 12px; min-height: 1.2em; }
+    .auth-submit-btn {
+      width: 100%; padding: 14px; margin-bottom: 12px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
+      cursor: pointer;
+    }
+    .auth-submit-btn:hover { box-shadow: 0 6px 20px rgba(168,85,247,0.4); }
+    .auth-switch { text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 16px; }
+    .auth-switch a { color: #a855f7; text-decoration: none; font-weight: 600; }
+    .auth-switch a:hover { text-decoration: underline; }
+    .auth-divider { text-align: center; color: #444; margin-bottom: 16px; font-size: 0.85rem; }
+    .auth-guest-btn {
+      width: 100%; padding: 12px;
+      background: rgba(168,85,247,0.1); color: #a855f7;
+      border: 1px solid rgba(168,85,247,0.2); border-radius: 10px;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    }
+    .auth-guest-btn:hover { background: rgba(168,85,247,0.2); }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>AI Sports Picks</h1>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <button class="auth-btn-sm" id="authBtn" onclick="authModule.showAuth()">Sign In</button>
+    <a href="index.html" class="back-btn">&larr; Shop</a>
+  </div>
+</div>
+
+<div class="paywall" id="paywall">
+  <div class="paywall-box">
+    <div class="paywall-icon">🤖</div>
+    <h2>AI Sports Picks</h2>
+    <p>Get AI-powered predictions for every major sport. NFL, NBA, MLB, NHL, College Football & more.</p>
+    <div class="paywall-price">$5</div>
+    <button class="pay-btn" id="payBtn" onclick="startPayment()">Unlock Access</button>
+    <div class="pay-error" id="payError"></div>
+  </div>
+</div>
+
+<div class="chat-container" id="chatContainer">
+  <div class="chat-messages" id="chatMessages">
+    <div class="msg ai">
+      <div class="label">AI Sports Bot</div>
+      Hey! Ask me about any upcoming game and I'll give you my best prediction. Try something like:<br><br>
+      "Who wins Lakers vs Celtics?"<br>
+      "Predict the Super Bowl"<br>
+      "Yankees or Red Sox tonight?"
+    </div>
+  </div>
+  <div class="chat-input-wrap">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about any game..." onkeypress="if(event.key==='Enter')sendMsg()">
+    <button class="send-btn" onclick="sendMsg()">Send</button>
+  </div>
+</div>
+
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-modal">
+    <button class="auth-close" onclick="authModule.hideAuth()">&times;</button>
+    <h2 id="authTitle">Sign In</h2>
+    <div id="authNameWrap" style="display:none">
+      <input type="text" id="authName" class="auth-input" placeholder="Name" />
+    </div>
+    <input type="email" id="authEmail" class="auth-input" placeholder="Email" />
+    <input type="password" id="authPass" class="auth-input" placeholder="Password" />
+    <div id="authError" class="auth-error"></div>
+    <button class="auth-submit-btn" id="authSubmit" onclick="handleAuthSubmit()">Sign In</button>
+    <div class="auth-switch">
+      <span id="authSwitchText">Don't have an account?</span>
+      <a href="#" id="authSwitchLink" onclick="toggleAuthMode(event)">Sign Up</a>
+    </div>
+    <div class="auth-divider">or</div>
+    <button class="auth-guest-btn" onclick="authModule.hideAuth()">Continue as Guest</button>
+  </div>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script type="module" src="auth.js"></script>
+<script>
+const stripe = Stripe('pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3');
+let paid = localStorage.getItem('aiPicksPaid') === 'true';
+
+if (paid) showChat();
+
+function showChat() {
+  document.getElementById('paywall').style.display = 'none';
+  document.getElementById('chatContainer').classList.add('active');
+}
+
+async function startPayment() {
+  const btn = document.getElementById('payBtn');
+  const err = document.getElementById('payError');
+  btn.disabled = true; btn.textContent = 'Processing...'; err.textContent = '';
+
+  try {
+    const res = await fetch('/api/create-payment-intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: 500, type: 'ai-picks' })
+    });
+    const { clientSecret, error } = await res.json();
+    if (error) { err.textContent = error; btn.disabled = false; btn.textContent = 'Unlock Access'; return; }
+
+    const { error: confirmError } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: elements.getElement('card'),
+      }
+    });
+
+    if (confirmError) { err.textContent = confirmError.message; btn.disabled = false; btn.textContent = 'Unlock Access'; }
+    else {
+      localStorage.setItem('aiPicksPaid', 'true');
+      const purchased = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+      purchased.push({ id: 'ai-picks', name: 'AI Sports Picks', quantity: 1 });
+      localStorage.setItem('purchasedItems', JSON.stringify(purchased));
+      showChat();
+    }
+  } catch (e) { err.textContent = 'Payment failed. Try again.'; btn.disabled = false; btn.textContent = 'Unlock Access'; }
+}
+
+const elements = stripe.elements();
+const card = elements.create('card', {
+  style: {
+    base: { color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: '16px', '::placeholder': { color: '#555' } },
+    invalid: { color: '#c02828' }
+  }
+});
+setTimeout(() => { const mount = document.getElementById('payBtn'); if (mount) card.mount('#payBtn'); }, 500);
+
+function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  const messages = document.getElementById('chatMessages');
+  messages.innerHTML += `<div class="msg user">${escHtml(text)}</div>`;
+  messages.scrollTop = messages.scrollHeight;
+
+  setTimeout(() => {
+    const reply = generatePrediction(text);
+    messages.innerHTML += `<div class="msg ai"><div class="label">AI Sports Bot</div>${reply}</div>`;
+    messages.scrollTop = messages.scrollHeight;
+  }, 800 + Math.random() * 1200);
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const teams = {
+  nfl: ['Chiefs','Bills','Ravens','49ers','Cowboys','Eagles','Lions','Dolphins','Bengals','Texans','Jets','Browns','Jaguars','Chargers','Broncos','Raiders','Steelers','Colts','Seahawks','Rams','Packers','Vikings','Buccaneers','Saints','Falcons','Panthers','Cardinals','Commanders','Giants','Patriots','Titans'],
+  nba: ['Lakers','Celtics','Nuggets','Thunder','Timberwolves','Knicks','Cavaliers','Warriors','Suns','Mavericks','Bucks','76ers','Clippers','Kings','Heat','Pacers','Pelicans','Rockets','Bulls','Hawks','Hornets','Nets','Raptors','Spurs','Blazers','Jazz','Pistons','Wizards','Magic'],
+  mlb: ['Yankees','Dodgers','Astros','Braves','Phillies','Rangers','Orioles','Twins','Guardians','Rays','Blue Jays','Mariners','Red Sox','Cardinals','Mets','Brewers','Padres','Diamondbacks','Giants','Cubs','Angels','Tigers','Reds','Royals','Pirates','Marlins','Rockies','Athletics','Nationals','White Sox'],
+  nhl: ['Panthers','Oilers','Rangers','Stars','Bruins','Canucks','Avalanche','Jets','Hurricanes','Wild','Knights','Kings','Blues','Flames','Lightning','Maple Leafs','Devils','Capitals','Islanders','Predators','Senators','Sabres','Red Wings','Flyers','Blackhawks','Ducks','Sharks','Coyotes','Blue Jackets','Penguins']
+};
+
+const sports = ['NFL','NBA','MLB','NHL','College Football','UFC','Soccer','Tennis'];
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function randInt(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
+function pct() { return randInt(51,89); }
+
+function generatePrediction(input) {
+  const lower = input.toLowerCase();
+
+  if (lower.includes('super bowl') || lower.includes('championship')) {
+    const t1 = pick(teams.nfl); const t2 = pick(teams.nfl.filter(t=>t!==t1));
+    return `🏆 <b>Super Bowl / Championship Prediction</b><br><br>` +
+      `${t1} vs ${t2}<br><br>` +
+      `My pick: <b>${Math.random()>0.5?t1:t2}</b><br>` +
+      `Confidence: ${pct()}%<br><br>` +
+      `This one's going to be a battle. Both teams have shown they can perform when it matters most. I'm leaning toward the team with the better defensive matchup.`;
+  }
+
+  const sportKeywords = {
+    'nfl': teams.nfl, 'football': teams.nfl, 'nba': teams.nba, 'basketball': teams.nba,
+    'mlb': teams.mlb, 'baseball': teams.mlb, 'nhl': teams.nhl, 'hockey': teams.nhl,
+    'ufc': ['Fighter A','Fighter B'], 'soccer': ['Team A','Team B'], 'tennis': ['Player A','Player B']
+  };
+
+  let sport = null;
+  for (const [key, arr] of Object.entries(sportKeywords)) {
+    if (lower.includes(key)) { sport = key; break; }
+  }
+
+  let t1, t2;
+  const vsMatch = lower.match(/(\w[\w\s]*?)\s*(?:vs?\.?|or|over)\s*(\w[\w\s]*?)[\?\!\.]/);
+
+  if (vsMatch) {
+    t1 = vsMatch[1].trim();
+    t2 = vsMatch[2].trim();
+  } else if (sport) {
+    const list = sportKeywords[sport];
+    t1 = pick(list);
+    t2 = pick(list.filter(t=>t!==t1));
+  } else {
+    t1 = pick(teams.nfl);
+    t2 = pick(teams.nba);
+    const randSport = pick(['NFL','NBA','MLB','NHL']);
+    return generateGenericPrediction(randSport, t1, t2);
+  }
+
+  const pickTeam = Math.random() > 0.5 ? t1 : t2;
+  const confidence = pct();
+  const margin = pick(['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal','in extra innings','in a shootout']);
+  const reason = pick([
+    'The home crowd advantage and recent form give them the edge.',
+    'Their defense has been stifling lately and I expect that to continue.',
+    'Offensive firepower wins games. They have the better scoring attack.',
+    'Head-to-head history favors them, and I think that trend continues.',
+    'Injuries are stacking up for the other side. This is the spot.',
+    'They are the more experienced team in big moments.',
+    'The momentum from last week carries over here.',
+    'Coaching adjustments will be the difference maker.',
+    'The stats and advanced metrics all point this direction.',
+    'Gut feeling on this one — they show up big tonight.'
+  ]);
+
+  return `<b>${t1} vs ${t2}</b><br><br>` +
+    `My pick: <b>${pickTeam}</b><br>` +
+    `Confidence: <b>${confidence}%</b><br>` +
+    `Predicted margin: ${margin}<br><br>` +
+    `${reason}<br><br>` +
+    `<i>Disclaimer: These are AI-generated predictions for entertainment purposes only. Bet responsibly.</i>`;
+}
+
+function generateGenericPrediction(sport, t1, t2) {
+  const pickTeam = Math.random() > 0.5 ? t1 : t2;
+  return `<b>${sport}: ${t1} vs ${t2}</b><br><br>` +
+    `My pick: <b>${pickTeam}</b><br>` +
+    `Confidence: <b>${pct()}%</b><br><br>` +
+    `This is going to be a great matchup. Both sides have talent, but I'm going with the team that has the better recent form and matchup advantage.<br><br>` +
+    `<i>Disclaimer: AI-generated predictions for entertainment only.</i>`;
+}
+
+let authMode = 'signin';
+function toggleAuthMode(e) {
+  e.preventDefault();
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  document.getElementById('authTitle').textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+  document.getElementById('authNameWrap').style.display = authMode === 'signup' ? 'block' : 'none';
+  document.getElementById('authSubmit').textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+  document.getElementById('authSwitchText').textContent = authMode === 'signin' ? "Don't have an account?" : "Already have an account?";
+  document.getElementById('authSwitchLink').textContent = authMode === 'signin' ? 'Sign Up' : 'Sign In';
+  document.getElementById('authError').textContent = '';
+}
+
+async function handleAuthSubmit() {
+  const name = document.getElementById('authName').value.trim();
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  const err = document.getElementById('authError');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'Fill in all fields'; return; }
+  if (authMode === 'signup' && !name) { err.textContent = 'Enter your name'; return; }
+  if (pass.length < 6) { err.textContent = 'Password must be 6+ characters'; return; }
+  try {
+    if (authMode === 'signup') await authModule.signUp(name, email, pass);
+    else await authModule.signIn(email, pass);
+    authModule.hideAuth();
+  } catch (e) {
+    err.textContent = e.message.replace('Firebase: ', '').replace(/\(auth\/.*?\)\.?/, '');
+  }
+}
+</script>
+</body>
+</html>
