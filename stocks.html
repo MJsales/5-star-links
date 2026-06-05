@@ -274,13 +274,13 @@
   </div>
 </div>
 
-<div id="addWalletOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;align-items:center;justify-content:center;">
-  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(245,158,11,0.25);border-radius:18px;padding:2rem;width:90%;max-width:400px;position:relative;">
-    <button onclick="closeAddWallet()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:1.5rem;cursor:pointer;">&times;</button>
-    <h2 style="margin-bottom:1.2rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Link Wallet</h2>
+<div id="addWalletOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;align-items:center;justify-content:center;overflow-y:auto;padding:1rem;">
+  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(245,158,11,0.25);border-radius:18px;padding:1.2rem;width:100%;max-width:360px;position:relative;margin:auto;">
+    <button onclick="closeAddWallet()" style="position:absolute;top:10px;right:12px;background:none;border:none;color:#555;font-size:1.3rem;cursor:pointer;">&times;</button>
+    <h2 style="margin-bottom:0.8rem;font-size:1rem;text-align:center;background:linear-gradient(135deg,#fff,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Link Wallet</h2>
     <p style="text-align:center;font-size:0.8rem;color:#555;margin-bottom:1rem;">Your public address is stored securely. No private keys are ever requested.</p>
     <div id="walletChainWrap">
-      <select id="walletChain" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;max-height:200px;overflow-y:auto;">
+      <select id="walletChain" style="width:100%;padding:10px;margin-bottom:8px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.85rem;outline:none;font-family:'Inter',sans-serif;max-height:160px;overflow-y:auto;">
         <option value="BTC">Bitcoin (BTC)</option>
         <option value="ETH">Ethereum (ETH)</option>
         <option value="SOL">Solana (SOL)</option>
@@ -314,8 +314,8 @@
       </select>
     </div>
     <div id="walletHint" style="font-size:0.7rem;color:#a855f7;margin-bottom:6px;min-height:0.8rem;"></div>
-    <input type="text" id="walletAddress" placeholder="Paste any wallet address — auto-detects chain" oninput="autoDetectChain()" style="width:100%;padding:12px;margin-bottom:14px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;word-break:break-all;" />
-    <button onclick="addWallet()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Link Wallet</button>
+    <input type="text" id="walletAddress" placeholder="Paste wallet address" oninput="autoDetectChain()" style="width:100%;padding:10px;margin-bottom:10px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.85rem;outline:none;font-family:'Inter',sans-serif;word-break:break-all;" />
+    <button onclick="addWallet()" style="width:100%;padding:10px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;font-size:0.9rem;font-weight:700;cursor:pointer;">Link Wallet</button>
   </div>
 </div>
 
@@ -1239,8 +1239,10 @@ function updateChart(symbol) {
   chartAsset = asset;
   document.getElementById('chartTitle').textContent = asset.symbol + ' — ' + asset.name;
   document.getElementById('chartSubtitle').textContent = '$' + (asset.price > 1000 ? asset.price.toLocaleString() : asset.price) + ' | ' + (asset.change > 0 ? '+' : '') + asset.change + '%';
-  priceHistory.push(asset.price);
-  if (priceHistory.length > 30) priceHistory.shift();
+  if (priceHistory.length === 0 || priceHistory[priceHistory.length - 1] !== asset.price) {
+    priceHistory.push(asset.price);
+    if (priceHistory.length > 60) priceHistory.shift();
+  }
   drawChart();
   updateProfitTarget(asset);
 }
@@ -1290,7 +1292,7 @@ function drawChart() {
   var w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
   var data = getChartData();
-  if (!data || data.length < 2) {
+  if (!data || data.length < 1) {
     ctx.fillStyle = '#333';
     ctx.font = '14px Inter';
     ctx.textAlign = 'center';
@@ -1299,14 +1301,21 @@ function drawChart() {
   }
   var min = Math.min.apply(null, data) * 0.998;
   var max = Math.max.apply(null, data) * 1.002;
+  if (min === max) { min = min * 0.99; max = max * 1.01; }
   var range = max - min || 1;
-  var step = w / (data.length - 1);
+  var step = data.length > 1 ? w / (data.length - 1) : w;
   var isUp = data[data.length - 1] >= data[0];
   var color = isUp ? '#22c55e' : '#ef4444';
   ctx.beginPath();
-  ctx.moveTo(0, h - ((data[0] - min) / range) * h);
-  for (var i = 1; i < data.length; i++) {
-    ctx.lineTo(i * step, h - ((data[i] - min) / range) * h);
+  if (data.length === 1) {
+    var midY = h / 2;
+    ctx.moveTo(w / 2 - 20, midY);
+    ctx.lineTo(w / 2 + 20, midY);
+  } else {
+    ctx.moveTo(0, h - ((data[0] - min) / range) * h);
+    for (var i = 1; i < data.length; i++) {
+      ctx.lineTo(i * step, h - ((data[i] - min) / range) * h);
+    }
   }
   ctx.strokeStyle = color;
   ctx.lineWidth = 2.5;
