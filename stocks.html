@@ -224,7 +224,28 @@ var scheduledPredictions = [];
 fetch('stocks-data.json').then(function(r) { return r.json(); }).then(function(d) {
   stocksData = d;
   if (d.scheduledPredictions) scheduledPredictions = d.scheduledPredictions;
+  fetchLiveCryptoPrices();
 }).catch(function(e) { console.error('Failed to load stocks data:', e); });
+
+function fetchLiveCryptoPrices() {
+  var coinIds = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOGE': 'dogecoin', 'XRP': 'ripple', 'ADA': 'cardano', 'AVAX': 'avalanche-2', 'LINK': 'chainlink', 'DOT': 'polkadot', 'MATIC': 'matic-network' };
+  var ids = Object.values(coinIds).join(',');
+  fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd&include_24hr_change=true')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!stocksData || !stocksData.crypto) return;
+      stocksData.crypto.forEach(function(c) {
+        var coinId = coinIds[c.symbol];
+        if (coinId && data[coinId]) {
+          c.price = data[coinId].usd;
+          c.change = parseFloat(data[coinId].usd_24h_change.toFixed(1));
+        }
+      });
+    })
+    .catch(function(e) { console.error('Live price fetch failed:', e); });
+}
+
+setInterval(fetchLiveCryptoPrices, 60000);
 
 var today = new Date();
 var todayStr = today.toISOString().slice(0, 10);
