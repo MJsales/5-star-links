@@ -381,8 +381,32 @@ function getGamesBySport(sport) {
   return scheduledGames.filter(g => g.sport === sport);
 }
 
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function hashString(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function pickSeeded(arr, rng) {
+  return arr[Math.floor(rng() * arr.length)];
+}
+
 function generatePrediction(input) {
   const lower = input.toLowerCase();
+  const seed = hashString(lower + today.toISOString().slice(0, 10));
+  const rng = seededRandom(seed);
 
   const greetings = ['hello','hi','hey','sup','yo'];
   if (greetings.some(g => lower.startsWith(g))) {
@@ -406,10 +430,10 @@ function generatePrediction(input) {
 
   const game = findGameByTeams(input);
   if (game) {
-    const pickTeam = Math.random() > 0.5 ? game.home : game.away;
-    const confidence = pct();
-    const margin = pick(['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal','in extra innings']);
-    const reason = pick([
+    const pickTeam = rng() > 0.5 ? game.home : game.away;
+    const confidence = 51 + Math.floor(rng() * 39);
+    const margins = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal','in extra innings'];
+    const reasons = [
       'The home crowd advantage and recent form give them the edge.',
       'Their defense has been stifling lately and I expect that to continue.',
       'Offensive firepower wins games. They have the better scoring attack.',
@@ -420,12 +444,12 @@ function generatePrediction(input) {
       'Coaching adjustments will be the difference maker.',
       'The stats and advanced metrics all point this direction.',
       'Gut feeling on this one — they show up big tonight.'
-    ]);
+    ];
     return `<b>${game.away} @ ${game.home}</b> (${game.sport.toUpperCase()})<br>Date: ${game.date} ✅<br><br>` +
       `My pick: <b>${pickTeam}</b><br>` +
       `Confidence: <b>${confidence}%</b><br>` +
-      `Predicted margin: ${margin}<br><br>` +
-      `${reason}<br><br>` +
+      `Predicted margin: ${pickSeeded(margins, rng)}<br><br>` +
+      `${pickSeeded(reasons, rng)}<br><br>` +
       `<i>Disclaimer: AI-generated predictions for entertainment only. Bet responsibly.</i>`;
   }
 
@@ -433,16 +457,17 @@ function generatePrediction(input) {
   if (sport) {
     const games = getGamesBySport(sport);
     if (games.length === 0) return `No confirmed ${sport.toUpperCase()} games on the schedule right now.`;
-    const game = pick(games);
-    const pickTeam = Math.random() > 0.5 ? game.home : game.away;
+    const game = pickSeeded(games, rng);
+    const pickTeam = rng() > 0.5 ? game.home : game.away;
     return `Here's the next confirmed ${sport.toUpperCase()} game:<br><br>` +
       `<b>${game.away} @ ${game.home}</b><br>Date: ${game.date} ✅<br><br>` +
       `My pick: <b>${pickTeam}</b><br>` +
-      `Confidence: <b>${pct()}%</b><br><br>` +
+      `Confidence: <b>${51 + Math.floor(rng() * 39)}%</b><br><br>` +
       `<i>Disclaimer: AI-generated predictions for entertainment only.</i>`;
   }
 
-  const nextGame = scheduledGames[0];
+  const game = pickSeeded(scheduledGames, rng);
+  const pickTeam = rng() > 0.5 ? game.home : game.away;
   return `I only predict confirmed upcoming games. Here's what's scheduled:<br><br>` +
     scheduledGames.slice(0, 6).map(g => `• ${g.date}: ${g.away} @ ${g.home} (${g.sport.toUpperCase()})`).join('<br>') +
     `<br><br>Ask me about any of these matchups!<br><br>` +
