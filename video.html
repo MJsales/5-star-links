@@ -130,12 +130,6 @@ var currentVideoUrl = '';
 var currentVideoTitle = '';
 var currentSplices = [];
 var downloadedClips = {};
-var isLocalServer = false;
-
-// Check if local server is running
-fetch('/api/video-info', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url:'https://www.youtube.com/watch?v=dQw4w9WgXcQ'}) })
-  .then(function(r) { isLocalServer = r.ok || r.status === 500; })
-  .catch(function() { isLocalServer = false; });
 
 function seededRandom(seed) {
   var s = seed;
@@ -674,11 +668,6 @@ function generateReply(input) {
 
 // Download a single clip
 async function downloadClip(idx) {
-  if (!isLocalServer) {
-    addAiMsg('<b>⚠ Download requires the local server.</b><br><br>Run <code>node server.js</code> in the project folder, then access the site at <code>http://localhost:4242</code><br><br>For now, you can copy the timestamps and use them in CapCut or any video editor.');
-    return;
-  }
-
   var btn = document.getElementById('dlBtn' + idx);
   var progress = document.getElementById('dlProgress' + idx);
   if (!btn || !currentSplices[idx]) return;
@@ -704,6 +693,11 @@ async function downloadClip(idx) {
       })
     });
 
+    if (!res.ok) {
+      var errData = await res.json().catch(function() { return { error: 'Server error' }; });
+      throw new Error(errData.error || 'Download failed');
+    }
+
     var data = await res.json();
 
     if (data.success) {
@@ -727,17 +721,16 @@ async function downloadClip(idx) {
   } catch (e) {
     btn.textContent = '❌ Error';
     btn.disabled = false;
-    progress.textContent = 'Server error: ' + e.message;
+    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('ERR_CONNECTION_REFUSED')) {
+      progress.innerHTML = '⚠ Local server not running. Run <code style="background:#1a1028;padding:2px 6px;border-radius:4px;">node server.js</code> then open <code style="background:#1a1028;padding:2px 6px;border-radius:4px;">http://localhost:4242</code>';
+    } else {
+      progress.textContent = 'Error: ' + e.message;
+    }
   }
 }
 
 // Download all clips
 async function downloadAllClips() {
-  if (!isLocalServer) {
-    addAiMsg('<b>⚠ Download requires the local server.</b><br><br>Run <code>node server.js</code> in the project folder, then access the site at <code>http://localhost:4242</code>');
-    return;
-  }
-
   var btn = document.getElementById('dlAllBtn');
   var progress = document.getElementById('dlAllProgress');
   if (!btn || currentSplices.length === 0) return;
@@ -806,7 +799,11 @@ async function downloadAllClips() {
   } catch (e) {
     btn.textContent = '❌ Error';
     btn.disabled = false;
-    progress.textContent = 'Server error: ' + e.message;
+    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('ERR_CONNECTION_REFUSED')) {
+      progress.innerHTML = '⚠ Local server not running. Run <code style="background:#1a1028;padding:2px 6px;border-radius:4px;">node server.js</code> then open <code style="background:#1a1028;padding:2px 6px;border-radius:4px;">http://localhost:4242</code>';
+    } else {
+      progress.textContent = 'Error: ' + e.message;
+    }
   }
 }
 
