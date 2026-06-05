@@ -77,6 +77,7 @@
     }
     .chat-input:focus { border-color: #a855f7; }
     .chat-input::placeholder { color: #555; }
+    .chat-input:empty::before { content: attr(placeholder); color: #555; pointer-events: none; }
     .send-btn {
       padding: 14px 20px; background: linear-gradient(135deg, #a855f7, #7c3aed);
       border: none; border-radius: 12px; color: #fff; font-weight: 700;
@@ -155,8 +156,7 @@
     </div>
   </div>
   <div class="chat-input-wrap">
-    <input type="email" style="position:absolute;left:-9999px;opacity:0;" tabindex="-1" autocomplete="email" aria-hidden="true">
-    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about any game..." onkeypress="if(event.key==='Enter')sendMsg()" autocomplete="off">
+    <div contenteditable="true" class="chat-input" id="chatInput" placeholder="Ask about any game..." onkeypress="if(event.key==='Enter'){event.preventDefault();sendMsg();}" style="min-height:48px;"></div>
     <button class="send-btn" onclick="sendMsg()">Send</button>
   </div>
 </div>
@@ -202,9 +202,9 @@
 <script>
 function sendMsg() {
   const input = document.getElementById('chatInput');
-  const text = input.value.trim();
+  const text = input.textContent.trim();
   if (!text) return;
-  input.value = '';
+  input.textContent = '';
 
   const messages = document.getElementById('chatMessages');
   messages.innerHTML += '<div class="msg user">' + escHtml(text) + '</div>';
@@ -569,22 +569,6 @@ async function handleAuthSubmit() {
     err.textContent = e.message.replace('Firebase: ', '').replace(/\(auth\/.*?\)\.?/, '');
   }
 }
-</script>
-<script>
-(function() {
-  var input = document.getElementById('chatInput');
-  var lastVal = input.value;
-  function checkAutofill() {
-    var v = input.value;
-    if (v && v.includes('@')) { input.value = ''; lastVal = ''; return; }
-    lastVal = v;
-  }
-  input.addEventListener('focus', checkAutofill);
-  input.addEventListener('blur', checkAutofill);
-  setInterval(checkAutofill, 200);
-  input.addEventListener('input', function() { lastVal = this.value; });
-  input.addEventListener('keydown', function() { setTimeout(checkAutofill, 50); });
-})();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
