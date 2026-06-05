@@ -242,6 +242,14 @@
     <div id="portfolioList" style="color:#555;font-size:0.9rem;">Sign in to track your portfolio</div>
   </div>
 
+  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.15);border-radius:16px;padding:1.2rem;margin-top:1.5rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h2 style="font-size:1.1rem;color:#f59e0b;font-weight:700;">My Wallets</h2>
+      <button onclick="openAddWallet()" style="padding:6px 14px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ Link Wallet</button>
+    </div>
+    <div id="walletList" style="color:#555;font-size:0.9rem;">No wallets linked yet</div>
+  </div>
+
   <div style="margin-top:1.5rem;background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.15);border-radius:16px;padding:1.2rem;">
     <h2 style="font-size:1.1rem;color:#f59e0b;font-weight:700;margin-bottom:0.8rem;">Sell Alerts</h2>
     <div id="sellAlertsList" style="color:#555;font-size:0.9rem;">No alerts yet — add positions to track</div>
@@ -257,6 +265,22 @@
     <input type="number" id="posPrice" placeholder="Price per unit ($)" step="any" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
     <input type="date" id="posDate" style="width:100%;padding:12px;margin-bottom:14px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;" />
     <button onclick="addPosition()" style="width:100%;padding:12px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Add to Portfolio</button>
+  </div>
+</div>
+
+<div id="addWalletOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(245,158,11,0.25);border-radius:18px;padding:2rem;width:90%;max-width:400px;position:relative;">
+    <button onclick="closeAddWallet()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:1.5rem;cursor:pointer;">&times;</button>
+    <h2 style="margin-bottom:1.2rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Link Wallet</h2>
+    <p style="text-align:center;font-size:0.8rem;color:#555;margin-bottom:1rem;">Your public address is stored securely. No private keys are ever requested.</p>
+    <select id="walletChain" style="width:100%;padding:12px;margin-bottom:10px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;">
+      <option value="BTC">Bitcoin (BTC)</option>
+      <option value="ETH">Ethereum (ETH)</option>
+      <option value="SOL">Solana (SOL)</option>
+      <option value="DOGE">Dogecoin (DOGE)</option>
+    </select>
+    <input type="text" id="walletAddress" placeholder="Public wallet address" style="width:100%;padding:12px;margin-bottom:14px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;word-break:break-all;" />
+    <button onclick="addWallet()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Link Wallet</button>
   </div>
 </div>
 
@@ -826,6 +850,147 @@ function savePortfolio(items) {
   checkSellAlerts();
 }
 
+var wallets = [];
+
+function getWallets() {
+  if (window.authModule && window.authModule.getCurrentUser() && window._fbDb) {
+    var uid = window.authModule.getCurrentUser().uid;
+    return window._fbDb.collection('users').doc(uid).collection('wallets').get().then(function(snap) {
+      var items = [];
+      snap.forEach(function(doc) { items.push(doc.data()); });
+      if (items.length > 0) {
+        localStorage.setItem('wallets', JSON.stringify(items));
+      }
+      return items;
+    }).catch(function() {
+      return JSON.parse(localStorage.getItem('wallets') || '[]');
+    });
+  }
+  return Promise.resolve(JSON.parse(localStorage.getItem('wallets') || '[]'));
+}
+
+function saveWallets(items) {
+  wallets = items;
+  localStorage.setItem('wallets', JSON.stringify(items));
+  if (window.authModule && window.authModule.getCurrentUser() && window._fbDb) {
+    var uid = window.authModule.getCurrentUser().uid;
+    var ref = window._fbDb.collection('users').doc(uid).collection('wallets');
+    ref.get().then(function(snap) {
+      var batch = window._fbDb.batch();
+      snap.forEach(function(doc) { batch.delete(doc.ref); });
+      items.forEach(function(item) {
+        batch.set(ref.doc(item.id), item);
+      });
+      return batch.commit();
+    }).catch(function(e) { console.error('Wallet save error:', e); });
+  }
+  renderWallets();
+}
+
+function openAddWallet() {
+  if (!window.authModule || !window.authModule.getCurrentUser()) {
+    authModule.showAuth();
+    return;
+  }
+  document.getElementById('walletAddress').value = '';
+  document.getElementById('addWalletOverlay').style.display = 'flex';
+}
+
+function closeAddWallet() {
+  document.getElementById('addWalletOverlay').style.display = 'none';
+}
+
+function addWallet() {
+  var chain = document.getElementById('walletChain').value;
+  var address = document.getElementById('walletAddress').value.trim();
+  if (!address) return;
+  var id = chain + '_' + address.slice(0, 8);
+  var exists = wallets.find(function(w) { return w.address === address && w.chain === chain; });
+  if (exists) { showToast('Wallet already linked'); return; }
+  wallets.push({ id: id, chain: chain, address: address, balance: null, lastChecked: null });
+  saveWallets(wallets);
+  closeAddWallet();
+  showToast(chain + ' wallet linked!');
+  fetchWalletBalance(address, chain);
+}
+
+function removeWallet(id) {
+  wallets = wallets.filter(function(w) { return w.id !== id; });
+  saveWallets(wallets);
+}
+
+async function fetchWalletBalance(address, chain) {
+  var wallet = wallets.find(function(w) { return w.address === address && w.chain === chain; });
+  if (!wallet) return;
+  try {
+    var balance = null;
+    if (chain === 'BTC') {
+      var res = await fetch('https://blockchain.info/q/addressbalance/' + address);
+      if (res.ok) balance = parseInt(await res.text()) / 100000000;
+    } else if (chain === 'ETH') {
+      var res = await fetch('https://api.etherscan.io/api?module=account&action=balance&address=' + address + '&tag=latest');
+      var data = await res.json();
+      if (data.status === '1') balance = parseInt(data.result) / 1e18;
+    } else if (chain === 'DOGE') {
+      var res = await fetch('https://dogechain.info/api/v1/address/balance/' + address);
+      var data = await res.json();
+      if (data.balance !== undefined) balance = parseFloat(data.balance);
+    } else if (chain === 'SOL') {
+      var res = await fetch('https://api.mainnet-beta.solana.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getBalance', params: [address] })
+      });
+      var data = await res.json();
+      if (data.result) balance = data.result.value / 1e9;
+    }
+    wallet.balance = balance;
+    wallet.lastChecked = Date.now();
+    saveWallets(wallets);
+  } catch(e) {
+    console.error('Balance fetch failed for ' + chain + ':', e);
+  }
+}
+
+async function fetchAllWalletBalances() {
+  for (var i = 0; i < wallets.length; i++) {
+    await fetchWalletBalance(wallets[i].address, wallets[i].chain);
+  }
+}
+
+function renderWallets() {
+  var el = document.getElementById('walletList');
+  if (!el) return;
+  if (wallets.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:1rem;color:#555;">No wallets linked yet. Click "Link Wallet" to start.</div>';
+    return;
+  }
+  el.innerHTML = wallets.map(function(w) {
+    var balanceText = w.balance !== null ? w.balance.toFixed(w.balance > 10 ? 4 : 8) : '...';
+    var balanceUsd = '';
+    if (w.balance !== null && typeof stocksData !== 'undefined') {
+      var coin = stocksData.crypto.find(function(c) { return c.symbol === w.chain; });
+      if (coin) {
+        var usd = w.balance * coin.price;
+        balanceUsd = ' ($' + usd.toFixed(2) + ')';
+      }
+    }
+    var chainColors = { BTC: '#f7931a', ETH: '#627eea', SOL: '#9945ff', DOGE: '#c2a633' };
+    var color = chainColors[w.chain] || '#f59e0b';
+    var shortAddr = w.address.slice(0, 6) + '...' + w.address.slice(-4);
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#050208;border:1px solid rgba(245,158,11,0.1);border-radius:10px;margin-bottom:8px;">' +
+      '<div>' +
+        '<div style="font-weight:700;color:' + color + ';font-size:1rem;">' + w.chain + ' <span style="font-size:0.8rem;color:#555;font-weight:400;">' + shortAddr + '</span></div>' +
+        '<div style="font-size:0.8rem;color:#555;">Balance: ' + balanceText + ' ' + w.chain + balanceUsd + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;">' +
+        '<button onclick="fetchWalletBalance(\'' + w.address + '\',\'' + w.chain + '\')" style="background:none;border:none;color:#a855f7;cursor:pointer;font-size:1rem;" title="Refresh">&#x21bb;</button>' +
+        '<button onclick="removeWallet(\'' + w.id + '\')" style="background:none;border:none;color:#555;cursor:pointer;font-size:1.2rem;">&times;</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
 function openAddPosition() {
   if (!window.authModule || !window.authModule.getCurrentUser()) {
     authModule.showAuth();
@@ -950,6 +1115,12 @@ getPortfolio().then(function(items) {
   portfolio = items;
   renderPortfolio();
   checkSellAlerts();
+});
+
+getWallets().then(function(items) {
+  wallets = items;
+  renderWallets();
+  fetchAllWalletBalances();
 });
 
 setInterval(checkSellAlerts, 60000);
