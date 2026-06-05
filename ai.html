@@ -239,7 +239,7 @@
 let stripe, elements, card;
 let paid = localStorage.getItem('aiPicksPaid') === 'true' || JSON.parse(localStorage.getItem('purchasedItems') || '[]').some(i => i.id === 'ai-picks');
 
-if (paid) showChat();
+showChat();
 
 function showChat() {
   document.getElementById('paywall').style.display = 'none';
