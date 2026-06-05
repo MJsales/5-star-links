@@ -573,15 +573,19 @@ function generatePrediction(input) {
     else if (d.trend === 'bearish') { score -= 2; reasons.push('Trend is bearish'); }
     else { reasons.push('Trend is sideways — consolidation phase'); }
 
-    if (d.change > 3) { score += 2; reasons.push('Strong + ' + d.change + '% move today shows buying pressure'); }
+    if (d.change > 3) { score += 2; reasons.push('Strong +' + d.change + '% move today — buying pressure'); }
     else if (d.change > 1) { score += 1; reasons.push('Positive +' + d.change + '% momentum'); }
     else if (d.change < -3) { score -= 2; reasons.push('Sharp ' + d.change + '% drop — selling pressure'); }
     else if (d.change < -1) { score -= 1; reasons.push('Negative ' + d.change + '% momentum'); }
 
-    var buy = score >= 0;
+    var verdict, verdictColor, timing;
+    if (score >= 3) { verdict = '🟢 BUY NOW'; verdictColor = '#22c55e'; timing = 'Good entry point — buy today'; }
+    else if (score >= 1) { verdict = '🟢 BUY'; verdictColor = '#22c55e'; timing = 'Favorable conditions — consider buying'; }
+    else if (score <= -3) { verdict = '🔴 SELL NOW'; verdictColor = '#ef4444'; timing = 'Sell today — take profit or cut losses'; }
+    else if (score <= -1) { verdict = '🔴 SELL'; verdictColor = '#ef4444'; timing = 'Consider selling soon — weakness ahead'; }
+    else { verdict = '🟡 HOLD'; verdictColor = '#f59e0b'; timing = 'Wait for clearer signals — no action needed'; }
+
     var confidence = Math.min(92, 55 + Math.abs(score) * 5 + Math.floor(rng() * 8));
-    var movePercent = (1 + Math.abs(score) * 0.8 + rng() * 2).toFixed(1);
-    var predictedMove = (buy ? '+' : '-') + movePercent + '%';
 
     var rsiSignal = d.rsi > 70 ? 'Overbought — may pull back' : d.rsi < 30 ? 'Oversold — bounce likely' : 'Neutral zone';
     var trendWord = d.trend === 'bullish' ? 'Bullish momentum' : d.trend === 'bearish' ? 'Bearish pressure' : 'Sideways consolidation';
@@ -590,15 +594,24 @@ function generatePrediction(input) {
     var highLabel = d.resistance ? '$' + d.resistance.toLocaleString() : 'N/A';
     var lowLabel = d.support ? '$' + d.support.toLocaleString() : 'N/A';
 
+    var posInPortfolio = portfolio.find(function(p) { return p.symbol === d.symbol; });
+    var portfolioLine = '';
+    if (posInPortfolio) {
+      var curPrice = d.price;
+      var pnl = ((curPrice - posInPortfolio.entryPrice) / posInPortfolio.entryPrice * 100);
+      var holdDays = Math.floor((Date.now() - new Date(posInPortfolio.date).getTime()) / 86400000);
+      portfolioLine = '<br><b>Your Position:</b> ' + posInPortfolio.amount + ' @ $' + (posInPortfolio.entryPrice > 1000 ? posInPortfolio.entryPrice.toLocaleString() : posInPortfolio.entryPrice) + ' | P&L: <span style="color:' + (pnl >= 0 ? '#22c55e' : '#ef4444') + ';">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(1) + '%</span> | ' + holdDays + 'd held';
+    }
+
     return '<b>' + d.symbol + ' (' + d.name + ')</b> — ' + asset.type.toUpperCase() + '<br><br>' +
       'Current: <b>' + priceLabel + '</b> (' + (d.change > 0 ? '+' : '') + d.change + '%)<br>' +
-      'Market Cap: ' + d.marketCap + '<br>' +
       'RSI: ' + d.rsi + ' — ' + rsiSignal + '<br>' +
       'Trend: ' + trendWord + '<br>' +
-      'Support: ' + lowLabel + ' | Resistance: ' + highLabel + '<br><br>' +
-      '<div style="display:inline-block;padding:8px 16px;border-radius:8px;font-size:1.1rem;font-weight:800;margin:8px 0;' + (buy ? 'background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);' : 'background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);') + '">' + (buy ? '🟢 STRONG BUY' : '🔴 SELL') + '</div><br>' +
-      'Expected move: <b>' + predictedMove + '</b><br>' +
-      'Confidence: <b>' + confidence + '%</b><br><br>' +
+      'Support: ' + lowLabel + ' | Resistance: ' + highLabel +
+      portfolioLine + '<br><br>' +
+      '<div style="display:inline-block;padding:10px 20px;border-radius:10px;font-size:1.15rem;font-weight:800;margin:8px 0;background:' + verdictColor + '15;color:' + verdictColor + ';border:1px solid ' + verdictColor + '44;">' + verdict + '</div><br>' +
+      '<div style="font-size:0.9rem;color:#ccc;margin-top:6px;">' + timing + '</div>' +
+      '<div style="font-size:0.85rem;color:#888;margin-top:8px;">Confidence: ' + confidence + '%</div><br>' +
       reasons.join('<br>');
   }
 
