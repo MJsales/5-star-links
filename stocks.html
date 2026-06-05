@@ -1282,7 +1282,7 @@ function generate1mData(asset) {
 }
 
 function getChartData() {
-  if (chartInterval === '1m' && chartData1m[chartAsset.symbol]) {
+  if (chartInterval === '1m' && chartAsset && chartData1m[chartAsset.symbol]) {
     return chartData1m[chartAsset.symbol];
   }
   return priceHistory;
@@ -1290,11 +1290,12 @@ function getChartData() {
 
 function drawChart() {
   var canvas = document.getElementById('priceChart');
+  if (!canvas) return;
   var ctx = canvas.getContext('2d');
   var w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
   var data = getChartData();
-  if (data.length < 2) {
+  if (!data || data.length < 2) {
     ctx.fillStyle = '#333';
     ctx.font = '14px Inter';
     ctx.textAlign = 'center';
@@ -1324,6 +1325,7 @@ function drawChart() {
   ctx.fill();
 
   if (chartAsset) {
+    try {
     portfolio.forEach(function(p) {
       if (p.symbol === chartAsset.symbol) {
         var entryY = h - ((p.entryPrice - min) / range) * h;
@@ -1400,6 +1402,7 @@ function drawChart() {
       ctx.textAlign = 'right';
       ctx.fillText('RSI ' + rsi, w - 8, 18);
     }
+    } catch(e) { console.error('Chart overlay error:', e); }
   }
 
   var lastY = h - ((data[data.length - 1] - min) / range) * h;
