@@ -178,11 +178,7 @@
     <h2>AI Sports Picks</h2>
     <p>Get AI-powered predictions for every major sport. NFL, NBA, MLB, NHL, College Football & more.</p>
     <div class="paywall-price">$5</div>
-    <div style="display:flex;gap:8px;margin-bottom:1rem;">
-      <input type="text" id="promoInput" placeholder="Promo code" style="flex:1;padding:10px 14px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:8px;color:#fff;font-size:0.9rem;outline:none;font-family:'Inter',sans-serif;" onkeypress="if(event.key==='Enter')startPayment()">
-      <button onclick="startPayment()" style="padding:10px 16px;background:rgba(168,85,247,0.2);color:#a855f7;border:1px solid rgba(168,85,247,0.3);border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9rem;white-space:nowrap;">Enter</button>
-    </div>
-    <button class="pay-btn" id="payBtn" onclick="startPayment()">Unlock Access</button>
+    <button class="pay-btn" id="payBtn" onclick="openPayment()">Pay $5 Now</button>
     <div class="pay-error" id="payError"></div>
   </div>
 </div>
@@ -227,6 +223,10 @@
   <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.25);border-radius:18px;padding:2rem;width:90%;max-width:400px;position:relative;">
     <button onclick="closePayment()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:1.5rem;cursor:pointer;">&times;</button>
     <h2 style="margin-bottom:1rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Pay $5 for AI Sports Picks</h2>
+    <div style="display:flex;gap:8px;margin-bottom:1rem;">
+      <input type="text" id="promoInput" placeholder="Promo code (optional)" style="flex:1;padding:10px 14px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:8px;color:#fff;font-size:0.9rem;outline:none;font-family:'Inter',sans-serif;" onkeypress="if(event.key==='Enter')submitPayment()">
+      <button onclick="submitPayment()" style="padding:10px 16px;background:rgba(168,85,247,0.2);color:#a855f7;border:1px solid rgba(168,85,247,0.3);border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9rem;white-space:nowrap;">Enter</button>
+    </div>
     <div id="card-mount" style="margin-bottom:1rem;"></div>
     <div id="payError2" style="color:#c02828;font-size:0.85rem;margin-bottom:12px;min-height:1.2em;"></div>
     <button id="paySubmitBtn" onclick="submitPayment()" style="width:100%;padding:14px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Pay $5</button>
@@ -287,6 +287,19 @@ function closePayment() {
 }
 
 async function submitPayment() {
+  const promoInput = document.getElementById('promoInput');
+  const promoCode = promoInput ? promoInput.value.trim().toUpperCase() : '';
+  if (promoCode === 'JOHNABBY') {
+    localStorage.setItem('aiPicksPaid', 'true');
+    const purchased = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+    purchased.push({ id: 'ai-picks', name: 'AI Sports Picks', quantity: 1 });
+    localStorage.setItem('purchasedItems', JSON.stringify(purchased));
+    if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
+    closePayment();
+    showChat();
+    return;
+  }
+
   const btn = document.getElementById('paySubmitBtn');
   const err = document.getElementById('payError2');
   btn.disabled = true; btn.textContent = 'Processing...'; err.textContent = '';
@@ -311,6 +324,7 @@ async function submitPayment() {
     const purchased = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
     purchased.push({ id: 'ai-picks', name: 'AI Sports Picks', quantity: 1 });
     localStorage.setItem('purchasedItems', JSON.stringify(purchased));
+    if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
     closePayment();
     showChat();
   }
