@@ -484,6 +484,21 @@ const products = [
       </circle>
     </svg>`
   },
+  {
+    id: 'ai-stocks', name: 'AI Stock Picks', price: 5, desc: 'AI-powered predictions for stocks & crypto',
+    hasColors: false, svg: () => `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#22c55e" stroke-width="3"/>
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#22c55e" stroke-width="1.5" opacity="0.3"/>
+      <text x="100" y="78" text-anchor="middle" fill="#22c55e" font-size="22" font-weight="900" font-family="Inter,sans-serif">STOCKS</text>
+      <text x="100" y="100" text-anchor="middle" fill="#fff" font-size="18" font-weight="900" font-family="Inter,sans-serif">&amp;</text>
+      <text x="100" y="122" text-anchor="middle" fill="#f59e0b" font-size="22" font-weight="900" font-family="Inter,sans-serif">CRYPTO</text>
+      <polyline points="40,140 70,110 90,125 130,70 160,90" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="160" cy="90" r="4" fill="#22c55e"/>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="8 4" opacity="0.5">
+        <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite"/>
+      </circle>
+    </svg>`
+  },
 ];
 
 let selectedColors = {};
@@ -625,6 +640,11 @@ if (!localStorage.getItem('reviewsSeeded')) {
       { stars: 5, text: 'AI called 3 out of 5 games correctly. Impressive.', name: 'Kevin B.', date: '5/29/2026' },
       { stars: 4, text: 'Fun to use. Predictions are pretty solid.', name: 'Brandon J.', date: '5/24/2026' },
       { stars: 5, text: 'Worth it for the sports insights alone.', name: 'Terrence D.', date: '5/19/2026' }
+    ],
+    'ai-stocks': [
+      { stars: 5, text: 'Called the NVDA rally perfectly. Made profits.', name: 'Jason W.', date: '5/30/2026' },
+      { stars: 5, text: 'Crypto predictions are on point. BTC call was spot on.', name: 'Ryan M.', date: '5/28/2026' },
+      { stars: 4, text: 'Good for quick market insights. RSI signals are useful.', name: 'Alex K.', date: '5/25/2026' }
     ]
   };
   localStorage.setItem('reviews', JSON.stringify(seeded));
