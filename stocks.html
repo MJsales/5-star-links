@@ -327,20 +327,31 @@ function generatePrediction(input) {
   var asset = findAsset(input);
   if (asset) {
     var d = asset.data;
-    var direction = d.change > 0 ? 'up' : d.change < 0 ? 'down' : 'flat';
-    var prediction = rng() > 0.45;
-    var predictedMove = (prediction ? '+' : '-') + (1 + Math.floor(rng() * 5)) + '.' + Math.floor(rng() * 10) + '%';
-    var confidence = 55 + Math.floor(rng() * 35);
+    var score = 0;
+    var reasons = [];
+
+    if (d.rsi > 70) { score -= 2; reasons.push('RSI at ' + d.rsi + ' — overbought, pullback likely'); }
+    else if (d.rsi > 60) { score += 1; reasons.push('RSI at ' + d.rsi + ' — bullish momentum'); }
+    else if (d.rsi < 30) { score += 2; reasons.push('RSI at ' + d.rsi + ' — oversold, bounce likely'); }
+    else if (d.rsi < 40) { score -= 1; reasons.push('RSI at ' + d.rsi + ' — bearish pressure'); }
+    else { reasons.push('RSI at ' + d.rsi + ' — neutral zone'); }
+
+    if (d.trend === 'bullish') { score += 2; reasons.push('Trend is bullish'); }
+    else if (d.trend === 'bearish') { score -= 2; reasons.push('Trend is bearish'); }
+    else { reasons.push('Trend is sideways — consolidation phase'); }
+
+    if (d.change > 3) { score += 2; reasons.push('Strong + ' + d.change + '% move today shows buying pressure'); }
+    else if (d.change > 1) { score += 1; reasons.push('Positive +' + d.change + '% momentum'); }
+    else if (d.change < -3) { score -= 2; reasons.push('Sharp ' + d.change + '% drop — selling pressure'); }
+    else if (d.change < -1) { score -= 1; reasons.push('Negative ' + d.change + '% momentum'); }
+
+    var buy = score >= 0;
+    var confidence = Math.min(92, 55 + Math.abs(score) * 5 + Math.floor(rng() * 8));
+    var movePercent = (1 + Math.abs(score) * 0.8 + rng() * 2).toFixed(1);
+    var predictedMove = (buy ? '+' : '-') + movePercent + '%';
+
     var rsiSignal = d.rsi > 70 ? 'Overbought — may pull back' : d.rsi < 30 ? 'Oversold — bounce likely' : 'Neutral zone';
     var trendWord = d.trend === 'bullish' ? 'Bullish momentum' : d.trend === 'bearish' ? 'Bearish pressure' : 'Sideways consolidation';
-
-    var reasons = [];
-    if (d.sentiment) reasons.push(d.sentiment);
-    if (d.rsi > 60) reasons.push('RSI at ' + d.rsi + ' shows buying pressure');
-    if (d.rsi < 40) reasons.push('RSI at ' + d.rsi + ' shows selling pressure');
-    if (d.change > 2) reasons.push('Strong positive movement today');
-    if (d.change < -2) reasons.push('Weakness shown today');
-    if (reasons.length === 0) reasons.push('Mixed signals — proceed with caution');
 
     var priceLabel = asset.type === 'crypto' ? '$' + d.price.toLocaleString() : '$' + d.price;
     var highLabel = d.resistance ? '$' + d.resistance.toLocaleString() : 'N/A';
@@ -352,10 +363,10 @@ function generatePrediction(input) {
       'RSI: ' + d.rsi + ' — ' + rsiSignal + '<br>' +
       'Trend: ' + trendWord + '<br>' +
       'Support: ' + lowLabel + ' | Resistance: ' + highLabel + '<br><br>' +
-      '<b>Prediction:</b> ' + (prediction ? '📈 BUY' : '📉 SELL') + '<br>' +
+      '<b>Prediction:</b> ' + (buy ? '📈 BUY' : '📉 SELL') + '<br>' +
       'Expected move: <b>' + predictedMove + '</b><br>' +
       'Confidence: <b>' + confidence + '%</b><br><br>' +
-      reasons[0];
+      reasons.join('<br>');
   }
 
   if (lower.includes('record') || lower.includes('rank') || lower.includes('stats')) {
