@@ -223,6 +223,16 @@
   </div>
 </div>
 
+<div class="payment-overlay" id="paymentOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.25);border-radius:18px;padding:2rem;width:90%;max-width:400px;position:relative;">
+    <button onclick="closePayment()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:1.5rem;cursor:pointer;">&times;</button>
+    <h2 style="margin-bottom:1rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Pay $5 for AI Sports Picks</h2>
+    <div id="card-mount" style="margin-bottom:1rem;"></div>
+    <div id="payError2" style="color:#c02828;font-size:0.85rem;margin-bottom:12px;min-height:1.2em;"></div>
+    <button id="paySubmitBtn" onclick="submitPayment()" style="width:100%;padding:14px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Pay $5</button>
+  </div>
+</div>
+
 <script src="https://js.stripe.com/v3/"></script>
 <script type="module" src="auth.js"></script>
 <script>
@@ -237,7 +247,6 @@ function showChat() {
 }
 
 async function startPayment() {
-  const btn = document.getElementById('payBtn');
   const err = document.getElementById('payError');
   err.textContent = '';
 
@@ -253,32 +262,7 @@ async function startPayment() {
     return;
   }
 
-  btn.disabled = true; btn.textContent = 'Processing...';
-
-  try {
-    const res = await fetch('/api/create-payment-intent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: 500, type: 'ai-picks' })
-    });
-    const { clientSecret, error } = await res.json();
-    if (error) { err.textContent = error; btn.disabled = false; btn.textContent = 'Unlock Access'; return; }
-
-    const { error: confirmError } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: elements.getElement('card'),
-      }
-    });
-
-    if (confirmError) { err.textContent = confirmError.message; btn.disabled = false; btn.textContent = 'Unlock Access'; }
-    else {
-      localStorage.setItem('aiPicksPaid', 'true');
-      const purchased = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
-      purchased.push({ id: 'ai-picks', name: 'AI Sports Picks', quantity: 1 });
-      localStorage.setItem('purchasedItems', JSON.stringify(purchased));
-      showChat();
-    }
-  } catch (e) { err.textContent = 'Payment failed. Try again.'; btn.disabled = false; btn.textContent = 'Unlock Access'; }
+  openPayment();
 }
 
 const elements = stripe.elements();
@@ -288,7 +272,49 @@ const card = elements.create('card', {
     invalid: { color: '#c02828' }
   }
 });
-setTimeout(() => { const mount = document.getElementById('payBtn'); if (mount) card.mount('#payBtn'); }, 500);
+
+function openPayment() {
+  const overlay = document.getElementById('paymentOverlay');
+  overlay.style.display = 'flex';
+  const mountPoint = document.getElementById('card-mount');
+  if (mountPoint && !mountPoint.hasChildNodes()) {
+    card.mount('#card-mount');
+  }
+}
+
+function closePayment() {
+  document.getElementById('paymentOverlay').style.display = 'none';
+}
+
+async function submitPayment() {
+  const btn = document.getElementById('paySubmitBtn');
+  const err = document.getElementById('payError2');
+  btn.disabled = true; btn.textContent = 'Processing...'; err.textContent = '';
+
+  const res = await fetch('/api/create-payment-intent', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount: 500, type: 'ai-picks' })
+  });
+  const { clientSecret, error } = await res.json();
+  if (error) { err.textContent = error; btn.disabled = false; btn.textContent = 'Pay $5'; return; }
+
+  const { error: confirmError } = await stripe.confirmCardPayment(clientSecret, {
+    payment_method: { card }
+  });
+
+  if (confirmError) {
+    err.textContent = confirmError.message;
+    btn.disabled = false; btn.textContent = 'Pay $5';
+  } else {
+    localStorage.setItem('aiPicksPaid', 'true');
+    const purchased = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+    purchased.push({ id: 'ai-picks', name: 'AI Sports Picks', quantity: 1 });
+    localStorage.setItem('purchasedItems', JSON.stringify(purchased));
+    closePayment();
+    showChat();
+  }
+}
 
 function sendMsg() {
   const input = document.getElementById('chatInput');
