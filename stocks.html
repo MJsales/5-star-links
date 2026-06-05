@@ -786,7 +786,8 @@ function generatePrediction(input) {
       '<div style="display:inline-block;padding:10px 20px;border-radius:10px;font-size:1.15rem;font-weight:800;margin:8px 0;background:' + verdictColor + '15;color:' + verdictColor + ';border:1px solid ' + verdictColor + '44;">' + verdict + '</div><br>' +
       '<div style="font-size:0.9rem;color:#ccc;margin-top:6px;">' + timing + '</div>' +
       '<div style="font-size:0.85rem;color:#888;margin-top:8px;">Confidence: ' + confidence + '%</div><br>' +
-      reasons.join('<br>');
+      reasons.join('<br>') +
+      '<br><div style="margin-top:8px;padding:8px 12px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.15);border-radius:8px;font-size:0.8rem;color:#a78bfa;">📊 Chart updated for <b>' + d.symbol + '</b> — scroll up to see price action, support/resistance lines, and RSI overlay</div>';
   }
 
   if (lower.includes('record') || lower.includes('rank') || lower.includes('stats')) {

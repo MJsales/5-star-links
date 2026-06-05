@@ -8,6 +8,7 @@ const products = {
   'bape-hoodie': { name: 'Bape Hoodie', price: 500 },
   'ai-picks': { name: 'AI Sports Picks', price: 500 },
   'ai-stocks': { name: 'AI Stock Picks', price: 500 },
+  'ai-video': { name: 'AI Video Splicer', price: 500 },
 };
 
 module.exports = async (req, res) => {

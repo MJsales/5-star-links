@@ -499,6 +499,27 @@ const products = [
       </circle>
     </svg>`
   },
+  {
+    id: 'ai-video', name: 'AI Video Splicer', price: 5, desc: 'Turn YouTube videos into viral TikTok series',
+    hasColors: false, svg: () => `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#ef4444" stroke-width="3"/>
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0.3"/>
+      <text x="100" y="78" text-anchor="middle" fill="#ef4444" font-size="20" font-weight="900" font-family="Inter,sans-serif">VIDEO</text>
+      <text x="100" y="100" text-anchor="middle" fill="#fff" font-size="18" font-weight="900" font-family="Inter,sans-serif">SPLICE</text>
+      <text x="100" y="122" text-anchor="middle" fill="#a855f7" font-size="16" font-weight="900" font-family="Inter,sans-serif">TikTok</text>
+      <rect x="75" y="130" width="50" height="30" rx="4" fill="none" stroke="#ef4444" stroke-width="2"/>
+      <polygon points="92,138 92,152 108,145" fill="#ef4444"/>
+      <rect x="50" y="55" width="16" height="10" rx="2" fill="#ef4444" opacity="0.6"/>
+      <text x="58" y="63" text-anchor="middle" fill="#fff" font-size="7" font-weight="700">P1</text>
+      <rect x="72" y="55" width="16" height="10" rx="2" fill="#f59e0b" opacity="0.6"/>
+      <text x="80" y="63" text-anchor="middle" fill="#fff" font-size="7" font-weight="700">P2</text>
+      <rect x="112" y="55" width="16" height="10" rx="2" fill="#22c55e" opacity="0.6"/>
+      <text x="120" y="63" text-anchor="middle" fill="#fff" font-size="7" font-weight="700">P3</text>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="8 4" opacity="0.5">
+        <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite"/>
+      </circle>
+    </svg>`
+  },
 ];
 
 let selectedColors = {};
@@ -645,6 +666,11 @@ if (!localStorage.getItem('reviewsSeeded')) {
       { stars: 5, text: 'Called the NVDA rally perfectly. Made profits.', name: 'Jason W.', date: '5/30/2026' },
       { stars: 5, text: 'Crypto predictions are on point. BTC call was spot on.', name: 'Ryan M.', date: '5/28/2026' },
       { stars: 4, text: 'Good for quick market insights. RSI signals are useful.', name: 'Alex K.', date: '5/25/2026' }
+    ],
+    'ai-video': [
+      { stars: 5, text: 'Split a 2hr podcast into 6 TikToks. One got 200K views.', name: 'Marcus T.', date: '6/1/2026' },
+      { stars: 5, text: 'The viral scores it gives are accurate. My Part 3 went crazy.', name: 'Sasha L.', date: '5/30/2026' },
+      { stars: 4, text: 'Great for content creators. Saves hours of editing time.', name: 'Jordan P.', date: '5/27/2026' }
     ]
   };
   localStorage.setItem('reviews', JSON.stringify(seeded));
@@ -688,6 +714,9 @@ function render() {
           onclick="selectColor('${p.id}','${c.id}')"></div>`
       ).join('')}</div>` : ''}
       <button class="add-btn" onclick="addToCart('${p.id}')">Add to Cart</button>
+      ${(p.id === 'ai-video') ? `<a href="video.html" style="display:block;text-align:center;margin-top:6px;padding:8px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Try AI Video Splicer</a>` : ''}
+      ${(p.id === 'ai-stocks') ? `<a href="stocks.html" style="display:block;text-align:center;margin-top:6px;padding:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Try AI Stock Picks</a>` : ''}
+      ${(p.id === 'ai-picks') ? `<a href="ai.html" style="display:block;text-align:center;margin-top:6px;padding:8px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Try AI Sports Picks</a>` : ''}
       <button onclick="openReviewModal('${p.id}')" style="margin-top:6px;width:100%;padding:8px;background:rgba(168,85,247,0.1);color:#a855f7;border:1px solid rgba(168,85,247,0.2);border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">Write a Review</button>
       ${renderReviewsHTML(p.id)}
     </div>`;
