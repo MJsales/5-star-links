@@ -178,10 +178,6 @@
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="auth.js"></script>
 <script>
 function sendMsg() {
   const input = document.getElementById('chatInput');
@@ -190,82 +186,89 @@ function sendMsg() {
   input.value = '';
 
   const messages = document.getElementById('chatMessages');
-  messages.innerHTML += `<div class="msg user">${escHtml(text)}</div>`;
+  messages.innerHTML += '<div class="msg user">' + escHtml(text) + '</div>';
   messages.scrollTop = messages.scrollHeight;
 
-  setTimeout(() => {
-    const reply = generatePrediction(text);
-    messages.innerHTML += `<div class="msg ai"><div class="label">AI Sports Bot</div>${reply}</div>`;
+  setTimeout(function() {
+    var reply = generatePrediction(text);
+    messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>' + reply + '</div>';
     messages.scrollTop = messages.scrollHeight;
   }, 800 + Math.random() * 1200);
 }
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-const teams = {
+var teams = {
   nfl: ['Chiefs','Bills','Ravens','49ers','Cowboys','Eagles','Lions','Dolphins','Bengals','Texans','Jets','Browns','Jaguars','Chargers','Broncos','Raiders','Steelers','Colts','Seahawks','Rams','Packers','Vikings','Buccaneers','Saints','Falcons','Panthers','Cardinals','Commanders','Giants','Patriots','Titans'],
   nba: ['Lakers','Celtics','Nuggets','Thunder','Timberwolves','Knicks','Cavaliers','Warriors','Suns','Mavericks','Bucks','76ers','Clippers','Kings','Heat','Pacers','Pelicans','Rockets','Bulls','Hawks','Hornets','Nets','Raptors','Spurs','Blazers','Jazz','Pistons','Wizards','Magic'],
   mlb: ['Yankees','Dodgers','Astros','Braves','Phillies','Rangers','Orioles','Twins','Guardians','Rays','Blue Jays','Mariners','Red Sox','Cardinals','Mets','Brewers','Padres','Diamondbacks','Giants','Cubs','Angels','Tigers','Reds','Royals','Pirates','Marlins','Rockies','Athletics','Nationals','White Sox'],
   nhl: ['Panthers','Oilers','Rangers','Stars','Bruins','Canucks','Avalanche','Jets','Hurricanes','Wild','Knights','Kings','Blues','Flames','Lightning','Maple Leafs','Devils','Capitals','Islanders','Predators','Senators','Sabres','Red Wings','Flyers','Blackhawks','Ducks','Sharks','Coyotes','Blue Jackets','Penguins']
 };
 
-const today = new Date();
+var today = new Date();
 function futureDate(daysAhead) {
-  const d = new Date(today);
+  var d = new Date(today);
   d.setDate(d.getDate() + daysAhead);
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-const scheduledGames = [
-  { sport: 'nfl', home: 'Chiefs', away: 'Bills', date: futureDate(2), confirmed: true },
-  { sport: 'nfl', home: 'Cowboys', away: 'Eagles', date: futureDate(3), confirmed: true },
-  { sport: 'nfl', home: 'Lions', away: '49ers', date: futureDate(4), confirmed: true },
-  { sport: 'nfl', home: 'Ravens', away: 'Bengals', date: futureDate(5), confirmed: true },
-  { sport: 'nfl', home: 'Dolphins', away: 'Jets', date: futureDate(6), confirmed: true },
-  { sport: 'nfl', home: 'Steelers', away: 'Colts', date: futureDate(8), confirmed: true },
-  { sport: 'nfl', home: 'Packers', away: 'Vikings', date: futureDate(9), confirmed: true },
-  { sport: 'nfl', home: 'Buccaneers', away: 'Saints', date: futureDate(10), confirmed: true },
-  { sport: 'nba', home: 'Lakers', away: 'Celtics', date: futureDate(1), confirmed: true },
-  { sport: 'nba', home: 'Warriors', away: 'Nuggets', date: futureDate(2), confirmed: true },
-  { sport: 'nba', home: 'Knicks', away: 'Bucks', date: futureDate(3), confirmed: true },
-  { sport: 'nba', home: 'Thunder', away: 'Mavericks', date: futureDate(4), confirmed: true },
-  { sport: 'nba', home: 'Suns', away: 'Clippers', date: futureDate(5), confirmed: true },
-  { sport: 'nba', home: 'Heat', away: '76ers', date: futureDate(6), confirmed: true },
-  { sport: 'nba', home: 'Kings', away: 'Timberwolves', date: futureDate(7), confirmed: true },
-  { sport: 'nba', home: 'Cavaliers', away: 'Pacers', date: futureDate(8), confirmed: true },
-  { sport: 'mlb', home: 'Yankees', away: 'Red Sox', date: futureDate(1), confirmed: true },
-  { sport: 'mlb', home: 'Dodgers', away: 'Giants', date: futureDate(2), confirmed: true },
-  { sport: 'mlb', home: 'Astros', away: 'Rangers', date: futureDate(3), confirmed: true },
-  { sport: 'mlb', home: 'Braves', away: 'Phillies', date: futureDate(4), confirmed: true },
-  { sport: 'mlb', home: 'Cubs', away: 'Cardinals', date: futureDate(5), confirmed: true },
-  { sport: 'mlb', home: 'Mariners', away: 'Blue Jays', date: futureDate(6), confirmed: true },
-  { sport: 'mlb', home: 'Padres', away: 'Diamondbacks', date: futureDate(7), confirmed: true },
-  { sport: 'mlb', home: 'Mets', away: 'Brewers', date: futureDate(8), confirmed: true },
-  { sport: 'nhl', home: 'Panthers', away: 'Rangers', date: futureDate(1), confirmed: true },
-  { sport: 'nhl', home: 'Oilers', away: 'Stars', date: futureDate(2), confirmed: true },
-  { sport: 'nhl', home: 'Bruins', away: 'Maple Leafs', date: futureDate(3), confirmed: true },
-  { sport: 'nhl', home: 'Avalanche', away: 'Jets', date: futureDate(4), confirmed: true },
-  { sport: 'nhl', home: 'Hurricanes', away: 'Devils', date: futureDate(5), confirmed: true },
-  { sport: 'nhl', home: 'Lightning', away: 'Capitals', date: futureDate(6), confirmed: true },
-  { sport: 'nhl', home: 'Golden Knights', away: 'Kings', date: futureDate(7), confirmed: true },
-  { sport: 'nhl', home: 'Penguins', away: 'Flyers', date: futureDate(9), confirmed: true },
+var scheduledGames = [
+  { sport: 'nfl', home: 'Chiefs', away: 'Bills', date: futureDate(2) },
+  { sport: 'nfl', home: 'Cowboys', away: 'Eagles', date: futureDate(3) },
+  { sport: 'nfl', home: 'Lions', away: '49ers', date: futureDate(4) },
+  { sport: 'nfl', home: 'Ravens', away: 'Bengals', date: futureDate(5) },
+  { sport: 'nfl', home: 'Dolphins', away: 'Jets', date: futureDate(6) },
+  { sport: 'nfl', home: 'Steelers', away: 'Colts', date: futureDate(8) },
+  { sport: 'nfl', home: 'Packers', away: 'Vikings', date: futureDate(9) },
+  { sport: 'nfl', home: 'Buccaneers', away: 'Saints', date: futureDate(10) },
+  { sport: 'nba', home: 'Lakers', away: 'Celtics', date: futureDate(1) },
+  { sport: 'nba', home: 'Warriors', away: 'Nuggets', date: futureDate(2) },
+  { sport: 'nba', home: 'Knicks', away: 'Bucks', date: futureDate(3) },
+  { sport: 'nba', home: 'Thunder', away: 'Mavericks', date: futureDate(4) },
+  { sport: 'nba', home: 'Suns', away: 'Clippers', date: futureDate(5) },
+  { sport: 'nba', home: 'Heat', away: '76ers', date: futureDate(6) },
+  { sport: 'nba', home: 'Kings', away: 'Timberwolves', date: futureDate(7) },
+  { sport: 'nba', home: 'Cavaliers', away: 'Pacers', date: futureDate(8) },
+  { sport: 'mlb', home: 'Yankees', away: 'Red Sox', date: futureDate(1) },
+  { sport: 'mlb', home: 'Dodgers', away: 'Giants', date: futureDate(2) },
+  { sport: 'mlb', home: 'Astros', away: 'Rangers', date: futureDate(3) },
+  { sport: 'mlb', home: 'Braves', away: 'Phillies', date: futureDate(4) },
+  { sport: 'mlb', home: 'Cubs', away: 'Cardinals', date: futureDate(5) },
+  { sport: 'mlb', home: 'Mariners', away: 'Blue Jays', date: futureDate(6) },
+  { sport: 'mlb', home: 'Padres', away: 'Diamondbacks', date: futureDate(7) },
+  { sport: 'mlb', home: 'Mets', away: 'Brewers', date: futureDate(8) },
+  { sport: 'nhl', home: 'Panthers', away: 'Rangers', date: futureDate(1) },
+  { sport: 'nhl', home: 'Oilers', away: 'Stars', date: futureDate(2) },
+  { sport: 'nhl', home: 'Bruins', away: 'Maple Leafs', date: futureDate(3) },
+  { sport: 'nhl', home: 'Avalanche', away: 'Jets', date: futureDate(4) },
+  { sport: 'nhl', home: 'Hurricanes', away: 'Devils', date: futureDate(5) },
+  { sport: 'nhl', home: 'Lightning', away: 'Capitals', date: futureDate(6) },
+  { sport: 'nhl', home: 'Golden Knights', away: 'Kings', date: futureDate(7) },
+  { sport: 'nhl', home: 'Penguins', away: 'Flyers', date: futureDate(9) }
 ];
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-function randInt(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
-function pct() { return randInt(51,89); }
+function seededRandom(seed) {
+  var s = seed;
+  return function() { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+}
+function hashString(str) {
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
+  return Math.abs(hash);
+}
+function pickSeeded(arr, rng) { return arr[Math.floor(rng() * arr.length)]; }
 
 function findGameByTeams(input) {
-  const lower = input.toLowerCase();
-  return scheduledGames.find(g => {
-    const home = g.home.toLowerCase();
-    const away = g.away.toLowerCase();
-    return lower.includes(home) && lower.includes(away) || lower.includes(away) && lower.includes(home);
+  var lower = input.toLowerCase();
+  return scheduledGames.find(function(g) {
+    return lower.includes(g.home.toLowerCase()) && lower.includes(g.away.toLowerCase()) ||
+           lower.includes(g.away.toLowerCase()) && lower.includes(g.home.toLowerCase());
   });
 }
 
 function findSportFromInput(input) {
-  const lower = input.toLowerCase();
+  var lower = input.toLowerCase();
   if (lower.match(/\b(nfl|football)\b/)) return 'nfl';
   if (lower.match(/\b(nba|basketball)\b/)) return 'nba';
   if (lower.match(/\b(mlb|baseball)\b/)) return 'mlb';
@@ -273,104 +276,57 @@ function findSportFromInput(input) {
   return null;
 }
 
-function getGamesBySport(sport) {
-  return scheduledGames.filter(g => g.sport === sport);
-}
-
-function seededRandom(seed) {
-  let s = seed;
-  return function() {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
-
-function hashString(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-function pickSeeded(arr, rng) {
-  return arr[Math.floor(rng() * arr.length)];
-}
+function getGamesBySport(sport) { return scheduledGames.filter(function(g) { return g.sport === sport; }); }
 
 function generatePrediction(input) {
-  const lower = input.toLowerCase();
-  const seed = hashString(lower + today.toISOString().slice(0, 10));
-  const rng = seededRandom(seed);
+  var lower = input.toLowerCase();
+  var seed = hashString(lower + today.toISOString().slice(0, 10));
+  var rng = seededRandom(seed);
 
-  const greetings = ['hello','hi','hey','sup','yo'];
-  if (greetings.some(g => lower.startsWith(g))) {
-    const upcoming = scheduledGames.slice(0, 5);
-    return `Hey! Here are confirmed upcoming games:<br><br>` +
-      upcoming.map(g => `• ${g.date}: ${g.away} @ ${g.home} (${g.sport.toUpperCase()})`).join('<br>') +
-      `<br><br>Ask me about any of these games and I'll give you my pick!`;
+  if (['hello','hi','hey','sup','yo'].some(function(g) { return lower.startsWith(g); })) {
+    return 'Hey! Here are confirmed upcoming games:<br><br>' +
+      scheduledGames.slice(0, 5).map(function(g) { return '&#8226; ' + g.date + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>') +
+      '<br><br>Ask me about any of these games!';
   }
 
   if (lower.includes('schedule') || lower.includes('upcoming') || lower.includes('what games')) {
-    const sport = findSportFromInput(lower);
+    var sport = findSportFromInput(lower);
     if (sport) {
-      const games = getGamesBySport(sport);
-      if (games.length === 0) return `No confirmed ${sport.toUpperCase()} games on the schedule right now.`;
-      return `📅 <b>Confirmed ${sport.toUpperCase()} Games</b><br><br>` +
-        games.map(g => `${g.date}: ${g.away} @ ${g.home}`).join('<br>');
+      var games = getGamesBySport(sport);
+      return 'Confirmed ' + sport.toUpperCase() + ' Games:<br><br>' + games.map(function(g) { return g.date + ': ' + g.away + ' @ ' + g.home; }).join('<br>');
     }
-    return `📅 <b>All Confirmed Games</b><br><br>` +
-      scheduledGames.map(g => `${g.date}: ${g.away} @ ${g.home} (${g.sport.toUpperCase()})`).join('<br>');
+    return 'All Confirmed Games:<br><br>' + scheduledGames.map(function(g) { return g.date + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>');
   }
 
-  const game = findGameByTeams(input);
+  var game = findGameByTeams(input);
   if (game) {
-    const pickTeam = rng() > 0.5 ? game.home : game.away;
-    const confidence = 51 + Math.floor(rng() * 39);
-    const margins = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal','in extra innings'];
-    const reasons = [
-      'The home crowd advantage and recent form give them the edge.',
-      'Their defense has been stifling lately and I expect that to continue.',
-      'Offensive firepower wins games. They have the better scoring attack.',
-      'Head-to-head history favors them, and I think that trend continues.',
-      'Injuries are stacking up for the other side. This is the spot.',
-      'They are the more experienced team in big moments.',
-      'The momentum from last week carries over here.',
-      'Coaching adjustments will be the difference maker.',
-      'The stats and advanced metrics all point this direction.',
-      'Gut feeling on this one — they show up big tonight.'
-    ];
-    return `<b>${game.away} @ ${game.home}</b> (${game.sport.toUpperCase()})<br>Date: ${game.date} ✅<br><br>` +
-      `My pick: <b>${pickTeam}</b><br>` +
-      `Confidence: <b>${confidence}%</b><br>` +
-      `Predicted margin: ${pickSeeded(margins, rng)}<br><br>` +
-      `${pickSeeded(reasons, rng)}<br><br>` +
-      `<i>Disclaimer: AI-generated predictions for entertainment only. Bet responsibly.</i>`;
+    var pickTeam = rng() > 0.5 ? game.home : game.away;
+    var confidence = 51 + Math.floor(rng() * 39);
+    var margins = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal','in extra innings'];
+    var reasons = ['The home crowd advantage and recent form give them the edge.','Their defense has been stifling lately.','Offensive firepower wins games.','Head-to-head history favors them.','Injuries are stacking up for the other side.','They are the more experienced team.','The momentum carries over.','Coaching adjustments will be the difference.','The stats all point this direction.','Gut feeling — they show up big tonight.'];
+    return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + '<br><br>' +
+      'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins, rng) + '<br><br>' +
+      pickSeeded(reasons, rng) + '<br><br><i>Disclaimer: AI-generated predictions for entertainment only.</i>';
   }
 
-  const sport = findSportFromInput(lower);
-  if (sport) {
-    const games = getGamesBySport(sport);
-    if (games.length === 0) return `No confirmed ${sport.toUpperCase()} games on the schedule right now.`;
-    const game = pickSeeded(games, rng);
-    const pickTeam = rng() > 0.5 ? game.home : game.away;
-    return `Here's the next confirmed ${sport.toUpperCase()} game:<br><br>` +
-      `<b>${game.away} @ ${game.home}</b><br>Date: ${game.date} ✅<br><br>` +
-      `My pick: <b>${pickTeam}</b><br>` +
-      `Confidence: <b>${51 + Math.floor(rng() * 39)}%</b><br><br>` +
-      `<i>Disclaimer: AI-generated predictions for entertainment only.</i>`;
+  var sport2 = findSportFromInput(lower);
+  if (sport2) {
+    var games2 = getGamesBySport(sport2);
+    var game2 = pickSeeded(games2, rng);
+    var pickTeam2 = rng() > 0.5 ? game2.home : game2.away;
+    return '<b>' + game2.away + ' @ ' + game2.home + '</b><br>Date: ' + game2.date + '<br><br>' +
+      'My pick: <b>' + pickTeam2 + '</b><br>Confidence: <b>' + (51 + Math.floor(rng() * 39)) + '%</b><br><br>' +
+      '<i>Disclaimer: AI-generated predictions for entertainment only.</i>';
   }
 
-  const game = pickSeeded(scheduledGames, rng);
-  const pickTeam = rng() > 0.5 ? game.home : game.away;
-  return `I only predict confirmed upcoming games. Here's what's scheduled:<br><br>` +
-    scheduledGames.slice(0, 6).map(g => `• ${g.date}: ${g.away} @ ${g.home} (${g.sport.toUpperCase()})`).join('<br>') +
-    `<br><br>Ask me about any of these matchups!<br><br>` +
-    `<i>Disclaimer: AI-generated predictions for entertainment only.</i>`;
+  var game3 = pickSeeded(scheduledGames, rng);
+  var pickTeam3 = rng() > 0.5 ? game3.home : game3.away;
+  return 'I only predict confirmed upcoming games:<br><br>' +
+    scheduledGames.slice(0, 6).map(function(g) { return '&#8226; ' + g.date + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>') +
+    '<br><br>Ask me about any of these matchups!';
 }
 
-let authMode = 'signin';
+var authMode = 'signin';
 function toggleAuthMode(e) {
   e.preventDefault();
   authMode = authMode === 'signin' ? 'signup' : 'signin';
@@ -383,10 +339,10 @@ function toggleAuthMode(e) {
 }
 
 async function handleAuthSubmit() {
-  const name = document.getElementById('authName').value.trim();
-  const email = document.getElementById('authEmail').value.trim();
-  const pass = document.getElementById('authPass').value;
-  const err = document.getElementById('authError');
+  var name = document.getElementById('authName').value.trim();
+  var email = document.getElementById('authEmail').value.trim();
+  var pass = document.getElementById('authPass').value;
+  var err = document.getElementById('authError');
   err.textContent = '';
   if (!email || !pass) { err.textContent = 'Fill in all fields'; return; }
   if (authMode === 'signup' && !name) { err.textContent = 'Enter your name'; return; }
@@ -400,5 +356,9 @@ async function handleAuthSubmit() {
   }
 }
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="auth.js"></script>
 </body>
 </html>
