@@ -178,6 +178,9 @@
     <h2>AI Sports Picks</h2>
     <p>Get AI-powered predictions for every major sport. NFL, NBA, MLB, NHL, College Football & more.</p>
     <div class="paywall-price">$5</div>
+    <div style="display:flex;gap:8px;margin-bottom:1rem;">
+      <input type="text" id="promoInput" placeholder="Promo code" style="flex:1;padding:10px 14px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:8px;color:#fff;font-size:0.9rem;outline:none;font-family:'Inter',sans-serif;">
+    </div>
     <button class="pay-btn" id="payBtn" onclick="startPayment()">Unlock Access</button>
     <div class="pay-error" id="payError"></div>
   </div>
@@ -236,6 +239,18 @@ async function startPayment() {
   const btn = document.getElementById('payBtn');
   const err = document.getElementById('payError');
   btn.disabled = true; btn.textContent = 'Processing...'; err.textContent = '';
+
+  const promoInput = document.getElementById('promoInput');
+  const promoCode = promoInput ? promoInput.value.trim().toUpperCase() : '';
+  if (promoCode === 'JOHNABBY') {
+    localStorage.setItem('aiPicksPaid', 'true');
+    const purchased = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+    purchased.push({ id: 'ai-picks', name: 'AI Sports Picks', quantity: 1 });
+    localStorage.setItem('purchasedItems', JSON.stringify(purchased));
+    if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
+    showChat();
+    return;
+  }
 
   try {
     const res = await fetch('/api/create-payment-intent', {
