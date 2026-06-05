@@ -185,6 +185,35 @@
   </div>
 </div>
 
+<div style="max-width:700px;margin:0 auto;width:100%;padding:0 1rem 1rem;">
+  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.15);border-radius:16px;padding:1.2rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <div>
+        <h3 style="font-size:1rem;color:#a855f7;font-weight:700;" id="chartTitle">Select an asset</h3>
+        <div style="font-size:0.8rem;color:#555;" id="chartSubtitle">Type a symbol in chat to view chart</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:0.7rem;color:#555;text-transform:uppercase;letter-spacing:1px;">Next scan in</div>
+        <div style="font-size:1.4rem;font-weight:800;color:#a855f7;" id="countdownTimer">1:00</div>
+      </div>
+    </div>
+    <canvas id="priceChart" width="660" height="200" style="width:100%;height:200px;border-radius:8px;background:#050208;"></canvas>
+    <div id="profitTarget" style="margin-top:1rem;display:none;">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:6px;">
+        <span style="color:#555;">Profit Target</span>
+        <span id="targetLabel" style="color:#22c55e;font-weight:700;">+5%</span>
+      </div>
+      <div style="height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden;">
+        <div id="targetBar" style="height:100%;background:linear-gradient(90deg,#22c55e,#86efac);width:0%;border-radius:3px;transition:width 0.5s;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-top:4px;">
+        <span style="color:#555;">Current</span>
+        <span id="targetPercent" style="color:#22c55e;">0%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-modal">
     <button class="auth-close" onclick="authModule.hideAuth()">&times;</button>
@@ -576,6 +605,115 @@ function submitReview() {
 }
 
 renderReviews();
+
+var chartAsset = null;
+var priceHistory = [];
+var countdown = 60;
+
+function updateChart(symbol) {
+  if (!stocksData) return;
+  var all = (stocksData.stocks || []).concat(stocksData.crypto || []);
+  var asset = all.find(function(a) { return a.symbol === symbol; });
+  if (!asset) return;
+  chartAsset = asset;
+  document.getElementById('chartTitle').textContent = asset.symbol + ' — ' + asset.name;
+  document.getElementById('chartSubtitle').textContent = '$' + (asset.price > 1000 ? asset.price.toLocaleString() : asset.price) + ' | ' + (asset.change > 0 ? '+' : '') + asset.change + '%';
+  priceHistory.push(asset.price);
+  if (priceHistory.length > 30) priceHistory.shift();
+  drawChart();
+  updateProfitTarget(asset);
+}
+
+function drawChart() {
+  var canvas = document.getElementById('priceChart');
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  if (priceHistory.length < 2) {
+    ctx.fillStyle = '#333';
+    ctx.font = '14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('Waiting for price data...', w / 2, h / 2);
+    return;
+  }
+  var min = Math.min.apply(null, priceHistory) * 0.998;
+  var max = Math.max.apply(null, priceHistory) * 1.002;
+  var range = max - min || 1;
+  var step = w / (priceHistory.length - 1);
+  var isUp = priceHistory[priceHistory.length - 1] >= priceHistory[0];
+  var color = isUp ? '#22c55e' : '#ef4444';
+  ctx.beginPath();
+  ctx.moveTo(0, h - ((priceHistory[0] - min) / range) * h);
+  for (var i = 1; i < priceHistory.length; i++) {
+    ctx.lineTo(i * step, h - ((priceHistory[i] - min) / range) * h);
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  var grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, isUp ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.lineTo(w, h);
+  ctx.lineTo(0, h);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  var lastY = h - ((priceHistory[priceHistory.length - 1] - min) / range) * h;
+  ctx.beginPath();
+  ctx.arc(w - 2, lastY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.font = 'bold 12px Inter';
+  ctx.textAlign = 'right';
+  var lastPrice = priceHistory[priceHistory.length - 1];
+  ctx.fillText('$' + (lastPrice > 1000 ? lastPrice.toLocaleString() : lastPrice), w - 10, lastY - 10);
+}
+
+function updateProfitTarget(asset) {
+  var el = document.getElementById('profitTarget');
+  el.style.display = 'block';
+  var target = asset.price * 1.05;
+  var current = asset.price;
+  var start = asset.price * 0.95;
+  var progress = ((current - start) / (target - start)) * 100;
+  progress = Math.max(0, Math.min(100, progress));
+  document.getElementById('targetBar').style.width = progress + '%';
+  document.getElementById('targetPercent').textContent = '+' + (progress * 0.1).toFixed(1) + '% to target';
+  if (progress >= 80) {
+    document.getElementById('targetLabel').textContent = '🎯 ALMOST THERE';
+    document.getElementById('targetLabel').style.color = '#22c55e';
+  } else if (progress >= 50) {
+    document.getElementById('targetLabel').textContent = '📈 ON TRACK';
+    document.getElementById('targetLabel').style.color = '#f59e0b';
+  } else {
+    document.getElementById('targetLabel').textContent = '+5% TARGET';
+    document.getElementById('targetLabel').style.color = '#22c55e';
+  }
+}
+
+function tickCountdown() {
+  countdown--;
+  if (countdown <= 0) {
+    countdown = 60;
+    if (chartAsset) updateChart(chartAsset.symbol);
+  }
+  var m = Math.floor(countdown / 60);
+  var s = countdown % 60;
+  document.getElementById('countdownTimer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+}
+setInterval(tickCountdown, 1000);
+
+var origGeneratePrediction = generatePrediction;
+generatePrediction = function(input) {
+  var lower = input.toLowerCase();
+  var all = stocksData ? (stocksData.stocks || []).concat(stocksData.crypto || []) : [];
+  all.forEach(function(a) {
+    if (lower.includes(a.symbol.toLowerCase()) || lower.includes(a.name.toLowerCase())) {
+      updateChart(a.symbol);
+    }
+  });
+  return origGeneratePrediction(input);
+};
 
 var authMode = 'signin';
 function toggleAuthMode(e) {
