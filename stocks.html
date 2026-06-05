@@ -338,7 +338,8 @@
         <option value="RENDER">Render (RENDER)</option>
       </optgroup>
     </select>
-    <input type="text" id="walletAddress" placeholder="Public wallet address" style="width:100%;padding:12px;margin-bottom:14px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;word-break:break-all;" />
+    <div id="walletHint" style="font-size:0.75rem;color:#a855f7;margin-bottom:6px;min-height:1rem;"></div>
+    <input type="text" id="walletAddress" placeholder="Paste any wallet address — auto-detects chain" oninput="autoDetectChain()" style="width:100%;padding:12px;margin-bottom:14px;background:#050208;border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;font-family:'Inter',sans-serif;word-break:break-all;" />
     <button onclick="addWallet()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Link Wallet</button>
   </div>
 </div>
@@ -951,20 +952,19 @@ function savePortfolio(items) {
 var wallets = [];
 
 function getWallets() {
-  if (window.authModule && window.authModule.getCurrentUser() && window._fbDb) {
-    var uid = window.authModule.getCurrentUser().uid;
-    return window._fbDb.collection('users').doc(uid).collection('wallets').get().then(function(snap) {
-      var items = [];
-      snap.forEach(function(doc) { items.push(doc.data()); });
-      if (items.length > 0) {
-        localStorage.setItem('wallets', JSON.stringify(items));
+  var local = JSON.parse(localStorage.getItem('wallets') || '[]');
+  var uid = getWalletUid();
+  return fetch('/api/wallets?uid=' + uid)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var server = data.wallets || [];
+      if (server.length > local.length) {
+        localStorage.setItem('wallets', JSON.stringify(server));
+        return server;
       }
-      return items;
-    }).catch(function() {
-      return JSON.parse(localStorage.getItem('wallets') || '[]');
-    });
-  }
-  return Promise.resolve(JSON.parse(localStorage.getItem('wallets') || '[]'));
+      return local;
+    })
+    .catch(function() { return local; });
 }
 
 function saveWallets(items) {
@@ -982,7 +982,21 @@ function saveWallets(items) {
       return batch.commit();
     }).catch(function(e) { console.error('Wallet save error:', e); });
   }
+  fetch('/api/wallets?uid=' + getWalletUid(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ wallets: items })
+  }).catch(function(e) { console.error('Server wallet save error:', e); });
   renderWallets();
+}
+
+function getWalletUid() {
+  if (window.authModule && window.authModule.getCurrentUser()) {
+    return window.authModule.getCurrentUser().uid;
+  }
+  var id = localStorage.getItem('guestWalletId');
+  if (!id) { id = 'guest_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('guestWalletId', id); }
+  return id;
 }
 
 function openAddWallet() {
@@ -998,17 +1012,46 @@ function closeAddWallet() {
   document.getElementById('addWalletOverlay').style.display = 'none';
 }
 
+function autoDetectChain() {
+  var address = document.getElementById('walletAddress').value.trim();
+  var detected = detectChain(address);
+  var sel = document.getElementById('walletChain');
+  var hint = document.getElementById('walletHint');
+  if (detected) {
+    sel.value = detected;
+    if (hint) hint.textContent = 'Detected: ' + detected;
+  } else {
+    if (hint) hint.textContent = '';
+  }
+}
+
+function detectChain(address) {
+  var a = address.trim();
+  if (/^0x[0-9a-fA-F]{40}$/.test(a)) return 'ETH';
+  if (/^(1|3|bc1)/.test(a) && a.length >= 26 && a.length <= 62) return 'BTC';
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a) && !a.startsWith('0x')) return 'SOL';
+  if (/^D[5-9A-HJ-NP-Za-km-z]/.test(a) && a.length >= 34) return 'DOGE';
+  if (/^r/.test(a) && a.length >= 25 && a.length <= 35) return 'XRP';
+  if (/^addr1/.test(a)) return 'ADA';
+  if (/^T[A-Za-z1-9]{33}$/.test(a)) return 'TRX';
+  if (/\.near$/.test(a)) return 'NEAR';
+  if (/^(bnb|tbnb)/.test(a)) return 'BNB';
+  if (/^ltc/.test(a)) return 'LTC';
+  return null;
+}
+
 function addWallet() {
-  var chain = document.getElementById('walletChain').value;
   var address = document.getElementById('walletAddress').value.trim();
   if (!address) return;
-  var id = chain + '_' + address.slice(0, 8);
-  var exists = wallets.find(function(w) { return w.address === address && w.chain === chain; });
+  var detected = detectChain(address);
+  var chain = detected || document.getElementById('walletChain').value;
+  var exists = wallets.find(function(w) { return w.address === address; });
   if (exists) { showToast('Wallet already linked'); return; }
+  var id = chain + '_' + address.slice(0, 8);
   wallets.push({ id: id, chain: chain, address: address, balance: null, lastChecked: null });
   saveWallets(wallets);
   closeAddWallet();
-  showToast(chain + ' wallet linked!');
+  showToast((detected ? 'Detected ' + chain + ' — ' : '') + chain + ' wallet linked!');
   fetchWalletBalance(address, chain);
 }
 
