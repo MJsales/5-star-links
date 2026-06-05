@@ -298,11 +298,6 @@
 <div class="container">
   <div class="tagline"><span>Everything $5</span></div>
   <div class="grid" id="productGrid"></div>
-  <a href="ai.html" style="display:block;margin-top:2rem;padding:1.5rem;background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.25);border-radius:16px;text-decoration:none;color:#fff;text-align:center;transition:all 0.3s;">
-    <div style="font-size:2rem;margin-bottom:0.5rem;">🤖</div>
-    <div style="font-size:1.3rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;background:linear-gradient(135deg,#fff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">AI Sports Picks</div>
-    <div style="color:#888;margin-top:0.3rem;">AI-powered predictions for every sport — $5</div>
-  </a>
 </div>
 
 <div class="footer">
@@ -427,6 +422,19 @@ const products = [
   {
     id: 'bape-hoodie', name: 'Bape Hoodie', price: 5, desc: 'Black & white camo zip-up with shark teeth',
     hasColors: false, svg: () => bapeHoodieSVG()
+  },
+  {
+    id: 'ai-picks', name: 'AI Sports Picks', price: 5, desc: 'AI-powered predictions for every sport',
+    hasColors: false, svg: () => `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#a855f7" stroke-width="3"/>
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#a855f7" stroke-width="1.5" opacity="0.3"/>
+      <text x="100" y="85" text-anchor="middle" fill="#a855f7" font-size="40" font-weight="900" font-family="Inter,sans-serif">AI</text>
+      <text x="100" y="115" text-anchor="middle" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">SPORTS</text>
+      <text x="100" y="135" text-anchor="middle" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">PICKS</text>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="8 4" opacity="0.5">
+        <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite"/>
+      </circle>
+    </svg>`
   },
 ];
 
