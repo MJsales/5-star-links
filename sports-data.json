@@ -1,4 +1,18 @@
 {
+  "scheduledGames": [
+    { "id": "g1", "sport": "mlb", "home": "Cubs", "away": "Giants", "date": "2026-06-05", "time": "2:20 PM ET", "venue": "Wrigley Field" },
+    { "id": "g2", "sport": "mlb", "home": "Yankees", "away": "Dodgers", "date": "2026-06-05", "time": "7:05 PM ET", "venue": "Yankee Stadium" },
+    { "id": "g3", "sport": "mlb", "home": "Braves", "away": "Phillies", "date": "2026-06-05", "time": "7:20 PM ET", "venue": "Truist Park" },
+    { "id": "g4", "sport": "mlb", "home": "Astros", "away": "Rangers", "date": "2026-06-05", "time": "8:10 PM ET", "venue": "Minute Maid Park" },
+    { "id": "g5", "sport": "mlb", "home": "Padres", "away": "Diamondbacks", "date": "2026-06-05", "time": "9:40 PM ET", "venue": "Petco Park" },
+    { "id": "g6", "sport": "mlb", "home": "Mets", "away": "Cardinals", "date": "2026-06-06", "time": "7:10 PM ET", "venue": "Citi Field" },
+    { "id": "g7", "sport": "mlb", "home": "Red Sox", "away": "Orioles", "date": "2026-06-06", "time": "7:10 PM ET", "venue": "Fenway Park" },
+    { "id": "g8", "sport": "nba", "home": "Celtics", "away": "Thunder", "date": "2026-06-06", "time": "8:30 PM ET", "venue": "TD Garden" },
+    { "id": "g9", "sport": "nhl", "home": "Panthers", "away": "Oilers", "date": "2026-06-06", "time": "8:00 PM ET", "venue": "Amerant Bank Arena" },
+    { "id": "g10", "sport": "mlb", "home": "Brewers", "away": "Twins", "date": "2026-06-07", "time": "2:10 PM ET", "venue": "American Family Field" },
+    { "id": "g11", "sport": "mlb", "home": "Royals", "away": "Guardians", "date": "2026-06-07", "time": "2:10 PM ET", "venue": "Kauffman Stadium" },
+    { "id": "g12", "sport": "mlb", "home": "Mariners", "away": "Blue Jays", "date": "2026-06-07", "time": "4:10 PM ET", "venue": "T-Mobile Park" }
+  ],
   "nfl": {
     "teams": [
       { "name": "Chiefs", "city": "Kansas City", "record": "12-5", "rank": 1, "offense": 9, "defense": 8, "streak": "W4" },
