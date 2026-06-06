@@ -3,7 +3,6 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const YTDLP = 'C:\\Users\\abby\\AppData\\Local\\Microsoft\\WinGet\\Packages\\yt-dlp.yt-dlp_Microsoft.Winget.Source_8wekyb3d8bbwe\\yt-dlp.exe';
 const DOWNLOADS = path.join(os.tmpdir(), '5star-videos');
 if (!fs.existsSync(DOWNLOADS)) fs.mkdirSync(DOWNLOADS, { recursive: true });
 
@@ -16,9 +15,8 @@ function formatSeconds(sec) {
 }
 
 const args = process.argv.slice(2);
-// Usage: node clip-downloader.js <url> <startSec> <endSec> <outputFilename>
 if (args.length < 4) {
-  console.error('Usage: node clip-downloader.js <url> <start> <end> <filename>');
+  console.error('Usage: node clip-downloader.js <url> <startSec> <endSec> <outputFilename>');
   process.exit(1);
 }
 
@@ -31,7 +29,7 @@ const startTime = formatSeconds(startSec);
 const endTime = formatSeconds(endSec);
 
 try {
-  execFileSync(YTDLP, [
+  execFileSync('yt-dlp', [
     '--extractor-args', 'youtube:player_client=android',
     '--download-sections', `*${startTime}-${endTime}`,
     '-f', 'best[ext=mp4]',

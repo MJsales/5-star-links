@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('.'));
 
-const PORT = 4242;
+const PORT = process.env.PORT || 4242;
 const DOWNLOADS_DIR = path.join(os.tmpdir(), '5star-videos');
 const DOWNLOADER = path.join(__dirname, 'clip-downloader.js');
 
@@ -134,6 +134,8 @@ app.post('/api/download-all', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+app.get('/health', (req, res) => res.json({ ok: true }));
 
 app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
 process.on('uncaughtException', e => console.error('[FATAL]', e.message));

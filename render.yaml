@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: 5star-downloads
+    runtime: docker
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: STRIPE_SECRET_KEY
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true
