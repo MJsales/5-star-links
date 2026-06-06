@@ -79,6 +79,10 @@
     <a href="index.html" class="back-btn">&larr; Shop</a>
   </div>
 </div>
+<div id="serverNotice" style="display:none;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(185,28,28,0.1));border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 18px;margin:12px auto;max-width:700px;text-align:center;">
+  <div style="font-weight:700;color:#ef4444;margin-bottom:4px;">⚠ Downloads require the local server</div>
+  <div style="font-size:0.85rem;color:#ccc;">Run <code style="background:#1a1028;padding:2px 6px;border-radius:4px;">node server.js</code> in your project folder, then open <a href="http://localhost:4242/video.html" style="color:#a855f7;">http://localhost:4242/video.html</a></div>
+</div>
 
 <div class="chat-container">
   <div class="chat-messages" id="chatMessages">
@@ -124,6 +128,11 @@
 <script>
 var today = new Date();
 var todayStr = today.toISOString().slice(0, 10);
+
+// Show notice if not on localhost
+if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  document.getElementById('serverNotice').style.display = 'block';
+}
 
 // Download state
 var currentVideoUrl = '';
@@ -694,8 +703,12 @@ async function downloadClip(idx) {
     });
 
     if (!res.ok) {
-      var errData = await res.json().catch(function() { return { error: 'Server error' }; });
-      throw new Error(errData.error || 'Download failed');
+      var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      var errData = await res.json().catch(function() { return null; });
+      if (!isLocal) {
+        throw new Error('Downloads require the local server. Run node server.js and open http://localhost:4242/video.html');
+      }
+      throw new Error(errData ? errData.error : 'Server returned error ' + res.status);
     }
 
     var data = await res.json();

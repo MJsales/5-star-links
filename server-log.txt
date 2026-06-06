@@ -1,0 +1,4 @@
+◇ injected env (2) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Server: http://localhost:4242
+[DL] 0:00-0:05 => test_dQw4w9WgXcQ_0-5.mp4
+[DL] OK: 315845 bytes
