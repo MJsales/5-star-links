@@ -1,12 +1,4 @@
 require('dotenv').config();
-
-const wingetPkgs = 'C:\\Users\\abby\\AppData\\Local\\Microsoft\\WinGet\\Packages';
-process.env.PATH = [
-  wingetPkgs + '\\yt-dlp.yt-dlp_Microsoft.Winget.Source_8wekyb3d8bbwe',
-  wingetPkgs + '\\yt-dlp.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-N-124716-g054dffd133-win64-gpl\\bin',
-  process.env.PATH
-].join(';');
-
 const express = require('express');
 const cors = require('cors');
 const { execFile } = require('child_process');
@@ -21,6 +13,8 @@ app.use(express.static('.'));
 
 const PORT = 4242;
 const DOWNLOADS_DIR = path.join(os.tmpdir(), '5star-videos');
+const DOWNLOADER = path.join(__dirname, 'clip-downloader.js');
+
 if (!fs.existsSync(DOWNLOADS_DIR)) fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
 
 setInterval(() => {
@@ -49,8 +43,8 @@ app.post('/create-payment-intent', async (req, res) => {
     items.forEach(item => { const p = products[item.id]; if (p) totalAmount += p.price * (item.quantity || 1); });
     if (totalAmount <= 0) return res.status(400).json({ error: 'Invalid amount' });
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const paymentIntent = await stripe.paymentIntents.create({ amount: totalAmount, currency: 'usd', automatic_payment_methods: { enabled: true } });
-    res.json({ clientSecret: paymentIntent.client_secret });
+    const pi = await stripe.paymentIntents.create({ amount: totalAmount, currency: 'usd', automatic_payment_methods: { enabled: true } });
+    res.json({ clientSecret: pi.client_secret });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
@@ -62,20 +56,18 @@ function formatSeconds(sec) {
   return `${m}:${String(s).padStart(2,'0')}`;
 }
 
-const YTDLP_PATH = 'C:\\Users\\abby\\AppData\\Local\\Microsoft\\WinGet\\Packages\\yt-dlp.yt-dlp_Microsoft.Winget.Source_8wekyb3d8bbwe\\yt-dlp.exe';
-
-const YTDLP = 'C:\\Users\\abby\\AppData\\Local\\Microsoft\\WinGet\\Packages\\yt-dlp.yt-dlp_Microsoft.Winget.Source_8wekyb3d8bbwe\\yt-dlp.exe';
-
-function runYtdlp(args, timeoutMs) {
+function runDownloader(url, startSec, endSec, filename) {
   return new Promise((resolve, reject) => {
-    let done = false;
-    const timer = setTimeout(() => { if (!done) { done = true; reject(new Error('yt-dlp timed out')); } }, timeoutMs);
-    execFile(YTDLP, args, { maxBuffer: 50*1024*1024, timeout: timeoutMs }, (err, stdout, stderr) => {
-      clearTimeout(timer);
-      if (done) return;
-      done = true;
-      if (err) reject(new Error(err.message.slice(0, 500)));
-      else resolve({ stdout, stderr });
+    execFile('node', [DOWNLOADER, url, String(startSec), String(endSec), filename], {
+      timeout: 120000,
+      maxBuffer: 10 * 1024 * 1024
+    }, (err, stdout, stderr) => {
+      if (err) {
+        try { return reject(JSON.parse(stderr.trim())); } catch(e) {}
+        return reject({ error: err.message });
+      }
+      try { resolve(JSON.parse(stdout.trim())); }
+      catch(e) { reject({ error: 'Bad response from downloader' }); }
     });
   });
 }
@@ -90,35 +82,15 @@ app.post('/api/download-clip', async (req, res) => {
 
     const safeTitle = (title || 'clip').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
     const filename = `${safeTitle}_${videoId}_${Math.floor(start)}-${Math.floor(end)}.mp4`;
-    const outputPath = path.join(DOWNLOADS_DIR, filename);
 
-    const startTime = typeof start === 'number' ? formatSeconds(start) : start;
-    const endTime = typeof end === 'number' ? formatSeconds(end) : end;
+    console.log(`[DL] ${formatSeconds(start)}-${formatSeconds(end)} => ${filename}`);
+    const result = await runDownloader(url, start, end, filename);
+    console.log(`[DL] OK: ${result.size} bytes`);
 
-    console.log(`[DL] ${startTime}-${endTime} => ${filename}`);
-
-    await runYtdlp([
-      '--extractor-args', 'youtube:player_client=android',
-      '--download-sections', `*${startTime}-${endTime}`,
-      '-f', 'best[ext=mp4]',
-      '--force-keyframes-at-cuts',
-      '--no-playlist', '--no-warnings',
-      '-o', outputPath,
-      url
-    ], 120000);
-
-    if (!fs.existsSync(outputPath)) {
-      const partFile = outputPath + '.part';
-      if (fs.existsSync(partFile)) fs.renameSync(partFile, outputPath);
-      else return res.status(500).json({ error: 'Download failed' });
-    }
-
-    const stat = fs.statSync(outputPath);
-    console.log(`[DL] OK: ${stat.size} bytes`);
-    res.json({ success: true, filename, size: stat.size, downloadUrl: `/api/serve-clip/${encodeURIComponent(filename)}` });
+    res.json({ success: true, filename, size: result.size, downloadUrl: `/api/serve-clip/${encodeURIComponent(filename)}` });
   } catch (error) {
-    console.error('[DL] Error:', error.message);
-    res.status(500).json({ error: error.message });
+    console.error('[DL] Error:', error.error || error.message || error);
+    res.status(500).json({ error: error.error || error.message || 'Download failed' });
   }
 });
 
@@ -150,29 +122,11 @@ app.post('/api/download-all', async (req, res) => {
     for (let i = 0; i < clips.length; i++) {
       const clip = clips[i];
       const filename = `${safeTitle}_part${i + 1}_${videoId}.mp4`;
-      const outputPath = path.join(DOWNLOADS_DIR, filename);
-      const startTime = typeof clip.start === 'number' ? formatSeconds(clip.start) : clip.start;
-      const endTime = typeof clip.end === 'number' ? formatSeconds(clip.end) : clip.end;
-
       try {
-        await runYtdlp([
-          '--extractor-args', 'youtube:player_client=android',
-          '--download-sections', `*${startTime}-${endTime}`,
-          '-f', 'best[ext=mp4]',
-          '--force-keyframes-at-cuts',
-          '--no-playlist', '--no-warnings',
-          '-o', outputPath,
-          url
-        ], 120000);
-
-        if (fs.existsSync(outputPath)) {
-          const stat = fs.statSync(outputPath);
-          results.push({ part: i + 1, filename, size: stat.size, downloadUrl: `/api/serve-clip/${encodeURIComponent(filename)}` });
-        } else {
-          results.push({ part: i + 1, error: 'File not created' });
-        }
+        const result = await runDownloader(url, clip.start, clip.end, filename);
+        results.push({ part: i + 1, filename, size: result.size, downloadUrl: `/api/serve-clip/${encodeURIComponent(filename)}` });
       } catch (e) {
-        results.push({ part: i + 1, error: e.message });
+        results.push({ part: i + 1, error: e.error || e.message || 'Failed' });
       }
     }
     res.json({ success: true, clips: results });
