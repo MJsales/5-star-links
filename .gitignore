@@ -6,3 +6,11 @@ package-lock.json
 server-log.txt
 
 .vercel
+5star_clips/  
+*.exe  
+test-yti.js  
+178077*-player-script.js 
+app/5star-splicer.exe  
+app/5star-splicer-mac  
+app/5star-splicer-linux  
+app/5star-splicer.bat 

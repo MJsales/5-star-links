@@ -1,10 +1,6 @@
 {
   "version": 2,
   "functions": {
-    "api/download-clip.js": {
-      "maxDuration": 60,
-      "memory": 1024
-    },
     "api/youtube.js": {
       "maxDuration": 15
     },

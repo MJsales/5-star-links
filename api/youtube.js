@@ -36,6 +36,21 @@ module.exports = async (req, res) => {
       const durMatch = html.match(/"lengthSeconds":"(\d+)"/);
       if (durMatch) duration = parseInt(durMatch[1]);
 
+      if (!duration) {
+        const isoMatch = html.match(/"approxDurationMs":"(\d+)"/);
+        if (isoMatch) duration = Math.round(parseInt(isoMatch[1]) / 1000);
+      }
+
+      if (!duration) {
+        const durMatch2 = html.match(/content="PT(\d+)M(\d+)S"/);
+        if (durMatch2) duration = parseInt(durMatch2[1]) * 60 + parseInt(durMatch2[2]);
+      }
+
+      if (!duration) {
+        const durMatch3 = html.match(/content="PT(\d+)H(\d+)M(\d+)S"/);
+        if (durMatch3) duration = parseInt(durMatch3[1]) * 3600 + parseInt(durMatch3[2]) * 60 + parseInt(durMatch3[3]);
+      }
+
       // Extract description
       const descMatch = html.match(/"shortDescription":"(.*?)(?<!\\)"/);
       if (descMatch) description = descMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').substring(0, 500);
