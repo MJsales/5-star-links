@@ -81,6 +81,14 @@
 </div>
 
 
+<div id="serverNotice" style="display:none;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(185,28,28,0.1));border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 18px;margin:12px auto;max-width:700px;text-align:center;">
+  <div style="font-weight:700;color:#ef4444;margin-bottom:4px;">⚠ Downloads need the local server</div>
+  <div style="font-size:0.85rem;color:#ccc;">YouTube blocks cloud servers from downloading. Run the download server:<br><br>
+  <b style="color:#a855f7;">Windows:</b> Double-click <code style="background:#1a1028;padding:2px 6px;border-radius:4px;">start-server.bat</code><br>
+  <b style="color:#a855f7;">Mac/Linux:</b> Run <code style="background:#1a1028;padding:2px 6px;border-radius:4px;">bash start-server.sh</code><br><br>
+  Then open <a href="http://localhost:4242/video.html" style="color:#a855f7;">http://localhost:4242/video.html</a></div>
+</div>
+
 <div class="chat-container">
   <div class="chat-messages" id="chatMessages">
     <div class="msg ai">
@@ -127,6 +135,9 @@ var today = new Date();
 var todayStr = today.toISOString().slice(0, 10);
 
 var DL_BACKEND = '';
+if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  document.getElementById('serverNotice').style.display = 'block';
+}
 
 // Download state
 var currentVideoUrl = '';
@@ -692,11 +703,7 @@ async function downloadClip(idx) {
 
     if (!res.ok) {
       var errData = await res.json().catch(function() { return null; });
-      var msg = errData ? errData.error : 'Server error ' + res.status;
-      if (msg.includes('bot') || msg.includes('blocking') || msg.includes('later')) {
-        throw new Error('YouTube is blocking server downloads. Try a different video or try again in a minute.');
-      }
-      throw new Error(msg);
+      throw new Error(errData ? errData.error : 'Server error ' + res.status);
     }
 
     var contentType = res.headers.get('Content-Type') || '';
