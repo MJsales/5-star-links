@@ -2,7 +2,6 @@ const ytdl = require('@distube/ytdl-core');
 const ffmpegPath = require('ffmpeg-static');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { execFile } = require('child_process');
 
 const TMP = '/tmp';
@@ -14,6 +13,32 @@ function formatSeconds(sec) {
   const s = Math.floor(sec % 60);
   if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+const CLIENTS = [
+  { name: 'tv_embedded', client: ['tv_embedded'] },
+  { name: 'android', client: ['android'] },
+  { name: 'web', client: ['web'] },
+  { name: 'ios', client: ['ios'] },
+  { name: 'mweb', client: ['mweb'] },
+];
+
+async function getInfoWithFallbacks(url) {
+  for (const { name, client } of CLIENTS) {
+    try {
+      console.log(`[DL] Trying client: ${name}`);
+      const info = await ytdl.getInfo(url, { playerClient: client });
+      const format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'audioandvideo' });
+      if (format.url) {
+        console.log(`[DL] Client ${name} worked: ${format.qualityLabel}`);
+        return { info, format };
+      }
+      console.log(`[DL] Client ${name}: no direct URL, trying next...`);
+    } catch (e) {
+      console.log(`[DL] Client ${name} failed: ${e.message.substring(0, 100)}`);
+    }
+  }
+  throw new Error('YouTube is blocking downloads from this server. Try again later or use a different video.');
 }
 
 module.exports = async (req, res) => {
@@ -41,17 +66,12 @@ module.exports = async (req, res) => {
     tempFile = path.join(TMP, `full_${videoId}_${Date.now()}.mp4`);
     outputFile = path.join(TMP, filename);
 
-    console.log(`[DL] Fetching video info for ${videoId}...`);
+    const { info, format } = await getInfoWithFallbacks(url);
 
-    const info = await ytdl.getInfo(url);
-    const format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'audioandvideo' });
+    console.log(`[DL] Downloading full video (${format.qualityLabel})...`);
 
-    console.log(`[DL] Format: ${format.qualityLabel} (${format.container})`);
-
-    // Download full video to temp file
     const stream = ytdl.downloadFromInfo(info, { format });
     const writeStream = fs.createWriteStream(tempFile);
-
     await new Promise((resolve, reject) => {
       stream.pipe(writeStream);
       stream.on('end', resolve);
@@ -62,11 +82,9 @@ module.exports = async (req, res) => {
     const fullSize = fs.statSync(tempFile).size;
     console.log(`[DL] Full video: ${fullSize} bytes`);
 
-    // Clip with ffmpeg-static
     const startTime = formatSeconds(start);
     const duration = end - start;
-
-    console.log(`[DL] Clipping: start=${startTime}, dur=${duration}s`);
+    console.log(`[DL] Clipping: ${startTime} +${duration}s`);
 
     await new Promise((resolve, reject) => {
       execFile(ffmpegPath, [
@@ -82,7 +100,6 @@ module.exports = async (req, res) => {
       });
     });
 
-    // Clean up temp
     try { fs.unlinkSync(tempFile); } catch(e) {}
     tempFile = null;
 
@@ -91,9 +108,8 @@ module.exports = async (req, res) => {
     }
 
     const clipSize = fs.statSync(outputFile).size;
-    console.log(`[DL] Clip ready: ${filename} (${clipSize} bytes)`);
+    console.log(`[DL] Clip: ${filename} (${clipSize} bytes)`);
 
-    // Read file and send as response
     const fileData = fs.readFileSync(outputFile);
     try { fs.unlinkSync(outputFile); } catch(e) {}
     outputFile = null;
@@ -105,7 +121,6 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('[DL] Error:', error.message || error);
-    // Clean up on error
     if (tempFile) try { fs.unlinkSync(tempFile); } catch(e) {}
     if (outputFile) try { fs.unlinkSync(outputFile); } catch(e) {}
     res.status(500).json({ error: error.message || 'Download failed' });

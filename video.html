@@ -692,7 +692,11 @@ async function downloadClip(idx) {
 
     if (!res.ok) {
       var errData = await res.json().catch(function() { return null; });
-      throw new Error(errData ? errData.error : 'Server error ' + res.status);
+      var msg = errData ? errData.error : 'Server error ' + res.status;
+      if (msg.includes('bot') || msg.includes('blocking') || msg.includes('later')) {
+        throw new Error('YouTube is blocking server downloads. Try a different video or try again in a minute.');
+      }
+      throw new Error(msg);
     }
 
     var contentType = res.headers.get('Content-Type') || '';
