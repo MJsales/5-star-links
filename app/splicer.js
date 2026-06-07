@@ -22,38 +22,29 @@ function checkCommand(cmd) {
 function findTools() {
   const home = process.env.USERPROFILE || '';
   const winGetBase = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
+  let ytDlpPath = null;
+  let ffmpegPath = null;
 
-  // Search for yt-dlp in WinGet packages
   if (fs.existsSync(winGetBase)) {
     for (const dir of fs.readdirSync(winGetBase)) {
-      if (dir.toLowerCase().includes('yt-dlp')) {
+      if (dir.toLowerCase().includes('yt-dlp') && !dir.toLowerCase().includes('ffmpeg')) {
         const sub = path.join(winGetBase, dir);
         for (const f of fs.readdirSync(sub)) {
           if (f.toLowerCase().includes('yt-dlp') && f.endsWith('.exe')) {
             const p = path.join(sub, f);
-            try { execSync('"' + p + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); break; } catch {}
+            try { execSync('"' + p + '" --version', { stdio: 'ignore', timeout: 5000 }); ytDlpPath = p; process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); } catch {}
           }
         }
       }
       if (dir.toLowerCase().includes('ffmpeg')) {
         const sub = path.join(winGetBase, dir);
-        const binDir = path.join(sub, 'bin');
-        if (fs.existsSync(binDir)) {
-          for (const f of fs.readdirSync(binDir)) {
-            if (f.toLowerCase() === 'ffmpeg.exe') {
-              const p = path.join(binDir, f);
-              try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); break; } catch {}
-            }
-          }
-        }
-        // Also check nested build dirs
-        for (const sub2 of fs.readdirSync(sub)) {
-          const binDir2 = path.join(sub, sub2, 'bin');
-          if (fs.existsSync(binDir2)) {
-            for (const f of fs.readdirSync(binDir2)) {
+        for (const sub2 of [sub, ...fs.readdirSync(sub).map(s => path.join(sub, s))]) {
+          const binDir = fs.existsSync(path.join(sub2, 'bin')) ? path.join(sub2, 'bin') : sub2;
+          if (fs.existsSync(binDir)) {
+            for (const f of fs.readdirSync(binDir)) {
               if (f.toLowerCase() === 'ffmpeg.exe') {
-                const p = path.join(binDir2, f);
-                try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); break; } catch {}
+                const p = path.join(binDir, f);
+                try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); ffmpegPath = p; process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); } catch {}
               }
             }
           }
@@ -62,7 +53,13 @@ function findTools() {
     }
   }
 
-  return { ytDlp: checkCommand('yt-dlp'), ffmpeg: checkCommand('ffmpeg') };
+  // Also check D:\0ne\ffmpeg.exe
+  if (!ffmpegPath && fs.existsSync('D:\\0ne\\ffmpeg.exe')) {
+    ffmpegPath = 'D:\\0ne\\ffmpeg.exe';
+    process.env.PATH = 'D:\\0ne;' + (process.env.PATH || '');
+  }
+
+  return { ytDlp: !!ytDlpPath, ffmpeg: !!ffmpegPath, ytDlpPath, ffmpegPath };
 }
 
 function installTool(name, wingetIds) {
