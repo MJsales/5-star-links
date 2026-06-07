@@ -138,11 +138,6 @@ async function main() {
     console.log(`  ✗ Error: ${err.message}`);
     console.log('');
   }
-
-  const rl3 = readline.createInterface({ input: process.stdin, output: process.stdout });
-  await new Promise(resolve => {
-    rl3.question('  Press Enter to exit...', () => { rl3.close(); resolve(); });
-  });
 }
 
 main();

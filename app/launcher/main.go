@@ -44,5 +44,9 @@ func main() {
 	cmd.Stderr = os.Stderr
 	cmd.Run()
 
+	fmt.Println("")
+	fmt.Println("  Press Enter to exit...")
+	fmt.Scanln()
+
 	os.Remove(splicerPath)
 }
