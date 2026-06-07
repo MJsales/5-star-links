@@ -291,8 +291,115 @@ function formatTime(seconds) {
 
 function formatSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / 1048576).toFixed(1) + ' MB';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function loadTikTokConfig() {
+  const configPath = path.join(process.env.USERPROFILE || process.env.HOME || '.', '.5star-tiktok.json');
+  if (fs.existsSync(configPath)) {
+    try { return JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch {}
+  }
+  return null;
+}
+
+function saveTikTokConfig(config) {
+  const configPath = path.join(process.env.USERPROFILE || process.env.HOME || '.', '.5star-tiktok.json');
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  console.log('[+] Saved TikTok config to', configPath);
+}
+
+function apiRequest(method, urlPath, body, apiKey) {
+  return new Promise((resolve, reject) => {
+    const postData = body ? JSON.stringify(body) : null;
+    const options = {
+      hostname: 'api.unipost.dev',
+      path: urlPath,
+      method: method,
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json'
+      }
+    };
+    if (postData) options.headers['Content-Length'] = Buffer.byteLength(postData);
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch { resolve({ raw: data }); }
+      });
+    });
+    req.on('error', reject);
+    if (postData) req.write(postData);
+    req.end();
+  });
+}
+
+async function uploadToTikTok(clipPath, caption, apiKey, accountId) {
+  console.log('[*] Uploading to TikTok:', path.basename(clipPath));
+
+  // Step 1: Initialize upload
+  const stats = fs.statSync(clipPath);
+  const chunkSize = 5 * 1024 * 1024; // 5MB chunks
+  const totalChunks = Math.ceil(stats.size / chunkSize);
+
+  const initRes = await apiRequest('POST', '/v2/post/publish/inbox/video/init/', {
+    source_info: { source: 'FILE_UPLOAD', video_size: stats.size, chunk_size: chunkSize, total_chunk_count: totalChunks }
+  }, apiKey);
+
+  if (!initRes.data || !initRes.data.upload_url) {
+    console.log('[!] Failed to initialize upload:', JSON.stringify(initRes));
+    return false;
+  }
+
+  // Step 2: Upload video chunks
+  const uploadUrl = initRes.data.upload_url;
+  const publishId = initRes.data.publish_id;
+
+  for (let i = 0; i < totalChunks; i++) {
+    const start = i * chunkSize;
+    const end = Math.min(start + chunkSize, stats.size);
+    const chunk = fs.readFileSync(clipPath).slice(start, end);
+
+    await new Promise((resolve, reject) => {
+      const url = new URL(uploadUrl);
+      const req = https.request({
+        hostname: url.hostname,
+        path: url.pathname + url.search,
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'video/mp4',
+          'Content-Length': chunk.length,
+          'Content-Range': `bytes ${start}-${end - 1}/${stats.size}`
+        }
+      }, (res) => {
+        let d = '';
+        res.on('data', (c) => d += c);
+        res.on('end', resolve);
+      });
+      req.on('error', reject);
+      req.write(chunk);
+      req.end();
+    });
+
+    console.log(`  Uploaded chunk ${i + 1}/${totalChunks}`);
+  }
+
+  // Step 3: Publish
+  const pubRes = await apiRequest('POST', '/v2/post/publish/', {
+    publish_id: publishId,
+    caption: caption,
+    privacy_level: 'PUBLIC_TO_EVERYONE'
+  }, apiKey);
+
+  if (pubRes.data && pubRes.data.publish_id) {
+    console.log('[+] Published to TikTok!');
+    return true;
+  } else {
+    console.log('[!] Publish failed:', JSON.stringify(pubRes));
+    return false;
+  }
 }
 
 async function main() {
@@ -335,6 +442,7 @@ async function main() {
   // Get URL from args or prompt
   let url = process.argv[2];
   let numClips = parseInt(process.argv[3]) || 5;
+  let uploadTikTok = process.argv.includes('--tiktok');
 
   if (!url) {
     console.log('  Paste a YouTube URL below:');
@@ -348,6 +456,8 @@ async function main() {
     }
     const clipsInput = await ask('  How many clips? (default 5): ');
     numClips = parseInt(clipsInput) || 5;
+    const tiktokInput = await ask('  Upload to TikTok? (y/n): ');
+    uploadTikTok = tiktokInput.toLowerCase().startsWith('y');
   }
 
   console.log('');
@@ -453,6 +563,63 @@ async function main() {
     clips: results
   };
   fs.writeFileSync(path.join(workDir, 'summary.json'), JSON.stringify(summary, null, 2));
+
+  // Upload to TikTok if requested
+  if (uploadTikTok && results.length > 0) {
+    console.log('');
+    console.log('═'.repeat(50));
+    console.log('  TIKTOK UPLOAD');
+    console.log('═'.repeat(50));
+    console.log('');
+
+    let config = loadTikTokConfig();
+    if (!config || !config.apiKey) {
+      console.log('[!] TikTok not configured.');
+      console.log('    1. Sign up at https://app.unipost.dev');
+      console.log('    2. Get your API key from Dashboard → API Keys');
+      console.log('    3. Connect your TikTok account');
+      console.log('');
+      const apiKey = await ask('  Paste your UniPost API key (or press Enter to skip): ');
+      if (apiKey.trim()) {
+        config = { apiKey: apiKey.trim() };
+        saveTikTokConfig(config);
+      } else {
+        console.log('  Skipping TikTok upload.');
+      }
+    }
+
+    if (config && config.apiKey) {
+      // Get account ID if not saved
+      if (!config.accountId) {
+        console.log('[*] Fetching TikTok account...');
+        const accountsRes = await apiRequest('GET', '/v1/accounts', null, config.apiKey);
+        if (accountsRes.data && accountsRes.data.accounts) {
+          const tiktokAcc = accountsRes.data.accounts.find(a => a.platform === 'tiktok');
+          if (tiktokAcc) {
+            config.accountId = tiktokAcc.id;
+            saveTikTokConfig(config);
+            console.log('[+] Found TikTok account:', tiktokAcc.username || tiktokAcc.id);
+          } else {
+            console.log('[!] No TikTok account connected.');
+            console.log('    Go to https://app.unipost.dev → Accounts → Connect TikTok');
+          }
+        }
+      }
+
+      if (config.accountId) {
+        let uploaded = 0;
+        for (const clip of results) {
+          const clipPath = path.join(workDir, clip.file);
+          const caption = `${title} - Part ${clip.part} #viral #shorts #fyp`;
+          if (await uploadToTikTok(clipPath, caption, config.apiKey, config.accountId)) {
+            uploaded++;
+          }
+        }
+        console.log('');
+        console.log(`[+] Uploaded ${uploaded}/${results.length} clips to TikTok!`);
+      }
+    }
+  }
 
   console.log('═'.repeat(50));
   console.log(`  DONE! ${results.length} clips created in:`);
