@@ -240,9 +240,26 @@ function fetchOdds(sport) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (Array.isArray(data)) {
+        var sportMap = { 'americanfootball_nfl': 'nfl', 'basketball_nba': 'nba', 'baseball_mlb': 'mlb', 'icehockey_nhl': 'nhl' };
         data.forEach(function(game) {
           var key = (game.home_team + ' vs ' + game.away_team).toLowerCase();
           liveOdds[key] = game;
+          // Add to scheduledGames if not already there
+          var exists = scheduledGames.find(function(g) {
+            return g.home === game.home_team && g.away === game.away_team;
+          });
+          if (!exists && game.commence_time) {
+            var dt = new Date(game.commence_time);
+            scheduledGames.push({
+              sport: sportMap[game.sport_key] || 'nfl',
+              home: game.home_team,
+              away: game.away_team,
+              date: dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+              time: dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
+              venue: 'TBD',
+              liveOdds: game
+            });
+          }
         });
       }
     })
@@ -305,6 +322,7 @@ function findGameByTeams(input) {
         home: game.home_team,
         away: game.away_team,
         date: game.commence_time ? new Date(game.commence_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'TBD',
+        time: game.commence_time ? new Date(game.commence_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : 'TBD',
         liveOdds: game
       };
     }
@@ -378,7 +396,7 @@ function generatePrediction(input) {
 
   if (['hello','hi','hey','sup','yo'].some(function(g) { return lower.startsWith(g); })) {
     return 'Hey! Here are confirmed upcoming games:<br><br>' +
-      scheduledGames.slice(0, 5).map(function(g) { return '&#8226; ' + g.date + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>') +
+      scheduledGames.slice(0, 5).map(function(g) { return '&#8226; ' + g.date + ' ' + g.time + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>') +
       '<br><br>Ask me about any of these games!';
   }
 
@@ -386,9 +404,9 @@ function generatePrediction(input) {
     var sport = findSportFromInput(lower);
     if (sport) {
       var games = getGamesBySport(sport);
-      return 'Confirmed ' + sport.toUpperCase() + ' Games:<br><br>' + games.map(function(g) { return g.date + ': ' + g.away + ' @ ' + g.home; }).join('<br>');
+      return 'Confirmed ' + sport.toUpperCase() + ' Games:<br><br>' + games.map(function(g) { return g.date + ' ' + g.time + ': ' + g.away + ' @ ' + g.home; }).join('<br>');
     }
-    return 'All Confirmed Games:<br><br>' + scheduledGames.map(function(g) { return g.date + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>');
+    return 'All Confirmed Games:<br><br>' + scheduledGames.map(function(g) { return g.date + ' ' + g.time + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>');
   }
 
   if (lower.includes('record') || lower.includes('rank') || lower.includes('stats') || lower.includes('standing')) {
@@ -449,7 +467,7 @@ function generatePrediction(input) {
         if (reasonPool.length === 0) reasonPool.push('This is a toss-up game.');
         reason = pickSeeded(reasonPool, rng);
         var oddsHTML = oddsData ? formatOdds(oddsData) : '';
-        return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + '<br><br>' +
+        return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + ' ' + game.time + '<br><br>' +
           '<b>' + game.home + ':</b> ' + (t1Data.record || '') + ' Rank #' + t1Data.rank + ' | Off: ' + t1Data.offense + '/10 | Def: ' + t1Data.defense + '/10<br>' +
           '<b>' + game.away + ':</b> ' + (t2Data.record || '') + ' Rank #' + t2Data.rank + ' | Off: ' + t2Data.offense + '/10 | Def: ' + t2Data.defense + '/10<br><br>' +
           'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins, rng) +
@@ -460,7 +478,7 @@ function generatePrediction(input) {
     confidence = 51 + Math.floor(rng() * 39);
     var margins2 = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal'];
     var oddsHTML2 = oddsData ? formatOdds(oddsData) : '';
-    return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + '<br><br>' +
+    return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + ' ' + game.time + '<br><br>' +
       'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins2, rng) + oddsHTML2;
   }
 
@@ -476,7 +494,7 @@ function generatePrediction(input) {
   var game3 = pickSeeded(scheduledGames, rng);
   var pickTeam3 = rng() > 0.5 ? game3.home : game3.away;
   return 'I only predict confirmed upcoming games:<br><br>' +
-    scheduledGames.slice(0, 6).map(function(g) { return '&#8226; ' + g.date + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>') +
+    scheduledGames.slice(0, 6).map(function(g) { return '&#8226; ' + g.date + ' ' + g.time + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>') +
     '<br><br>Ask me about any of these matchups!';
 }
 

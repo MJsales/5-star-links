@@ -714,9 +714,7 @@ function render() {
           onclick="selectColor('${p.id}','${c.id}')"></div>`
       ).join('')}</div>` : ''}
       <button class="add-btn" onclick="addToCart('${p.id}')">Add to Cart</button>
-      ${(p.id === 'ai-video') ? `<a href="download.html" style="display:block;text-align:center;margin-top:6px;padding:8px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Download Free Tool</a><a href="video.html" style="display:block;text-align:center;margin-top:4px;padding:8px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Try Online</a>` : ''}
-      ${(p.id === 'ai-stocks') ? `<a href="stocks.html" style="display:block;text-align:center;margin-top:6px;padding:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Try AI Stock Picks</a>` : ''}
-      ${(p.id === 'ai-picks') ? `<a href="ai.html" style="display:block;text-align:center;margin-top:6px;padding:8px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Try AI Sports Picks</a>` : ''}
+      ${(p.id === 'ai-video') ? `<a href="download.html" style="display:block;text-align:center;margin-top:6px;padding:8px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Download Free Tool</a>` : ''}
       <button onclick="openReviewModal('${p.id}')" style="margin-top:6px;width:100%;padding:8px;background:rgba(168,85,247,0.1);color:#a855f7;border:1px solid rgba(168,85,247,0.2);border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">Write a Review</button>
       ${renderReviewsHTML(p.id)}
     </div>`;
