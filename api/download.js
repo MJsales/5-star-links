@@ -1,63 +1,109 @@
 const https = require('https');
-const http = require('http');
+
+function httpsGet(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return httpsGet(res.headers.location).then(resolve).catch(reject);
+      }
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    }).on('error', reject);
+  });
+}
+
+function httpsPost(url, data) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const postData = JSON.stringify(data);
+    const options = {
+      hostname: u.hostname,
+      path: u.pathname,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(postData) }
+    };
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => resolve({ status: res.statusCode, body }));
+    });
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
+  });
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  const fileId = 'A7kvd0';
+  const contentCode = 'A7kvd0';
   const fileName = '5star-launcher.exe';
 
   try {
-    // Step 1: Get gofile content info
-    const tokenRes = await fetch('https://api.gofile.io/createAccount');
-    const tokenData = await tokenRes.json();
+    // Step 1: Create guest account to get token
+    const tokenRes = await httpsPost('https://api.gofile.io/accounts', {});
+    const tokenData = JSON.parse(tokenRes.body);
+    if (tokenData.status !== 'ok') {
+      return res.status(502).json({ error: 'Failed to get token', raw: tokenRes.body });
+    }
     const token = tokenData.data.token;
 
-    const contentRes = await fetch(`https://api.gofile.io/contents/${fileId}?token=${token}`);
-    const contentData = await contentRes.json();
+    // Step 2: Get content info
+    const contentUrl = `https://api.gofile.io/contents/${contentCode}?token=${token}`;
+    const contentRes = await httpsGet(contentUrl);
 
-    if (contentData.status !== 'ok' || !contentData.data) {
-      return res.status(502).json({ error: 'Could not get file info from gofile' });
+    let contentData;
+    try {
+      contentData = JSON.parse(contentRes.body);
+    } catch (e) {
+      return res.status(502).json({ error: 'Invalid JSON from gofile', raw: contentRes.body.substring(0, 500) });
     }
 
-    const contents = contentData.data.children || contentData.data;
-    let downloadUrl;
+    if (contentData.status !== 'ok') {
+      return res.status(502).json({ error: 'Content not found', detail: contentData });
+    }
 
-    if (Array.isArray(contents)) {
-      downloadUrl = contents[0]?.link;
-    } else if (contents.link) {
-      downloadUrl = contents.link;
-    } else {
-      const firstKey = Object.keys(contents)[0];
-      downloadUrl = contents[firstKey]?.link;
+    // Find the file
+    let downloadUrl;
+    const children = contentData.data.children;
+    if (children) {
+      const keys = Object.keys(children);
+      for (const key of keys) {
+        if (children[key].link) {
+          downloadUrl = children[key].link;
+          break;
+        }
+      }
     }
 
     if (!downloadUrl) {
-      return res.status(502).json({ error: 'No download link found' });
+      return res.status(502).json({ error: 'No download link', content: contentData.data });
     }
 
-    // Step 2: Stream the file
-    const fileRes = await fetch(downloadUrl);
-    if (!fileRes.ok) {
-      return res.status(502).json({ error: 'Failed to fetch file' });
+    // Step 3: Stream file to user
+    const fileRes = await new Promise((resolve, reject) => {
+      https.get(downloadUrl, {
+        headers: { 'Cookie': `accountToken=${token}` }
+      }, (r) => resolve(r)).on('error', reject);
+    });
+
+    // Follow redirect
+    if (fileRes.statusCode >= 300 && fileRes.statusCode < 400 && fileRes.headers.location) {
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Location', fileRes.headers.location);
+      return res.redirect(fileRes.headers.location);
     }
 
-    const contentType = fileRes.headers.get('content-type') || 'application/octet-stream';
-    const contentLength = fileRes.headers.get('content-length');
+    const ct = fileRes.headers['content-type'] || 'application/octet-stream';
+    const cl = fileRes.headers['content-length'];
 
-    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Type', ct);
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    if (contentLength) res.setHeader('Content-Length', contentLength);
+    if (cl) res.setHeader('Content-Length', cl);
 
-    const reader = fileRes.body.getReader();
-    const pump = async () => {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) { res.end(); return; }
-        res.write(value);
-      }
-    };
-    await pump();
+    fileRes.pipe(res);
 
   } catch (err) {
     if (!res.headersSent) {
