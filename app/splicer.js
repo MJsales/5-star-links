@@ -16,39 +16,24 @@ function banner() {
 }
 
 function checkCommand(cmd) {
-  try { execSync(cmd + ' --version', { stdio: 'ignore' }); return true; } catch { return false; }
+  try { execSync(cmd + ' --version', { stdio: 'ignore', timeout: 5000 }); return true; } catch { return false; }
 }
 
-function findTools() {
+function ensureTools() {
   const home = process.env.USERPROFILE || '';
-  const winGetBase = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
-  let ytDlpPath = null;
-  let ffmpegPath = null;
 
-  if (fs.existsSync(winGetBase)) {
-    for (const dir of fs.readdirSync(winGetBase)) {
-      const dirPath = path.join(winGetBase, dir);
-      if (!fs.statSync(dirPath).isDirectory()) continue;
-
-      if (dir.toLowerCase().includes('yt-dlp') && !dir.toLowerCase().includes('ffmpeg')) {
-        for (const f of fs.readdirSync(dirPath)) {
-          const fp = path.join(dirPath, f);
-          if (!fs.statSync(fp).isDirectory()) continue;
-          if (f.toLowerCase().includes('yt-dlp') && f.endsWith('.exe')) {
-            try { execSync('"' + fp + '" --version', { stdio: 'ignore', timeout: 5000 }); ytDlpPath = fp; process.env.PATH = path.dirname(fp) + ';' + (process.env.PATH || ''); } catch {}
-          }
-        }
-      }
-      if (dir.toLowerCase().includes('ffmpeg')) {
-        for (const sub of fs.readdirSync(dirPath)) {
-          const subPath = path.join(dirPath, sub);
-          if (!fs.statSync(subPath).isDirectory()) continue;
-          const binDir = fs.existsSync(path.join(subPath, 'bin')) ? path.join(subPath, 'bin') : subPath;
-          if (!fs.existsSync(binDir)) continue;
-          for (const f of fs.readdirSync(binDir)) {
-            if (f.toLowerCase() === 'ffmpeg.exe') {
-              const p = path.join(binDir, f);
-              try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); ffmpegPath = p; process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); } catch {}
+  // Try to find yt-dlp
+  if (!checkCommand('yt-dlp')) {
+    const ytdlpDir = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
+    if (fs.existsSync(ytdlpDir)) {
+      for (const d of fs.readdirSync(ytdlpDir)) {
+        if (d.toLowerCase().includes('yt-dlp') && !d.toLowerCase().includes('ffmpeg')) {
+          const sub = path.join(ytdlpDir, d);
+          if (!fs.statSync(sub).isDirectory()) continue;
+          for (const f of fs.readdirSync(sub)) {
+            if (f.toLowerCase().includes('yt-dlp') && f.endsWith('.exe')) {
+              const p = path.join(sub, f);
+              try { execSync('"' + p + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); } catch {}
             }
           }
         }
@@ -56,33 +41,53 @@ function findTools() {
     }
   }
 
-  // Also check D:\0ne\ffmpeg.exe
-  if (!ffmpegPath && fs.existsSync('D:\\0ne\\ffmpeg.exe')) {
-    ffmpegPath = 'D:\\0ne\\ffmpeg.exe';
-    process.env.PATH = 'D:\\0ne;' + (process.env.PATH || '');
-  }
-
-  return { ytDlp: !!ytDlpPath, ffmpeg: !!ffmpegPath, ytDlpPath, ffmpegPath };
-}
-
-function installTool(name, wingetIds) {
-  const ids = Array.isArray(wingetIds) ? wingetIds : [wingetIds];
-  console.log(`  Installing ${name} via winget...`);
-  for (const id of ids) {
-    try {
-      execSync(`winget install --id ${id} --accept-source-agreements --accept-package-agreements`, { stdio: 'pipe', timeout: 300000 });
-      console.log(`  ✓ ${name} installed`);
-      return true;
-    } catch (e) {
-      const out = (e.stdout || '') + (e.stderr || '');
-      if (out.includes('already installed') || out.includes('No available upgrade')) {
-        console.log(`  ✓ ${name} already installed`);
-        return true;
+  // Try to find ffmpeg
+  if (!checkCommand('ffmpeg')) {
+    // Check D:\0ne\ffmpeg.exe
+    if (fs.existsSync('D:\\0ne\\ffmpeg.exe')) {
+      process.env.PATH = 'D:\\0ne;' + (process.env.PATH || '');
+    }
+    const winGetPackages = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
+    if (fs.existsSync(winGetPackages)) {
+      for (const d of fs.readdirSync(winGetPackages)) {
+        if (d.toLowerCase().includes('ffmpeg')) {
+          const sub = path.join(winGetPackages, d);
+          if (!fs.statSync(sub).isDirectory()) continue;
+          for (const s of fs.readdirSync(sub)) {
+            const sp = path.join(sub, s);
+            if (!fs.statSync(sp).isDirectory()) continue;
+            const bin = path.join(sp, 'bin');
+            if (fs.existsSync(bin)) {
+              for (const f of fs.readdirSync(bin)) {
+                if (f.toLowerCase() === 'ffmpeg.exe') {
+                  try { execSync('"' + path.join(bin, f) + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = bin + ';' + (process.env.PATH || ''); } catch {}
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
-  console.log(`  ✗ Failed to install ${name}`);
-  return false;
+
+  return { ytDlp: checkCommand('yt-dlp'), ffmpeg: checkCommand('ffmpeg') };
+}
+
+function installTool(name, wingetId) {
+  console.log('  Installing ' + name + ' via winget...');
+  try {
+    execSync('winget install --id ' + wingetId + ' --accept-source-agreements --accept-package-agreements', { stdio: 'pipe', timeout: 300000 });
+    console.log('  ✓ ' + name + ' installed');
+    return true;
+  } catch (e) {
+    const out = (e.stdout || '') + (e.stderr || '');
+    if (out.includes('already installed') || out.includes('No available upgrade')) {
+      console.log('  ✓ ' + name + ' already installed');
+      return true;
+    }
+    console.log('  ✗ Failed to install ' + name);
+    return false;
+  }
 }
 
 function getVideoInfo(url) {
@@ -114,60 +119,66 @@ function downloadVideo(url, outputDir) {
 function clipVideo(inputPath, outputDir, startSec, duration, index, total) {
   return new Promise((resolve, reject) => {
     const outputPath = path.join(outputDir, 'clip_' + String(index).padStart(2, '0') + '.mp4');
-    console.log(`  Creating clip ${index}/${total} (${startSec}s)...`);
+    console.log('  Creating clip ' + index + '/' + total + ' (' + startSec + 's)...');
     const proc = spawn('ffmpeg', ['-ss', String(startSec), '-i', inputPath, '-t', String(duration), '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'fast', '-y', outputPath], { shell: true });
     let stderr = '';
     proc.stderr.on('data', d => { stderr += d.toString(); });
     proc.on('close', code => {
       if (code !== 0) return reject(new Error(stderr || 'Clip failed'));
-      console.log(`  ✓ Clip ${index} saved`);
+      console.log('  ✓ Clip ' + index + ' saved');
       resolve(outputPath);
     });
     proc.on('error', reject);
   });
 }
 
+async function ask(question) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise(resolve => {
+    rl.question(question, ans => { rl.close(); resolve(ans.trim()); });
+  });
+}
+
 async function main() {
   banner();
 
-  const tools = findTools();
-  if (!tools.ytDlp) { installTool('yt-dlp', ['yt-dlp.yt-dlp']); }
-  if (!tools.ffmpeg) { installTool('ffmpeg', ['yt-dlp.FFmpeg', 'Gyan.FFmpeg']); }
+  let tools = ensureTools();
+  if (!tools.ytDlp) { installTool('yt-dlp', 'yt-dlp.yt-dlp'); }
+  if (!tools.ffmpeg) { installTool('ffmpeg', 'yt-dlp.FFmpeg'); }
+  if (!tools.ytDlp || !tools.ffmpeg) {
+    tools = ensureTools();
+    if (!tools.ytDlp) { console.log('  ✗ yt-dlp not found. Run: winget install yt-dlp.yt-dlp'); return; }
+    if (!tools.ffmpeg) { console.log('  ✗ ffmpeg not found. Run: winget install yt-dlp.FFmpeg'); return; }
+  }
 
-  const tools2 = findTools();
-  if (!tools2.ytDlp) { console.log('  ✗ yt-dlp still missing. Run: winget install yt-dlp.yt-dlp'); return; }
-  if (!tools2.ffmpeg) { console.log('  ✗ ffmpeg still missing. Run: winget install Gyan.FFmpeg'); return; }
+  const url = await ask('  YouTube URL: ');
+  if (!url) { console.log('  No URL entered.'); return;
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const url = await new Promise(resolve => {
-    rl.question('  YouTube URL: ', ans => { rl.close(); resolve(ans.trim()); });
-  });
+  }
 
-  if (!url) { console.log('  No URL entered.'); return; }
+  console.log('  Fetching video info...');
+  const info = await getVideoInfo(url);
+  const mins = Math.floor(info.duration / 60);
+  const secs = info.duration % 60;
+  const suggestedClips = Math.ceil(info.duration / 90);
+  console.log('');
+  console.log('  Title: ' + info.title);
+  console.log('  Channel: ' + info.channel);
+  console.log('  Duration: ' + mins + 'm ' + secs + 's');
+  console.log('  Suggested clips (90s each): ' + suggestedClips);
+  console.log('');
 
-  const rl2 = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const durationInput = await new Promise(resolve => {
-    rl2.question('  Clip duration in seconds [90]: ', ans => { rl2.close(); resolve(ans.trim()); });
-  });
-  const clipDuration = parseInt(durationInput) || 90;
-
+  const clipDurInput = await ask('  Clip duration in seconds [90]: ');
+  const clipDuration = parseInt(clipDurInput) || 90;
+  const totalClips = Math.ceil(info.duration / clipDuration);
+  console.log('  Will create ' + totalClips + ' clips of ' + clipDuration + 's each');
   console.log('');
 
   const outputDir = path.join(process.cwd(), '5star_clips');
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
   try {
-    console.log('  Fetching video info...');
-    const info = await getVideoInfo(url);
-    console.log(`  Title: ${info.title}`);
-    console.log(`  Channel: ${info.channel}`);
-    console.log(`  Duration: ${Math.floor(info.duration / 60)}m ${info.duration % 60}s`);
-
     const videoPath = await downloadVideo(url, outputDir);
-
-    const totalClips = Math.ceil(info.duration / clipDuration);
-    console.log(`  Creating ${totalClips} clips of ${clipDuration}s each...`);
-    console.log('');
 
     for (let i = 0; i < totalClips; i++) {
       const start = i * clipDuration;
@@ -180,13 +191,13 @@ async function main() {
 
     console.log('');
     console.log('  ═══════════════════════════════════════════');
-    console.log(`  ✓ Done! ${totalClips} clips saved to ${outputDir}`);
+    console.log('  ✓ Done! ' + totalClips + ' clips saved to ' + outputDir);
     console.log('  ═══════════════════════════════════════════');
     console.log('');
 
   } catch (err) {
     console.log('');
-    console.log(`  ✗ Error: ${err.message}`);
+    console.log('  ✗ Error: ' + err.message);
     console.log('');
   }
 }
