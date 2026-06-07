@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -18,8 +20,8 @@ func main() {
 	setConsoleTitle := kernel32.NewProc("SetConsoleTitleW")
 	setConsoleTitle.Call(uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("5 Star Links - AI Video Splicer"))))
 
-	webPath := filepath.Join(os.TempDir(), "5star-web-v1.exe")
-	os.Remove(webPath)
+	name := "5star-web-" + strconv.FormatInt(time.Now().UnixNano(), 36) + ".exe"
+	webPath := filepath.Join(os.TempDir(), name)
 
 	if err := os.WriteFile(webPath, webBin, 0755); err != nil {
 		fmt.Println("Error:", err)
