@@ -7,7 +7,6 @@ const readline = require('readline');
 const VERSION = '1.0.0';
 
 function banner() {
-  console.title('5 Star Links - AI Video Splicer');
   console.log('');
   console.log('  ╔══════════════════════════════════════════╗');
   console.log('  ║   5 STAR LINKS - AI VIDEO SPLICER v' + VERSION + '  ║');
