@@ -21,19 +21,47 @@ function checkCommand(cmd) {
 
 function findTools() {
   const home = process.env.USERPROFILE || '';
-  const ytdlpPaths = [
-    path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages', 'yt-dlp.yt-dlp_Microsoft.Winget.Source_8wekyb3d8bbwe', 'yt-dlp.exe'),
-    path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages', 'yt-dlp.yt-dlp_Microsoft.Winget.Source_8wekyb3d8bbwe', 'yt-dlp_cmd.exe'),
-  ];
-  const ffmpegPaths = [
-    path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages', 'Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe', 'ffmpeg-8.1.1-full_build', 'bin', 'ffmpeg.exe'),
-  ];
-  for (const p of ytdlpPaths) {
-    if (fs.existsSync(p)) { try { execSync('"' + p + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); break; } catch {} }
+  const winGetBase = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
+
+  // Search for yt-dlp in WinGet packages
+  if (fs.existsSync(winGetBase)) {
+    for (const dir of fs.readdirSync(winGetBase)) {
+      if (dir.toLowerCase().includes('yt-dlp')) {
+        const sub = path.join(winGetBase, dir);
+        for (const f of fs.readdirSync(sub)) {
+          if (f.toLowerCase().includes('yt-dlp') && f.endsWith('.exe')) {
+            const p = path.join(sub, f);
+            try { execSync('"' + p + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); break; } catch {}
+          }
+        }
+      }
+      if (dir.toLowerCase().includes('ffmpeg')) {
+        const sub = path.join(winGetBase, dir);
+        const binDir = path.join(sub, 'bin');
+        if (fs.existsSync(binDir)) {
+          for (const f of fs.readdirSync(binDir)) {
+            if (f.toLowerCase() === 'ffmpeg.exe') {
+              const p = path.join(binDir, f);
+              try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); break; } catch {}
+            }
+          }
+        }
+        // Also check nested build dirs
+        for (const sub2 of fs.readdirSync(sub)) {
+          const binDir2 = path.join(sub, sub2, 'bin');
+          if (fs.existsSync(binDir2)) {
+            for (const f of fs.readdirSync(binDir2)) {
+              if (f.toLowerCase() === 'ffmpeg.exe') {
+                const p = path.join(binDir2, f);
+                try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); break; } catch {}
+              }
+            }
+          }
+        }
+      }
+    }
   }
-  for (const p of ffmpegPaths) {
-    if (fs.existsSync(p)) { try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); break; } catch {} }
-  }
+
   return { ytDlp: checkCommand('yt-dlp'), ffmpeg: checkCommand('ffmpeg') };
 }
 
@@ -42,6 +70,12 @@ function installTool(name, wingetId) {
   try {
     execSync(`winget install --id ${wingetId} --accept-source-agreements --accept-package-agreements`, { stdio: 'inherit', timeout: 300000 });
     console.log(`  ✓ ${name} installed`);
+    // Refresh PATH from registry
+    try {
+      const reg = execSync('reg query "HKCU\\Environment" /v Path', { encoding: 'utf8', timeout: 5000 });
+      const match = reg.match(/Path\s+REG_EXPAND_SZ\s+(.*)/);
+      if (match) process.env.PATH = match[1].trim() + ';' + process.env.PATH;
+    } catch {}
     return true;
   } catch (e) {
     console.log(`  ✗ Failed to install ${name}. Install manually: winget install --id ${wingetId}`);
