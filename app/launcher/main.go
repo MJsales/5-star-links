@@ -2,14 +2,12 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
-	"unsafe"
 )
 
 //go:embed web.exe
@@ -17,31 +15,30 @@ var webBin []byte
 
 func main() {
 	kernel32 := syscall.NewLazyDLL("kernel32.dll")
-	setConsoleTitle := kernel32.NewProc("SetConsoleTitleW")
-	setConsoleTitle.Call(uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("5 Star Links - AI Video Splicer"))))
+	freeConsole := kernel32.NewProc("FreeConsole")
+	freeConsole.Call()
 
 	name := "5star-web-" + strconv.FormatInt(time.Now().UnixNano(), 36) + ".exe"
 	webPath := filepath.Join(os.TempDir(), name)
-
-	if err := os.WriteFile(webPath, webBin, 0755); err != nil {
-		fmt.Println("Error:", err)
-		fmt.Println("Press Enter to exit...")
-		fmt.Scanln()
-		os.Exit(1)
-	}
-
-	cmd := exec.Command(webPath, os.Args[1:]...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
 	os.Remove(webPath)
 
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		fmt.Println("Press Enter to exit...")
-		fmt.Scanln()
-		os.Exit(1)
+	if err := os.WriteFile(webPath, webBin, 0755); err != nil {
+		return
 	}
+
+	cmd := exec.Command(webPath)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow:    true,
+		CreationFlags: 0x08000000,
+	}
+	cmd.Stdin = nil
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+
+	if err := cmd.Start(); err != nil {
+		return
+	}
+
+	cmd.Wait()
+	os.Remove(webPath)
 }

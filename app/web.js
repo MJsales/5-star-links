@@ -156,16 +156,8 @@ const server = http.createServer((req, res) => {
   res.end(HTML);
 });
 
-server.listen(0, () => {
+server.listen(0, '127.0.0.1', () => {
   const actualPort = server.address().port;
-  console.log('');
-  console.log('  ╔══════════════════════════════════════════╗');
-  console.log('  ║   5 STAR LINKS - AI VIDEO SPLICER v1.0   ║');
-  console.log('  ║   Opening in your browser...              ║');
-  console.log('  ╚══════════════════════════════════════════╝');
-  console.log('');
-  console.log('  If browser didn\'t open, go to: http://localhost:' + actualPort);
-  console.log('');
   const start = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
   try { exec(start + ' http://localhost:' + actualPort); } catch {}
 });
