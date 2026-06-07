@@ -27,25 +27,28 @@ function findTools() {
 
   if (fs.existsSync(winGetBase)) {
     for (const dir of fs.readdirSync(winGetBase)) {
+      const dirPath = path.join(winGetBase, dir);
+      if (!fs.statSync(dirPath).isDirectory()) continue;
+
       if (dir.toLowerCase().includes('yt-dlp') && !dir.toLowerCase().includes('ffmpeg')) {
-        const sub = path.join(winGetBase, dir);
-        for (const f of fs.readdirSync(sub)) {
+        for (const f of fs.readdirSync(dirPath)) {
+          const fp = path.join(dirPath, f);
+          if (!fs.statSync(fp).isDirectory()) continue;
           if (f.toLowerCase().includes('yt-dlp') && f.endsWith('.exe')) {
-            const p = path.join(sub, f);
-            try { execSync('"' + p + '" --version', { stdio: 'ignore', timeout: 5000 }); ytDlpPath = p; process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); } catch {}
+            try { execSync('"' + fp + '" --version', { stdio: 'ignore', timeout: 5000 }); ytDlpPath = fp; process.env.PATH = path.dirname(fp) + ';' + (process.env.PATH || ''); } catch {}
           }
         }
       }
       if (dir.toLowerCase().includes('ffmpeg')) {
-        const sub = path.join(winGetBase, dir);
-        for (const sub2 of [sub, ...fs.readdirSync(sub).map(s => path.join(sub, s))]) {
-          const binDir = fs.existsSync(path.join(sub2, 'bin')) ? path.join(sub2, 'bin') : sub2;
-          if (fs.existsSync(binDir)) {
-            for (const f of fs.readdirSync(binDir)) {
-              if (f.toLowerCase() === 'ffmpeg.exe') {
-                const p = path.join(binDir, f);
-                try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); ffmpegPath = p; process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); } catch {}
-              }
+        for (const sub of fs.readdirSync(dirPath)) {
+          const subPath = path.join(dirPath, sub);
+          if (!fs.statSync(subPath).isDirectory()) continue;
+          const binDir = fs.existsSync(path.join(subPath, 'bin')) ? path.join(subPath, 'bin') : subPath;
+          if (!fs.existsSync(binDir)) continue;
+          for (const f of fs.readdirSync(binDir)) {
+            if (f.toLowerCase() === 'ffmpeg.exe') {
+              const p = path.join(binDir, f);
+              try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); ffmpegPath = p; process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); } catch {}
             }
           }
         }
