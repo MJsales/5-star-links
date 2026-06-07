@@ -37,14 +37,24 @@
     document.getElementById('fileName').textContent = fileName;
     document.title = 'Downloading ' + fileName + ' | 5 Star Links';
 
-    const directUrl = 'https://drive.google.com/uc?export=download&id=' + fileId;
+    const directUrl = 'https://drive.google.com/uc?export=download&confirm=t&id=' + fileId;
     document.getElementById('retryBtn').href = directUrl;
 
     // Auto-start download
     if (fileId) {
       const a = document.createElement('a');
       a.href = directUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
+
+      // Fallback: if download doesn't start in 3 seconds, open in new tab
+      setTimeout(() => {
+        if (confirm('Download not starting? Click OK to open download page.')) {
+          window.open(directUrl, '_blank');
+        }
+      }, 3000);
     }
   </script>
 </body>
