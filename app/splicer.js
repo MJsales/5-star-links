@@ -37,6 +37,18 @@ function findTools() {
   return { ytDlp: checkCommand('yt-dlp'), ffmpeg: checkCommand('ffmpeg') };
 }
 
+function installTool(name, wingetId) {
+  console.log(`  Installing ${name} via winget...`);
+  try {
+    execSync(`winget install --id ${wingetId} --accept-source-agreements --accept-package-agreements`, { stdio: 'inherit', timeout: 300000 });
+    console.log(`  ✓ ${name} installed`);
+    return true;
+  } catch (e) {
+    console.log(`  ✗ Failed to install ${name}. Install manually: winget install --id ${wingetId}`);
+    return false;
+  }
+}
+
 function getVideoInfo(url) {
   return new Promise((resolve, reject) => {
     exec('yt-dlp --dump-json --no-download "' + url + '"', { timeout: 60000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
@@ -83,8 +95,12 @@ async function main() {
   banner();
 
   const tools = findTools();
-  if (!tools.ytDlp) { console.log('  ✗ yt-dlp not found. Run: winget install yt-dlp'); return; }
-  if (!tools.ffmpeg) { console.log('  ✗ ffmpeg not found. Run: winget install ffmpeg'); return; }
+  if (!tools.ytDlp) { installTool('yt-dlp', 'yt-dlp.yt-dlp'); }
+  if (!tools.ffmpeg) { installTool('ffmpeg', 'Gyan.FFmpeg'); }
+
+  const tools2 = findTools();
+  if (!tools2.ytDlp) { console.log('  ✗ yt-dlp still missing. Run: winget install yt-dlp.yt-dlp'); return; }
+  if (!tools2.ffmpeg) { console.log('  ✗ ffmpeg still missing. Run: winget install Gyan.FFmpeg'); return; }
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const url = await new Promise(resolve => {
