@@ -236,7 +236,7 @@ function findViralMoments(transcript, duration, numClips) {
   const segments = transcript?.segments || [];
   if (segments.length === 0) return [];
 
-  const clipLen = 35;
+  const clipLen = 90;
   const numParts = Math.max(2, Math.min(numClips, Math.ceil(duration / clipLen)));
   const partDuration = duration / numParts;
   const clips = [];
@@ -257,14 +257,11 @@ function findViralMoments(transcript, duration, numClips) {
       }
     }
 
-    const peak = p === 0 ? 'hook' : p === numParts - 1 ? 'cliffhanger' : p === Math.floor(numParts / 2) ? 'climax' : 'buildup';
-
     clips.push({
       part: p + 1,
       start: partStart,
       end: partEnd,
       score: bestScore,
-      peak,
       text: bestText.substring(0, 200)
     });
   }
@@ -524,6 +521,19 @@ async function main() {
   let numClips = parseInt(process.argv[3]) || 5;
   let uploadTikTok = process.argv.includes('--tiktok');
   let uploadYoutube = process.argv.includes('--youtube') || process.argv.includes('--shorts');
+  let autoUpload = process.argv.includes('--auto');
+
+  // Check if social accounts are configured
+  const socialConfig = loadSocialConfig();
+  const hasTikTok = socialConfig && socialConfig.tiktokAccountId;
+  const hasYouTube = socialConfig && socialConfig.youtubeAccountId;
+
+  // If no flags specified but accounts are connected, auto-upload to all
+  if (!uploadTikTok && !uploadYoutube && !autoUpload && (hasTikTok || hasYouTube)) {
+    uploadTikTok = hasTikTok;
+    uploadYoutube = hasYouTube;
+    autoUpload = true;
+  }
 
   if (!url) {
     console.log('  Paste a YouTube URL below:');
@@ -535,12 +545,19 @@ async function main() {
       await ask('  Press Enter to exit...');
       process.exit(0);
     }
-    const clipsInput = await ask('  How many clips? (default 5): ');
-    numClips = parseInt(clipsInput) || 5;
-    const uploadInput = await ask('  Upload to social media? (tiktok/youtube/both/n): ');
-    const uploadChoice = uploadInput.toLowerCase().trim();
-    if (uploadChoice.includes('tiktok') || uploadChoice === 'both') uploadTikTok = true;
-    if (uploadChoice.includes('youtube') || uploadChoice === 'both') uploadYoutube = true;
+
+    // Only ask about upload if no accounts are connected
+    if (!hasTikTok && !hasYouTube) {
+      const uploadInput = await ask('  Upload to social media? (tiktok/youtube/both/n): ');
+      const uploadChoice = uploadInput.toLowerCase().trim();
+      if (uploadChoice.includes('tiktok') || uploadChoice === 'both') uploadTikTok = true;
+      if (uploadChoice.includes('youtube') || uploadChoice === 'both') uploadYoutube = true;
+    } else {
+      // Accounts connected - tell user it will auto-upload
+      if (hasTikTok) console.log('  [+] TikTok: Connected');
+      if (hasYouTube) console.log('  [+] YouTube: Connected');
+      console.log('  Clips will auto-upload when ready.');
+    }
   }
 
   console.log('');
@@ -562,6 +579,16 @@ async function main() {
   console.log(`[+] Title: ${title}`);
   console.log(`[+] Duration: ${formatTime(duration)}`);
   console.log(`[+] Creator: ${info.uploader || 'Unknown'}`);
+
+  // Suggest number of 1:30 clips to cover full video
+  const clipLength = 90;
+  const suggestedClips = Math.ceil(duration / clipLength);
+  console.log('');
+  console.log(`  This video is ${formatTime(duration)} long.`);
+  console.log(`  To cover the full video in 1:30 clips, you need ${suggestedClips} parts.`);
+
+  const clipsInput = await ask(`  How many clips? (default ${suggestedClips}): `);
+  numClips = parseInt(clipsInput) || suggestedClips;
 
   // Create work directory
   const safeTitle = title.replace(/[^\w\-]/g, '_').substring(0, 50);
@@ -591,7 +618,7 @@ async function main() {
   // Fallback: if no transcript, split into equal segments
   if (clips.length === 0) {
     console.log('[*] No transcript available. Splitting into equal segments...');
-    const clipDuration = Math.min(35, duration / numClips);
+    const clipDuration = Math.min(90, duration / numClips);
     for (let i = 0; i < numClips; i++) {
       const start = Math.floor((duration / numClips) * i);
       const end = Math.min(Math.floor(start + clipDuration), duration);
@@ -600,25 +627,23 @@ async function main() {
         start,
         end,
         score: 50,
-        text: `Segment ${i + 1}`,
-        peak: 'cliffhanger'
+        text: `Segment ${i + 1}`
       });
     }
   }
 
   console.log('');
-  console.log(`[+] Found ${clips.length} viral moments:`);
+  console.log(`[+] Found ${clips.length} clips:`);
   console.log('');
 
   const results = [];
   for (const clip of clips) {
-    const peakIcon = { hook: '🪝', climax: '🔥', cliffhanger: '🪢', buildup: '📈' }[clip.peak] || '📹';
-    console.log(`  Part ${clip.part} | ${peakIcon} ${clip.peak.toUpperCase()} | Score: ${clip.score}%`);
+    console.log(`  Part ${clip.part} | Score: ${clip.score}%`);
     console.log(`  ⏱ ${formatTime(clip.start)} → ${formatTime(clip.end)}`);
     console.log(`  📝 "${clip.text.substring(0, 80)}..."`);
     console.log('');
 
-    const clipName = `clip_part${clip.part}_${clip.peak}.mp4`;
+    const clipName = `clip_part${clip.part}.mp4`;
     const clipPath = path.join(workDir, clipName);
 
     if (clipVideo(videoPath, clip.start, clip.end, clipPath)) {
@@ -629,8 +654,7 @@ async function main() {
         file: clipName,
         start: formatTime(clip.start),
         end: formatTime(clip.end),
-        score: clip.score,
-        peak: clip.peak
+        score: clip.score
       });
     } else {
       console.log(`  ❌ Failed to create ${clipName}`);
@@ -676,8 +700,10 @@ async function main() {
       if (!config.tiktokAccountId || !config.youtubeAccountId) {
         console.log('[*] Fetching connected accounts...');
         const accountsRes = await apiRequest('GET', '/v1/accounts', null, config.apiKey);
-        if (accountsRes.data && accountsRes.data.accounts) {
-          for (const acc of accountsRes.data.accounts) {
+        const accounts = accountsRes.data && Array.isArray(accountsRes.data) ? accountsRes.data :
+                         (accountsRes.data && accountsRes.data.accounts) ? accountsRes.data.accounts : [];
+        if (accounts.length > 0) {
+          for (const acc of accounts) {
             if (acc.platform === 'tiktok' && !config.tiktokAccountId) {
               config.tiktokAccountId = acc.id;
               console.log('[+] Found TikTok:', acc.username || acc.id);
@@ -688,6 +714,8 @@ async function main() {
             }
           }
           saveSocialConfig(config);
+        } else {
+          console.log('[!] No accounts found. Connect at https://app.unipost.dev');
         }
       }
 

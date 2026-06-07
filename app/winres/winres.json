@@ -1,0 +1,58 @@
+{
+  "RT_GROUP_ICON": {
+    "APP": {
+      "0000": "APP_0000.ico"
+    }
+  },
+  "RT_MANIFEST": {
+    "#1": {
+      "0409": {
+        "identity": {
+          "name": "5 Star Links AI Video Splicer",
+          "version": "1.0.0.0"
+        },
+        "description": "5 Star Links AI Video Splicer",
+        "minimum-os": "win7",
+        "execution-level": "",
+        "ui-access": false,
+        "auto-elevate": false,
+        "dpi-awareness": "system",
+        "disable-theming": false,
+        "disable-window-filtering": false,
+        "high-resolution-scrolling-aware": false,
+        "ultra-high-resolution-scrolling-aware": false,
+        "long-path-aware": false,
+        "printer-driver-isolation": false,
+        "gdi-scaling": false,
+        "segment-heap": false,
+        "use-common-controls-v6": false
+      }
+    }
+  },
+  "RT_VERSION": {
+    "#1": {
+      "0409": {
+        "fixed": {
+          "file_version": "1.0.0.0",
+          "product_version": "1.0.0.0"
+        },
+        "info": {
+          "0409": {
+            "Comments": "5 Star Links AI Video Splicer",
+            "CompanyName": "5 Star Links",
+            "FileDescription": "5 Star Links AI Video Splicer",
+            "FileVersion": "1.0.0.0",
+            "InternalName": "5star-splicer",
+            "LegalCopyright": "5 Star Links",
+            "LegalTrademarks": "",
+            "OriginalFilename": "5star-splicer.exe",
+            "PrivateBuild": "",
+            "ProductName": "5 Star Links AI Video Splicer",
+            "ProductVersion": "1.0.0.0",
+            "SpecialBuild": ""
+          }
+        }
+      }
+    }
+  }
+}

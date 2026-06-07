@@ -8,47 +8,63 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: #050208; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-    .center { text-align: center; }
+    .center { text-align: center; max-width: 500px; padding: 2rem; }
     .spinner { width: 60px; height: 60px; border: 4px solid rgba(168,85,247,0.2); border-top-color: #a855f7; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1.5rem; }
     @keyframes spin { to { transform: rotate(360deg); } }
     h2 { font-size: 1.4rem; margin-bottom: 0.5rem; }
-    p { color: #aaa; font-size: 0.95rem; margin-bottom: 1.5rem; }
-    .back-btn { display: inline-block; padding: 10px 24px; background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: #a78bfa; border-radius: 10px; text-decoration: none; font-weight: 600; transition: all 0.3s; }
-    .back-btn:hover { background: rgba(168,85,247,0.3); }
+    p { color: #aaa; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.6; }
+    .btn { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 1rem; transition: all 0.3s; border: none; cursor: pointer; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239,68,68,0.4); }
     .file-name { background: #1a1028; padding: 8px 16px; border-radius: 8px; color: #a855f7; font-family: monospace; font-size: 0.9rem; display: inline-block; margin-bottom: 1.5rem; }
+    .back { display: inline-block; padding: 10px 24px; background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: #a78bfa; border-radius: 10px; text-decoration: none; font-weight: 600; margin-top: 1rem; }
+    .error { color: #ef4444; }
+    .help { color: #888; font-size: 0.85rem; margin-top: 0.5rem; }
   </style>
 </head>
 <body>
   <div class="center">
-    <div class="spinner"></div>
-    <h2>Download Starting...</h2>
+    <div class="spinner" id="spinner"></div>
+    <h2 id="heading">Preparing Download...</h2>
     <div class="file-name" id="fileName"></div>
-    <p id="status">Your download should begin automatically.</p>
-    <a href="#" id="retryBtn" class="back-btn">Download Again</a>
-    <br><br>
-    <a href="download.html" class="back-btn">Back to Downloads</a>
+    <p id="status">Downloading from Google Drive...</p>
+    <div id="error" style="display:none" class="error"></div>
+    <div id="actions" style="display:none">
+      <button class="btn" id="downloadBtn">Download Now</button>
+      <p class="help" id="help"></p>
+      <br>
+      <a href="download.html" class="back">Back to Downloads</a>
+    </div>
   </div>
 
   <script>
     const params = new URLSearchParams(window.location.search);
     const fileId = params.get('id');
-    const fileName = params.get('name') || 'file';
+    const fileName = params.get('name') || 'download';
+    const proxyUrl = '/api/download?id=' + fileId + '&name=' + encodeURIComponent(fileName);
 
     document.getElementById('fileName').textContent = fileName;
-    document.title = 'Downloading ' + fileName + ' | 5 Star Links';
+    document.getElementById('downloadBtn').href = proxyUrl;
+    document.getElementById('downloadBtn').onclick = function() { window.location.href = proxyUrl; };
 
-    const directUrl = '/api/download?id=' + fileId + '&name=' + encodeURIComponent(fileName);
-    document.getElementById('retryBtn').href = directUrl;
-
-    // Auto-start download
-    if (fileId) {
-      window.location.href = directUrl;
-
-      // Fallback: if download doesn't start in 5 seconds
-      setTimeout(() => {
-        document.getElementById('status').textContent = 'Download not starting? Click the button below.';
-      }, 5000);
+    if (!fileId) {
+      document.getElementById('heading').textContent = 'Error';
+      document.getElementById('heading').className = 'error';
+      document.getElementById('status').textContent = 'No file ID provided.';
+      document.getElementById('spinner').style.display = 'none';
+      return;
     }
+
+    // Auto-start download via proxy
+    window.location.href = proxyUrl;
+
+    // After 5 seconds, show manual button in case auto-download failed
+    setTimeout(() => {
+      document.getElementById('heading').textContent = 'Download Ready';
+      document.getElementById('status').textContent = 'If the download didn\'t start automatically, click below.';
+      document.getElementById('help').textContent = 'If it still doesn\'t work, try the Google Drive link instead.';
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('actions').style.display = 'block';
+    }, 5000);
   </script>
 </body>
 </html>
