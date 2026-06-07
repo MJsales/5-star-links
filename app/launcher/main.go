@@ -32,7 +32,9 @@ func main() {
 	splicerPath := filepath.Join(os.TempDir(), name)
 
 	if err := os.WriteFile(splicerPath, splicerBin, 0755); err != nil {
-		fmt.Println("  Error extracting splicer:", err)
+		fmt.Println("  Error:", err)
+		fmt.Println("  Press Enter to exit...")
+		fmt.Scanln()
 		return
 	}
 
