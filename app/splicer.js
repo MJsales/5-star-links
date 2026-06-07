@@ -65,22 +65,24 @@ function findTools() {
   return { ytDlp: checkCommand('yt-dlp'), ffmpeg: checkCommand('ffmpeg') };
 }
 
-function installTool(name, wingetId) {
+function installTool(name, wingetIds) {
+  const ids = Array.isArray(wingetIds) ? wingetIds : [wingetIds];
   console.log(`  Installing ${name} via winget...`);
-  try {
-    execSync(`winget install --id ${wingetId} --accept-source-agreements --accept-package-agreements`, { stdio: 'inherit', timeout: 300000 });
-    console.log(`  ✓ ${name} installed`);
-    // Refresh PATH from registry
+  for (const id of ids) {
     try {
-      const reg = execSync('reg query "HKCU\\Environment" /v Path', { encoding: 'utf8', timeout: 5000 });
-      const match = reg.match(/Path\s+REG_EXPAND_SZ\s+(.*)/);
-      if (match) process.env.PATH = match[1].trim() + ';' + process.env.PATH;
-    } catch {}
-    return true;
-  } catch (e) {
-    console.log(`  ✗ Failed to install ${name}. Install manually: winget install --id ${wingetId}`);
-    return false;
+      execSync(`winget install --id ${id} --accept-source-agreements --accept-package-agreements`, { stdio: 'pipe', timeout: 300000 });
+      console.log(`  ✓ ${name} installed`);
+      return true;
+    } catch (e) {
+      const out = (e.stdout || '') + (e.stderr || '');
+      if (out.includes('already installed') || out.includes('No available upgrade')) {
+        console.log(`  ✓ ${name} already installed`);
+        return true;
+      }
+    }
   }
+  console.log(`  ✗ Failed to install ${name}`);
+  return false;
 }
 
 function getVideoInfo(url) {
@@ -129,8 +131,8 @@ async function main() {
   banner();
 
   const tools = findTools();
-  if (!tools.ytDlp) { installTool('yt-dlp', 'yt-dlp.yt-dlp'); }
-  if (!tools.ffmpeg) { installTool('ffmpeg', 'Gyan.FFmpeg'); }
+  if (!tools.ytDlp) { installTool('yt-dlp', ['yt-dlp.yt-dlp']); }
+  if (!tools.ffmpeg) { installTool('ffmpeg', ['yt-dlp.FFmpeg', 'Gyan.FFmpeg']); }
 
   const tools2 = findTools();
   if (!tools2.ytDlp) { console.log('  ✗ yt-dlp still missing. Run: winget install yt-dlp.yt-dlp'); return; }
