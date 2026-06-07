@@ -7,6 +7,7 @@ const readline = require('readline');
 const VERSION = '1.0.0';
 
 function banner() {
+  console.title('5 Star Links - AI Video Splicer');
   console.log('');
   console.log('  ╔══════════════════════════════════════════╗');
   console.log('  ║   5 STAR LINKS - AI VIDEO SPLICER v' + VERSION + '  ║');
@@ -137,6 +138,11 @@ async function main() {
     console.log(`  ✗ Error: ${err.message}`);
     console.log('');
   }
+
+  const rl3 = readline.createInterface({ input: process.stdin, output: process.stdout });
+  await new Promise(resolve => {
+    rl3.question('  Press Enter to exit...', () => { rl3.close(); resolve(); });
+  });
 }
 
 main();
