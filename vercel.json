@@ -6,6 +6,9 @@
     },
     "api/transcript.js": {
       "maxDuration": 15
+    },
+    "api/download.js": {
+      "maxDuration": 30
     }
   }
 }

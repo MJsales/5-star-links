@@ -23,7 +23,7 @@
     <div class="spinner"></div>
     <h2>Download Starting...</h2>
     <div class="file-name" id="fileName"></div>
-    <p>Your download should begin automatically.<br>If not, click the button below.</p>
+    <p id="status">Your download should begin automatically.</p>
     <a href="#" id="retryBtn" class="back-btn">Download Again</a>
     <br><br>
     <a href="download.html" class="back-btn">Back to Downloads</a>
@@ -37,24 +37,17 @@
     document.getElementById('fileName').textContent = fileName;
     document.title = 'Downloading ' + fileName + ' | 5 Star Links';
 
-    const directUrl = 'https://drive.google.com/uc?export=download&confirm=t&id=' + fileId;
+    const directUrl = '/api/download?id=' + fileId + '&name=' + encodeURIComponent(fileName);
     document.getElementById('retryBtn').href = directUrl;
 
     // Auto-start download
     if (fileId) {
-      const a = document.createElement('a');
-      a.href = directUrl;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      window.location.href = directUrl;
 
-      // Fallback: if download doesn't start in 3 seconds, open in new tab
+      // Fallback: if download doesn't start in 5 seconds
       setTimeout(() => {
-        if (confirm('Download not starting? Click OK to open download page.')) {
-          window.open(directUrl, '_blank');
-        }
-      }, 3000);
+        document.getElementById('status').textContent = 'Download not starting? Click the button below.';
+      }, 5000);
     }
   </script>
 </body>
