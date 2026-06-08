@@ -30,10 +30,17 @@ function ensureTools() {
         if (d.toLowerCase().includes('yt-dlp') && !d.toLowerCase().includes('ffmpeg')) {
           const sub = path.join(ytdlpDir, d);
           if (!fs.statSync(sub).isDirectory()) continue;
+          // Check for yt-dlp.exe directly in the package folder
+          const direct = path.join(sub, 'yt-dlp.exe');
+          if (fs.existsSync(direct)) {
+            try { execSync('"' + direct + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = sub + ';' + (process.env.PATH || ''); } catch {}
+          }
+          // Also check subdirectories
           for (const f of fs.readdirSync(sub)) {
+            const fp = path.join(sub, f);
+            if (!fs.statSync(fp).isDirectory()) continue;
             if (f.toLowerCase().includes('yt-dlp') && f.endsWith('.exe')) {
-              const p = path.join(sub, f);
-              try { execSync('"' + p + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); } catch {}
+              try { execSync('"' + fp + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(fp) + ';' + (process.env.PATH || ''); } catch {}
             }
           }
         }
