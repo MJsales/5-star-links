@@ -3,6 +3,8 @@ import numpy as np
 import mediapipe as mp
 import sys
 import os
+import tkinter as tk
+from tkinter import filedialog
 
 mp_face_mesh = mp.solutions.face_mesh
 mp_selfie_segmentation = mp.solutions.selfie_segmentation
@@ -160,12 +162,21 @@ def overlay_body(frame, photo, photo_seg, webcam_seg, face_rect):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python swap.py <photo_path>")
-        print("Example: python swap.py C:\\Users\\abby\\Desktop\\photo.jpg")
+    if len(sys.argv) >= 2:
+        photo_path = sys.argv[1]
+    else:
+        root = tk.Tk()
+        root.withdraw()
+        photo_path = filedialog.askopenfilename(
+            title="Select a photo of someone to swap onto yourself",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp *.bmp")]
+        )
+        root.destroy()
+
+    if not photo_path:
+        print("No photo selected!")
         sys.exit(1)
 
-    photo_path = sys.argv[1]
     if not os.path.exists(photo_path):
         print(f"Photo not found: {photo_path}")
         sys.exit(1)
@@ -203,8 +214,8 @@ def main():
         print("Face detected in photo!")
 
         # Body segmentation for photo
-        with mp_selfie_segmentation.SelfieSegmentation(model_selection=1) as selfie_seg:
-            photo_seg_results = selfie_seg.process(photo_rgb)
+        with mp_selfie_segmentation.SelfieSegmentation(model_selection=1) as temp_seg:
+            photo_seg_results = temp_seg.process(photo_rgb)
             photo_seg_mask = photo_seg_results.segmentation_mask
 
         print("Starting webcam... (press Q to quit)")
@@ -218,7 +229,7 @@ def main():
             refine_landmarks=True,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5
-        ) as webcam_face_mesh:
+        ) as webcam_face_mesh, mp_selfie_segmentation.SelfieSegmentation(model_selection=1) as selfie_seg:
 
             mode = "face"  # face, body, both
 
