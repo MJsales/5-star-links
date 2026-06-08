@@ -5,6 +5,8 @@ const path = require('path');
 const readline = require('readline');
 
 const VERSION = '1.0.0';
+let FFMPEG = 'ffmpeg';
+let YTDLP = 'yt-dlp';
 
 function banner() {
   console.log('');
@@ -15,75 +17,63 @@ function banner() {
   console.log('');
 }
 
-function checkCommand(cmd) {
+function checkCmd(cmd) {
   try { execSync(cmd + ' --version', { stdio: 'ignore', timeout: 5000 }); return true; } catch { return false; }
 }
 
-function ensureTools() {
+function findExe(name) {
+  // Check system PATH
+  if (checkCmd(name)) return name;
+
   const home = process.env.USERPROFILE || '';
 
-  // Try to find yt-dlp
-  if (!checkCommand('yt-dlp')) {
-    const ytdlpDir = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
-    if (fs.existsSync(ytdlpDir)) {
-      for (const d of fs.readdirSync(ytdlpDir)) {
-        if (d.toLowerCase().includes('yt-dlp') && !d.toLowerCase().includes('ffmpeg')) {
-          const sub = path.join(ytdlpDir, d);
-          if (!fs.statSync(sub).isDirectory()) continue;
-          // Check for yt-dlp.exe directly in the package folder
-          const direct = path.join(sub, 'yt-dlp.exe');
-          if (fs.existsSync(direct)) {
-            try { execSync('"' + direct + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = sub + ';' + (process.env.PATH || ''); } catch {}
-          }
-          // Also check subdirectories
-          for (const f of fs.readdirSync(sub)) {
-            const fp = path.join(sub, f);
-            if (!fs.statSync(fp).isDirectory()) continue;
-            if (f.toLowerCase().includes('yt-dlp') && f.endsWith('.exe')) {
-              try { execSync('"' + fp + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(fp) + ';' + (process.env.PATH || ''); } catch {}
-            }
+  // Check D:\0ne
+  const localPath = 'D:\\0ne\\' + name + '.exe';
+  if (fs.existsSync(localPath)) {
+    try { execSync('"' + localPath + '" --version', { stdio: 'ignore', timeout: 5000 }); return localPath; } catch {}
+  }
+
+  // Scan WinGet packages
+  const winGetDir = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
+  if (fs.existsSync(winGetDir)) {
+    try {
+      for (const d of fs.readdirSync(winGetDir)) {
+        const dp = path.join(winGetDir, d);
+        try { if (!fs.statSync(dp).isDirectory()) continue; } catch { continue; }
+
+        // For yt-dlp: exe is directly in package folder
+        if (name === 'yt-dlp' && d.toLowerCase().includes('yt-dlp') && !d.toLowerCase().includes('ffmpeg')) {
+          const exe = path.join(dp, 'yt-dlp.exe');
+          if (fs.existsSync(exe)) {
+            try { execSync('"' + exe + '" --version', { stdio: 'ignore', timeout: 5000 }); return exe; } catch {}
           }
         }
-      }
-    }
-  }
 
-  // Try to find ffmpeg
-  if (!checkCommand('ffmpeg')) {
-    // Check D:\0ne\ffmpeg.exe first
-    if (fs.existsSync('D:\\0ne\\ffmpeg.exe')) {
-      try { execSync('"D:\\0ne\\ffmpeg.exe" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = 'D:\\0ne;' + (process.env.PATH || ''); } catch {}
-    }
-  }
-  if (!checkCommand('ffmpeg')) {
-    const winGetPackages = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
-    if (fs.existsSync(winGetPackages)) {
-      for (const d of fs.readdirSync(winGetPackages)) {
-        const dp = path.join(winGetPackages, d);
-        try { if (!fs.statSync(dp).isDirectory()) continue; } catch { continue; }
-        if (!d.toLowerCase().includes('ffmpeg')) continue;
-        try {
-          const subs = fs.readdirSync(dp);
-          for (const s of subs) {
-            const sp = path.join(dp, s);
-            try { if (!fs.statSync(sp).isDirectory()) continue; } catch { continue; }
-            const bin = path.join(sp, 'bin');
-            try {
-              if (fs.existsSync(bin)) {
-                for (const f of fs.readdirSync(bin)) {
-                  if (f.toLowerCase() === 'ffmpeg.exe') {
-                    try { execSync('"' + path.join(bin, f) + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = bin + ';' + (process.env.PATH || ''); } catch {}
+        // For ffmpeg: check bin subdirectories
+        if (name === 'ffmpeg' && d.toLowerCase().includes('ffmpeg')) {
+          try {
+            for (const s of fs.readdirSync(dp)) {
+              const sp = path.join(dp, s);
+              try { if (!fs.statSync(sp).isDirectory()) continue; } catch { continue; }
+              const bin = path.join(sp, 'bin');
+              try {
+                if (fs.existsSync(bin)) {
+                  for (const f of fs.readdirSync(bin)) {
+                    if (f.toLowerCase() === 'ffmpeg.exe') {
+                      const p = path.join(bin, f);
+                      try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); return p; } catch {}
+                    }
                   }
                 }
-              }
-            } catch {}
-          }
-        } catch {}
+              } catch {}
+            }
+          } catch {}
+        }
       }
-    }
+    } catch {}
   }
 
-  return { ytDlp: checkCommand('yt-dlp'), ffmpeg: checkCommand('ffmpeg') };
+  return null;
 }
 
 function installTool(name, wingetId) {
@@ -105,7 +95,7 @@ function installTool(name, wingetId) {
 
 function getVideoInfo(url) {
   return new Promise((resolve, reject) => {
-    exec('yt-dlp --dump-json --no-download "' + url + '"', { timeout: 60000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
+    exec(YTDLP + ' --dump-json --no-download "' + url + '"', { timeout: 60000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
       if (err) return reject(err);
       try { resolve(JSON.parse(stdout)); } catch { reject(new Error('Parse error')); }
     });
@@ -116,7 +106,9 @@ function downloadVideo(url, outputDir) {
   return new Promise((resolve, reject) => {
     const outputPath = path.join(outputDir, 'video.mp4');
     console.log('  Downloading video...');
-    const proc = spawn('yt-dlp', ['-f', 'best[height<=720]', '-o', outputPath, '--no-playlist', url], { shell: true });
+    const cmd = YTDLP.includes('\\') ? YTDLP : YTDLP;
+    const args = ['-f', 'best[height<=720]', '-o', outputPath, '--no-playlist', url];
+    const proc = spawn(cmd, args, { shell: true });
     let stderr = '';
     proc.stderr.on('data', d => { stderr += d.toString(); });
     proc.on('close', code => {
@@ -133,7 +125,8 @@ function clipVideo(inputPath, outputDir, startSec, duration, index, total) {
   return new Promise((resolve, reject) => {
     const outputPath = path.join(outputDir, 'clip_' + String(index).padStart(2, '0') + '.mp4');
     console.log('  Creating clip ' + index + '/' + total + ' (' + startSec + 's)...');
-    const proc = spawn('ffmpeg', ['-ss', String(startSec), '-i', inputPath, '-t', String(duration), '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'fast', '-y', outputPath], { shell: true });
+    const args = ['-ss', String(startSec), '-i', inputPath, '-t', String(duration), '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'fast', '-y', outputPath];
+    const proc = spawn(FFMPEG, args, { shell: true });
     let stderr = '';
     proc.stderr.on('data', d => { stderr += d.toString(); });
     proc.on('close', code => {
@@ -145,29 +138,29 @@ function clipVideo(inputPath, outputDir, startSec, duration, index, total) {
   });
 }
 
-async function ask(question) {
+async function ask(q) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise(resolve => {
-    rl.question(question, ans => { rl.close(); resolve(ans.trim()); });
-  });
+  return new Promise(r => rl.question(q, a => { rl.close(); r(a.trim()); }));
 }
 
 async function main() {
   banner();
 
-  let tools = ensureTools();
-  if (!tools.ytDlp) { installTool('yt-dlp', 'yt-dlp.yt-dlp'); }
-  if (!tools.ffmpeg) { installTool('ffmpeg', 'yt-dlp.FFmpeg'); }
-  if (!tools.ytDlp || !tools.ffmpeg) {
-    tools = ensureTools();
-    if (!tools.ytDlp) { console.log('  ✗ yt-dlp not found. Run: winget install yt-dlp.yt-dlp'); return; }
-    if (!tools.ffmpeg) { console.log('  ✗ ffmpeg not found. Run: winget install yt-dlp.FFmpeg'); return; }
-  }
+  // Find tools
+  let ytDlpPath = findExe('yt-dlp');
+  let ffmpegPath = findExe('ffmpeg');
+
+  if (!ytDlpPath) { installTool('yt-dlp', 'yt-dlp.yt-dlp'); ytDlpPath = findExe('yt-dlp'); }
+  if (!ffmpegPath) { installTool('ffmpeg', 'yt-dlp.FFmpeg'); ffmpegPath = findExe('ffmpeg'); }
+
+  if (!ytDlpPath) { console.log('  ✗ yt-dlp not found. Run: winget install yt-dlp.yt-dlp'); return; }
+  if (!ffmpegPath) { console.log('  ✗ ffmpeg not found. Run: winget install yt-dlp.FFmpeg'); return; }
+
+  YTDLP = ytDlpPath;
+  FFMPEG = ffmpegPath;
 
   const url = await ask('  YouTube URL: ');
-  if (!url) { console.log('  No URL entered.'); return;
-
-  }
+  if (!url) { console.log('  No URL entered.'); return; }
 
   console.log('  Fetching video info...');
   const info = await getVideoInfo(url);
