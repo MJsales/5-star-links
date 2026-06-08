@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jewelry Orders | 5 Star Jewelry</title>
+  <link rel="icon" type="image/png" href="pics/logo/favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #050208; color: #fff; min-height: 100vh; }
+    .topbar { background: rgba(13,8,21,0.9); border-bottom: 1px solid rgba(245,200,66,0.15); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .topbar h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: 3px; background: linear-gradient(135deg, #f5c842, #d4a017); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .topbar a { color: #d4a017; text-decoration: none; font-weight: 600; }
+    .container { max-width: 900px; margin: 2rem auto; padding: 0 1.5rem; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+    .stat { background: linear-gradient(145deg, #0d0815, #110a1a); border: 1px solid rgba(245,200,66,0.15); border-radius: 14px; padding: 1.2rem; text-align: center; }
+    .stat .num { font-size: 2rem; font-weight: 800; color: #f5c842; }
+    .stat .label { font-size: 0.8rem; color: #888; margin-top: 0.3rem; }
+    .order-card { background: linear-gradient(145deg, #0d0815, #110a1a); border: 1px solid rgba(245,200,66,0.15); border-radius: 14px; padding: 1.5rem; margin-bottom: 1rem; }
+    .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.8rem; border-bottom: 1px solid rgba(245,200,66,0.1); }
+    .order-id { font-weight: 700; color: #f5c842; font-family: monospace; }
+    .order-date { font-size: 0.8rem; color: #666; }
+    .order-status { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .status-pending { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .status-fulfilled { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .order-customer { margin-bottom: 0.8rem; }
+    .order-customer p { font-size: 0.85rem; color: #aaa; line-height: 1.6; }
+    .order-customer strong { color: #fff; }
+    .order-items { margin-bottom: 0.8rem; }
+    .order-item { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.85rem; color: #ccc; }
+    .order-item .qty { color: #888; }
+    .order-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1rem; padding-top: 0.8rem; border-top: 1px solid rgba(245,200,66,0.1); }
+    .order-total .amount { color: #f5c842; }
+    .ali-links { margin-top: 0.8rem; }
+    .ali-links a { display: inline-block; padding: 6px 12px; background: rgba(245,200,66,0.1); border: 1px solid rgba(245,200,66,0.2); border-radius: 8px; color: #f5c842; text-decoration: none; font-size: 0.8rem; font-weight: 600; margin-right: 6px; margin-bottom: 6px; }
+    .ali-links a:hover { background: rgba(245,200,66,0.2); }
+    .empty { text-align: center; padding: 4rem; color: #666; }
+    .btn-sm { padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+    .btn-fulfill { background: #22c55e; color: #fff; }
+    .btn-delete { background: rgba(239,68,68,0.15); color: #ef4444; margin-left: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>JEWELRY ORDERS</h1>
+  <a href="jewelry.html">&larr; Back to Store</a>
+</div>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="num" id="totalOrders">0</div><div class="label">Total Orders</div></div>
+    <div class="stat"><div class="num" id="totalRevenue">$0</div><div class="label">Revenue</div></div>
+    <div class="stat"><div class="num" id="pendingOrders">0</div><div class="label">Pending</div></div>
+  </div>
+  <div id="ordersList"></div>
+</div>
+
+<script>
+  function render() {
+    const orders = JSON.parse(localStorage.getItem('jewelryOrders') || '[]');
+    const reversed = [...orders].reverse();
+
+    document.getElementById('totalOrders').textContent = orders.length;
+    document.getElementById('totalRevenue').textContent = '$' + orders.reduce((s, o) => s + o.total, 0).toFixed(2);
+    document.getElementById('pendingOrders').textContent = orders.filter(o => o.status === 'pending').length;
+
+    if (orders.length === 0) {
+      document.getElementById('ordersList').innerHTML = '<div class="empty">No orders yet</div>';
+      return;
+    }
+
+    let html = '';
+    reversed.forEach((order, i) => {
+      const idx = orders.length - 1 - i;
+      const date = new Date(order.date).toLocaleDateString() + ' ' + new Date(order.date).toLocaleTimeString();
+      html += `<div class="order-card">
+        <div class="order-header">
+          <div>
+            <span class="order-id">${order.orderId}</span>
+            <span class="order-date" style="margin-left:12px;">${date}</span>
+          </div>
+          <div>
+            <span class="order-status ${order.status === 'pending' ? 'status-pending' : 'status-fulfilled'}">${order.status}</span>
+            ${order.status === 'pending' ? `<button class="btn-sm btn-fulfill" onclick="fulfill(${idx})">Mark Fulfilled</button>` : ''}
+            <button class="btn-sm btn-delete" onclick="deleteOrder(${idx})">Delete</button>
+          </div>
+        </div>
+        <div class="order-customer">
+          <p><strong>${order.name}</strong></p>
+          <p>${order.email} | ${order.phone}</p>
+          <p>${order.address}, ${order.city}, ${order.state} ${order.zip}, ${order.country}</p>
+        </div>
+        <div class="order-items">
+          ${order.items.map(item => `<div class="order-item"><span>${item.name} <span class="qty">x${item.qty}</span></span><span>$${(item.price * item.qty).toFixed(2)}</span></div>`).join('')}
+        </div>
+        <div class="order-total"><span>Total</span><span class="amount">$${order.total.toFixed(2)}</span></div>
+        <div class="ali-links">
+          <a href="https://www.aliexpress.us/item/3256808790005366.html" target="_blank">Buy Earrings on AliExpress</a>
+          <a href="https://www.aliexpress.us/item/3256808419929204.html" target="_blank">Buy Rope Chain on AliExpress</a>
+          <a href="https://www.aliexpress.us/item/3256811818685674.html" target="_blank">Buy Nugget Ring on AliExpress</a>
+        </div>
+      </div>`;
+    });
+    document.getElementById('ordersList').innerHTML = html;
+  }
+
+  function fulfill(idx) {
+    const orders = JSON.parse(localStorage.getItem('jewelryOrders') || '[]');
+    orders[idx].status = 'fulfilled';
+    localStorage.setItem('jewelryOrders', JSON.stringify(orders));
+    render();
+  }
+
+  function deleteOrder(idx) {
+    if (!confirm('Delete this order?')) return;
+    const orders = JSON.parse(localStorage.getItem('jewelryOrders') || '[]');
+    orders.splice(idx, 1);
+    localStorage.setItem('jewelryOrders', JSON.stringify(orders));
+    render();
+  }
+
+  render();
+</script>
+</body>
+</html>
