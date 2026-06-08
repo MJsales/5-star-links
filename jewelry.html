@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5 Star Jewelry | Moissanite & Gold Jewelry</title>
+  <link rel="icon" type="image/png" href="pics/logo/favicon.png">
+  <link rel="apple-touch-icon" href="pics/logo/favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #050208; color: #fff; min-height: 100vh; }
+
+    .topbar { background: rgba(13,8,21,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(168,85,247,0.15); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .topbar h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; background: linear-gradient(135deg, #f5c842, #d4a017); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .topbar-links { display: flex; gap: 16px; align-items: center; }
+    .topbar-links a { color: #d4a017; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: color 0.3s; }
+    .topbar-links a:hover { color: #f5c842; }
+    .cart-badge { position: relative; }
+    .cart-badge .count { position: absolute; top: -8px; right: -10px; background: #ef4444; color: #fff; font-size: 0.7rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+    .hero { text-align: center; padding: 4rem 1.5rem 2rem; max-width: 800px; margin: 0 auto; }
+    .hero h2 { font-size: 2.8rem; font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(135deg, #f5c842, #d4a017, #f5c842); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { color: #aaa; font-size: 1.1rem; line-height: 1.6; margin-bottom: 0.5rem; }
+    .hero .highlight { color: #f5c842; font-weight: 700; }
+
+    .badge { display: inline-block; background: linear-gradient(135deg, #f5c842, #d4a017); color: #000; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; margin-bottom: 1rem; }
+
+    .products { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+    .product-card { background: linear-gradient(145deg, #0d0815, #110a1a); border: 1px solid rgba(245,200,66,0.15); border-radius: 18px; overflow: hidden; transition: all 0.3s; }
+    .product-card:hover { transform: translateY(-4px); border-color: rgba(245,200,66,0.4); box-shadow: 0 8px 30px rgba(245,200,66,0.1); }
+    .product-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #110a1a; }
+    .product-info { padding: 1.2rem; }
+    .product-info h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; line-height: 1.4; }
+    .product-info .price { font-size: 1.4rem; font-weight: 800; color: #f5c842; margin-bottom: 0.3rem; }
+    .product-info .original { font-size: 0.85rem; color: #666; text-decoration: line-through; margin-bottom: 0.8rem; }
+    .product-info .desc { font-size: 0.85rem; color: #888; line-height: 1.5; margin-bottom: 1rem; }
+    .buy-btn { display: block; width: 100%; padding: 12px; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.3s; text-decoration: none; text-align: center; border: none; background: linear-gradient(135deg, #f5c842, #d4a017); color: #000; }
+    .buy-btn:hover { box-shadow: 0 6px 20px rgba(245,200,66,0.4); transform: translateY(-2px); }
+
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; max-width: 800px; margin: 3rem auto; padding: 0 1.5rem; }
+    .feature { background: linear-gradient(145deg, #0d0815, #110a1a); border: 1px solid rgba(245,200,66,0.1); border-radius: 14px; padding: 1.2rem; text-align: center; }
+    .feature .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .feature h3 { font-size: 0.9rem; margin-bottom: 0.3rem; color: #f5c842; }
+    .feature p { font-size: 0.8rem; color: #888; }
+
+    .footer { text-align: center; padding: 2rem; color: #444; font-size: 0.8rem; border-top: 1px solid rgba(245,200,66,0.1); margin-top: 3rem; }
+
+    .cart-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; align-items: center; justify-content: center; }
+    .cart-modal.active { display: flex; }
+    .cart-box { background: #0d0815; border: 1px solid rgba(245,200,66,0.2); border-radius: 18px; padding: 2rem; max-width: 450px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    .cart-box h2 { font-size: 1.3rem; margin-bottom: 1rem; color: #f5c842; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid rgba(245,200,66,0.1); }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item-info { flex: 1; }
+    .cart-item-name { font-size: 0.9rem; font-weight: 600; }
+    .cart-item-price { font-size: 0.85rem; color: #f5c842; }
+    .cart-item-qty { display: flex; align-items: center; gap: 8px; margin: 0 12px; }
+    .cart-item-qty button { width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(245,200,66,0.3); background: transparent; color: #f5c842; font-size: 1rem; cursor: pointer; }
+    .cart-item-remove { color: #ef4444; cursor: pointer; font-size: 1.2rem; background: none; border: none; }
+    .cart-total { display: flex; justify-content: space-between; padding: 1rem 0; border-top: 2px solid rgba(245,200,66,0.2); margin-top: 0.5rem; font-weight: 700; font-size: 1.1rem; }
+    .cart-total .amount { color: #f5c842; }
+    .checkout-btn { display: block; width: 100%; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; border: none; background: linear-gradient(135deg, #f5c842, #d4a017); color: #000; margin-top: 1rem; transition: all 0.3s; }
+    .checkout-btn:hover { box-shadow: 0 6px 20px rgba(245,200,66,0.4); }
+    .close-cart { background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; float: right; }
+    .empty-cart { text-align: center; padding: 2rem; color: #666; }
+    .promo-row { display: flex; gap: 8px; margin-top: 1rem; }
+    .promo-row input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(245,200,66,0.2); background: #110a1a; color: #fff; font-size: 0.9rem; }
+    .promo-row button { padding: 10px 16px; border-radius: 8px; border: none; background: rgba(245,200,66,0.15); color: #f5c842; font-weight: 600; cursor: pointer; }
+
+    @media (max-width: 600px) {
+      .hero h2 { font-size: 2rem; }
+      .products { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>5 STAR JEWELRY</h1>
+  <div class="topbar-links">
+    <a href="index.html">5 Star Links</a>
+    <a href="#" class="cart-badge" onclick="openCart(); return false;">
+      Cart
+      <span class="count" id="cartCount" style="display:none;">0</span>
+    </a>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="badge">MOISSANITE &bull; STERLING SILVER &bull; 18K GOLD</div>
+  <h2>Ice That Passes The Test</h2>
+  <p>Lab-created moissanite that <span class="highlight">passes diamond testers</span>. VVS1 clarity, D color, certified. 925 sterling silver & 18k gold plated.</p>
+</div>
+
+<div class="products">
+
+  <div class="product-card">
+    <img class="product-img" src="https://ae01.alicdn.com/kf/Sfb9375de2cd34e0cb740c54c57d6232dD.jpg" alt="Moissanite Stud Earrings" loading="lazy">
+    <div class="product-info">
+      <h3>Moissanite S925 Sterling Silver Stud Earrings</h3>
+      <div class="price">$20.00</div>
+      <div class="original">$45.00</div>
+      <div class="desc">VVS1 D Color moissanite studs. 925 sterling silver setting. Comes with 2 GRA certificates. Passes diamond tester.</div>
+      <button class="buy-btn" onclick="addToCart('Moissanite Stud Earrings', 20, 'https://ae01.alicdn.com/kf/Sfb9375de2cd34e0cb740c54c57d6232dD.jpg')">Add to Cart</button>
+      <a href="https://www.aliexpress.us/item/3256808790005366.html" target="_blank" class="buy-btn" style="margin-top:8px; background:linear-gradient(135deg,#555,#333); color:#fff;">Buy on AliExpress</a>
+    </div>
+  </div>
+
+  <div class="product-card">
+    <img class="product-img" src="https://ae01.alicdn.com/kf/S4e9d83c368934bc18e44351ab7209210H.jpg" alt="Moissanite Rope Chain" loading="lazy">
+    <div class="product-info">
+      <h3>6mm Iced Moissanite Rope Chain Necklace</h3>
+      <div class="price">$56.95</div>
+      <div class="original">$113.90</div>
+      <div class="desc">Stainless steel, 18k gold plated. iced out moissanite rope chain. Hip hop rapper style. Available 16-24 inch.</div>
+      <button class="buy-btn" onclick="addToCart('Moissanite Rope Chain', 56.95, 'https://ae01.alicdn.com/kf/S4e9d83c368934bc18e44351ab7209210H.jpg')">Add to Cart</button>
+      <a href="https://www.aliexpress.us/item/3256808419929204.html" target="_blank" class="buy-btn" style="margin-top:8px; background:linear-gradient(135deg,#555,#333); color:#fff;">Buy on AliExpress</a>
+    </div>
+  </div>
+
+  <div class="product-card">
+    <img class="product-img" src="https://ae01.alicdn.com/kf/Sfb9375de2cd34e0cb740c54c57d6232dD.jpg" alt="14k Gold Nugget Rings" loading="lazy">
+    <div class="product-info">
+      <h3>14k Gold Plated Nugget Rings</h3>
+      <div class="price">$20.00</div>
+      <div class="original">$40.00</div>
+      <div class="desc">Classic nugget design ring. 14k gold plated over stainless steel. Hip hop style. Durable and shiny.</div>
+      <button class="buy-btn" onclick="addToCart('14k Gold Nugget Rings', 20, 'https://ae01.alicdn.com/kf/Sfb9375de2cd34e0cb740c54c57d6232dD.jpg')">Add to Cart</button>
+      <a href="https://www.aliexpress.us/item/3256811818685674.html" target="_blank" class="buy-btn" style="margin-top:8px; background:linear-gradient(135deg,#555,#333); color:#fff;">Buy on AliExpress</a>
+    </div>
+  </div>
+
+</div>
+
+<div class="features">
+  <div class="feature">
+    <div class="icon">💎</div>
+    <h3>Passes Diamond Tester</h3>
+    <p>Real moissanite, not CZ</p>
+  </div>
+  <div class="feature">
+    <div class="icon">📋</div>
+    <h3>GRA Certified</h3>
+    <p>Certificate of authenticity included</p>
+  </div>
+  <div class="feature">
+    <div class="icon">✈️</div>
+    <h3>Free Shipping</h3>
+    <p>Worldwide delivery</p>
+  </div>
+  <div class="feature">
+    <div class="icon">🔄</div>
+    <h3>Easy Returns</h3>
+    <p>30-day money back guarantee</p>
+  </div>
+</div>
+
+<div class="footer">
+  <p>5 Star Jewelry &copy; 2026. All rights reserved.</p>
+  <p style="margin-top:0.3rem;"><a href="index.html" style="color:#666;text-decoration:none;">5 Star Links</a></p>
+</div>
+
+<div class="cart-modal" id="cartModal">
+  <div class="cart-box">
+    <button class="close-cart" onclick="closeCart()">&times;</button>
+    <h2>Your Cart</h2>
+    <div id="cartItems"></div>
+    <div class="promo-row">
+      <input type="text" id="promoInput" placeholder="Promo code">
+      <button onclick="applyPromo()">Apply</button>
+    </div>
+    <div id="promoMsg" style="font-size:0.8rem; margin-top:0.5rem;"></div>
+    <div class="cart-total">
+      <span>Total</span>
+      <span class="amount" id="cartTotal">$0.00</span>
+    </div>
+    <button class="checkout-btn" onclick="checkout()">Checkout</button>
+  </div>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="auth.js"></script>
+<script>
+  let cart = JSON.parse(localStorage.getItem('jewelryCart') || '[]');
+  let promoApplied = false;
+  let promoDiscount = 0;
+
+  function saveCart() {
+    localStorage.setItem('jewelryCart', JSON.stringify(cart));
+    updateCartCount();
+  }
+
+  function updateCartCount() {
+    const count = cart.reduce((s, i) => s + i.qty, 0);
+    const el = document.getElementById('cartCount');
+    if (count > 0) { el.style.display = 'flex'; el.textContent = count; }
+    else { el.style.display = 'none'; }
+  }
+
+  function addToCart(name, price, img) {
+    const existing = cart.find(i => i.name === name);
+    if (existing) { existing.qty++; }
+    else { cart.push({ name, price, img, qty: 1 }); }
+    saveCart();
+    openCart();
+  }
+
+  function removeFromCart(idx) {
+    cart.splice(idx, 1);
+    saveCart();
+    renderCart();
+  }
+
+  function changeQty(idx, delta) {
+    cart[idx].qty += delta;
+    if (cart[idx].qty <= 0) cart.splice(idx, 1);
+    saveCart();
+    renderCart();
+  }
+
+  function applyPromo() {
+    const code = document.getElementById('promoInput').value.trim().toUpperCase();
+    if (code === 'JOHNABBY' || code === 'DAY1') {
+      promoApplied = true;
+      promoDiscount = getTotal();
+      document.getElementById('promoMsg').innerHTML = '<span style="color:#22c55e;">Promo applied! FREE order!</span>';
+      renderCart();
+    } else {
+      document.getElementById('promoMsg').innerHTML = '<span style="color:#ef4444;">Invalid code</span>';
+    }
+  }
+
+  function getTotal() {
+    return cart.reduce((s, i) => s + i.price * i.qty, 0);
+  }
+
+  function renderCart() {
+    const container = document.getElementById('cartItems');
+    if (cart.length === 0) {
+      container.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
+      document.getElementById('cartTotal').textContent = '$0.00';
+      return;
+    }
+    let html = '';
+    cart.forEach((item, i) => {
+      html += `<div class="cart-item">
+        <img src="${item.img}" style="width:50px;height:50px;border-radius:8px;object-fit:cover;">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-price">$${item.price.toFixed(2)}</div>
+        </div>
+        <div class="cart-item-qty">
+          <button onclick="changeQty(${i},-1)">-</button>
+          <span>${item.qty}</span>
+          <button onclick="changeQty(${i},1)">+</button>
+        </div>
+        <button class="cart-item-remove" onclick="removeFromCart(${i})">&times;</button>
+      </div>`;
+    });
+    container.innerHTML = html;
+    const total = promoApplied ? 0 : getTotal();
+    document.getElementById('cartTotal').textContent = '$' + total.toFixed(2);
+  }
+
+  function openCart() {
+    renderCart();
+    document.getElementById('cartModal').classList.add('active');
+  }
+
+  function closeCart() {
+    document.getElementById('cartModal').classList.remove('active');
+  }
+
+  async function checkout() {
+    if (promoApplied) {
+      alert('Free order! Check your email for confirmation.');
+      cart = [];
+      promoApplied = false;
+      promoDiscount = 0;
+      saveCart();
+      closeCart();
+      return;
+    }
+    if (cart.length === 0) return;
+
+    const total = getTotal();
+    try {
+      const res = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: Math.round(total * 100), items: cart.map(i => i.name) })
+      });
+      const data = await res.json();
+      if (data.error) { alert(data.error); return; }
+
+      const stripe = Stripe('pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3');
+      const { error } = await stripe.confirmCardPayment(data.clientSecret, {
+        payment_method: { card: elements.getElement('card') }
+      });
+      if (error) { alert(error.message); return; }
+
+      alert('Payment successful!');
+      cart = [];
+      saveCart();
+      closeCart();
+    } catch(e) { alert('Checkout error: ' + e.message); }
+  }
+
+  document.getElementById('cartModal').addEventListener('click', function(e) {
+    if (e.target === this) closeCart();
+  });
+
+  updateCartCount();
+</script>
+</body>
+</html>
