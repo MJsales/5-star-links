@@ -93,9 +93,20 @@ function installTool(name, wingetId) {
   }
 }
 
+function run(cmd, args) {
+  return new Promise((resolve, reject) => {
+    const full = '"' + cmd + '" ' + args.join(' ');
+    exec(full, { timeout: 300000, maxBuffer: 50 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (err) return reject(new Error(stderr || err.message));
+      resolve(stdout);
+    });
+  });
+}
+
 function getVideoInfo(url) {
   return new Promise((resolve, reject) => {
-    exec(YTDLP + ' --dump-json --no-download "' + url + '"', { timeout: 60000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
+    const cmd = '"' + YTDLP + '" --dump-json --no-download "' + url + '"';
+    exec(cmd, { timeout: 60000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
       if (err) return reject(err);
       try { resolve(JSON.parse(stdout)); } catch { reject(new Error('Parse error')); }
     });
@@ -106,18 +117,13 @@ function downloadVideo(url, outputDir) {
   return new Promise((resolve, reject) => {
     const outputPath = path.join(outputDir, 'video.mp4');
     console.log('  Downloading video...');
-    const cmd = YTDLP.includes('\\') ? YTDLP : YTDLP;
-    const args = ['-f', 'best[height<=720]', '-o', outputPath, '--no-playlist', url];
-    const proc = spawn(cmd, args, { shell: true });
-    let stderr = '';
-    proc.stderr.on('data', d => { stderr += d.toString(); });
-    proc.on('close', code => {
-      if (code !== 0) return reject(new Error(stderr || 'Download failed'));
+    const cmd = '"' + YTDLP + '" -f "best[height<=720]" -o "' + outputPath + '" --no-playlist "' + url + '"';
+    exec(cmd, { timeout: 300000 }, (err, stdout, stderr) => {
+      if (err) return reject(new Error(stderr || 'Download failed'));
       if (!fs.existsSync(outputPath)) return reject(new Error('File not created'));
       console.log('  ✓ Download complete');
       resolve(outputPath);
     });
-    proc.on('error', reject);
   });
 }
 
@@ -125,16 +131,12 @@ function clipVideo(inputPath, outputDir, startSec, duration, index, total) {
   return new Promise((resolve, reject) => {
     const outputPath = path.join(outputDir, 'clip_' + String(index).padStart(2, '0') + '.mp4');
     console.log('  Creating clip ' + index + '/' + total + ' (' + startSec + 's)...');
-    const args = ['-ss', String(startSec), '-i', inputPath, '-t', String(duration), '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'fast', '-y', outputPath];
-    const proc = spawn(FFMPEG, args, { shell: true });
-    let stderr = '';
-    proc.stderr.on('data', d => { stderr += d.toString(); });
-    proc.on('close', code => {
-      if (code !== 0) return reject(new Error(stderr || 'Clip failed'));
+    const cmd = '"' + FFMPEG + '" -ss ' + startSec + ' -i "' + inputPath + '" -t ' + duration + ' -c:v libx264 -c:a aac -preset fast -y "' + outputPath + '"';
+    exec(cmd, { timeout: 300000 }, (err, stdout, stderr) => {
+      if (err) return reject(new Error(stderr || 'Clip failed'));
       console.log('  ✓ Clip ' + index + ' saved');
       resolve(outputPath);
     });
-    proc.on('error', reject);
   });
 }
 
