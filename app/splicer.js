@@ -115,7 +115,7 @@ function clipVideo(inputPath, outputDir, startSec, duration, index, total) {
   return new Promise((resolve, reject) => {
     const outputPath = path.join(outputDir, 'clip_' + String(index).padStart(2, '0') + '.mp4');
     console.log('  Creating clip ' + index + '/' + total + ' (' + startSec + 's)...');
-    const proc = require('child_process').spawn(FFMPEG, ['-ss', String(startSec), '-i', inputPath, '-t', String(duration), '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'fast', '-y', outputPath]);
+    const proc = require('child_process').spawn(FFMPEG, ['-i', inputPath, '-ss', String(startSec), '-t', String(duration), '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'fast', '-y', outputPath]);
     let stderr = '';
     proc.stdout.on('data', () => {});
     proc.stderr.on('data', d => { stderr += d.toString(); });
