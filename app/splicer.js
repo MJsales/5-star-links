@@ -50,29 +50,35 @@ function ensureTools() {
 
   // Try to find ffmpeg
   if (!checkCommand('ffmpeg')) {
-    // Check D:\0ne\ffmpeg.exe
+    // Check D:\0ne\ffmpeg.exe first
     if (fs.existsSync('D:\\0ne\\ffmpeg.exe')) {
-      process.env.PATH = 'D:\\0ne;' + (process.env.PATH || '');
+      try { execSync('"D:\\0ne\\ffmpeg.exe" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = 'D:\\0ne;' + (process.env.PATH || ''); } catch {}
     }
+  }
+  if (!checkCommand('ffmpeg')) {
     const winGetPackages = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
     if (fs.existsSync(winGetPackages)) {
       for (const d of fs.readdirSync(winGetPackages)) {
-        if (d.toLowerCase().includes('ffmpeg')) {
-          const sub = path.join(winGetPackages, d);
-          if (!fs.statSync(sub).isDirectory()) continue;
-          for (const s of fs.readdirSync(sub)) {
-            const sp = path.join(sub, s);
-            if (!fs.statSync(sp).isDirectory()) continue;
+        const dp = path.join(winGetPackages, d);
+        try { if (!fs.statSync(dp).isDirectory()) continue; } catch { continue; }
+        if (!d.toLowerCase().includes('ffmpeg')) continue;
+        try {
+          const subs = fs.readdirSync(dp);
+          for (const s of subs) {
+            const sp = path.join(dp, s);
+            try { if (!fs.statSync(sp).isDirectory()) continue; } catch { continue; }
             const bin = path.join(sp, 'bin');
-            if (fs.existsSync(bin)) {
-              for (const f of fs.readdirSync(bin)) {
-                if (f.toLowerCase() === 'ffmpeg.exe') {
-                  try { execSync('"' + path.join(bin, f) + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = bin + ';' + (process.env.PATH || ''); } catch {}
+            try {
+              if (fs.existsSync(bin)) {
+                for (const f of fs.readdirSync(bin)) {
+                  if (f.toLowerCase() === 'ffmpeg.exe') {
+                    try { execSync('"' + path.join(bin, f) + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = bin + ';' + (process.env.PATH || ''); } catch {}
+                  }
                 }
               }
-            }
+            } catch {}
           }
-        }
+        } catch {}
       }
     }
   }
