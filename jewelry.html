@@ -117,6 +117,35 @@
   </div>
 
   <div class="product-card">
+    <img class="product-img" src="https://ae01.alicdn.com/kf/Sfb9375de2cd34e0cb740c54c57d6232dD.jpg" alt="Moissanite Stud Earrings" loading="lazy">
+    <div class="product-info">
+      <h3>Moissanite S925 Sterling Silver Stud Earrings</h3>
+      <div class="price">$15.00</div>
+      <div class="desc">VVS1 D Color moissanite. 925 sterling silver. GRA certified. 8 Hearts 8 Arrows cut. Passes diamond tester. 500+ sold.</div>
+      <div class="form-group" style="margin:0.8rem 0 0.5rem;">
+        <label style="font-size:0.8rem;color:#aaa;">Gem Color</label>
+        <select id="earringColor" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(245,200,66,0.2);background:#110a1a;color:#fff;font-size:0.85rem;">
+          <option>WG Silver - White</option><option>FB Silver - White</option><option>FB Silver - Yellow</option>
+          <option>FB Silver - Green</option><option>FB Silver - Pink</option><option>FB Silver - Red</option>
+          <option>FB Silver - Orange</option><option>YB Silver - White</option><option>YB Silver - Yellow</option>
+          <option>YB Silver - Green</option><option>YB Silver - Pink</option><option>YB Silver - Red</option>
+          <option>YB Silver - Orange</option><option>YB Glod - White</option><option>FB Glod - White</option>
+          <option>WG Gold - White</option><option>FBEK Silver - White</option><option>UXEK Silver - White</option>
+          <option>SZEK Silver - White</option><option>FBEH Silver - White</option><option>YBEH Silver - White</option>
+          <option>HRFB Silver - White</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0.5rem 0 0.8rem;">
+        <label style="font-size:0.8rem;color:#aaa;">Metal Color / Size</label>
+        <select id="earringSize" style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(245,200,66,0.2);background:#110a1a;color:#fff;font-size:0.85rem;">
+          <option>0.5ct (5mm) x 2pcs-box</option><option>1ct (6.5mm) x 2pcs-box</option><option>2ct (8mm) x 2pcs-box</option>
+        </select>
+      </div>
+      <button class="buy-btn" onclick="addEarringToCart()">Add to Cart</button>
+    </div>
+  </div>
+
+  <div class="product-card">
     <img class="product-img" src="https://ae01.alicdn.com/kf/S4e9d83c368934bc18e44351ab7209210H.jpg" alt="Moissanite Rope Chain" loading="lazy">
     <div class="product-info">
       <h3>6mm Iced Moissanite Rope Chain Necklace</h3>
@@ -291,6 +320,17 @@
     const existing = cart.find(i => i.name === name);
     if (existing) { existing.qty++; }
     else { cart.push({ name, price, img, qty: 1 }); }
+    saveCart();
+    openCart();
+  }
+
+  function addEarringToCart() {
+    const color = document.getElementById('earringColor').value;
+    const size = document.getElementById('earringSize').value;
+    const name = 'Moissanite Stud Earrings - ' + color + ' / ' + size;
+    const existing = cart.find(i => i.name === name);
+    if (existing) { existing.qty++; }
+    else { cart.push({ name, price: 15, img: 'https://ae01.alicdn.com/kf/Sfb9375de2cd34e0cb740c54c57d6232dD.jpg', qty: 1 }); }
     saveCart();
     openCart();
   }
