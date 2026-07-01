@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DHG - LKS | 5 Star Links</title>
+  <link rel="icon" type="image/png" href="pics/logo/favicon.png">
+  <link rel="apple-touch-icon" href="pics/logo/logo.png.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050208;
+      color: #fff;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(5,2,8,0.85); backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding: 0.8rem 1.5rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar a { text-decoration: none; color: #fff; font-weight: 600; font-size: 0.9rem; }
+    .topbar a:hover { color: #a855f7; }
+    .topbar .logo {
+      font-size: 1.2rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 0%, #a855f7 50%, #7c3aed 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header {
+      position: relative; padding: 4rem 1rem 3rem; text-align: center;
+      overflow: hidden;
+    }
+    .header::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.15) 0%, transparent 60%);
+    }
+    .header h1 {
+      font-size: 3.5rem; font-weight: 900; letter-spacing: 6px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 0%, #a855f7 50%, #7c3aed 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      position: relative;
+    }
+    .header p {
+      margin-top: 0.5rem; font-size: 0.95rem; color: #a78bfa;
+      letter-spacing: 5px; text-transform: uppercase; font-weight: 600;
+      position: relative;
+    }
+    .container { max-width: 900px; margin: 0 auto; padding: 1rem; }
+    .search-wrap {
+      margin: 1.5rem 0; text-align: center;
+    }
+    .search-wrap input {
+      width: 100%; max-width: 500px; padding: 0.8rem 1.2rem;
+      background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25);
+      border-radius: 50px; color: #fff; font-size: 1rem; outline: none;
+      font-family: 'Inter', sans-serif; transition: border-color 0.3s;
+    }
+    .search-wrap input:focus { border-color: #a855f7; }
+    .search-wrap input::placeholder { color: #555; }
+    .section-label {
+      font-size: 1.3rem; font-weight: 900; letter-spacing: 4px;
+      text-transform: uppercase; margin: 2rem 0 0.5rem;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      border-bottom: 1px solid rgba(168,85,247,0.2); padding-bottom: 0.5rem;
+    }
+    .cat-count {
+      font-size: 0.8rem; color: #555; font-weight: 600; margin-left: 8px;
+      -webkit-text-fill-color: #555;
+    }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem; margin-top: 1rem;
+    }
+    .card {
+      background: linear-gradient(145deg, #0d0815 0%, #110a1a 100%);
+      border: 1px solid rgba(168,85,247,0.15); border-radius: 14px;
+      padding: 1.2rem; transition: all 0.3s; display: flex;
+      flex-direction: column; justify-content: space-between;
+    }
+    .card:hover {
+      border-color: rgba(168,85,247,0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(168,85,247,0.15);
+    }
+    .card h3 {
+      font-size: 0.95rem; font-weight: 700; letter-spacing: 0.5px;
+      margin-bottom: 0.8rem; line-height: 1.3; color: #e0d6f5;
+    }
+    .card a {
+      display: block; width: 100%; padding: 0.6rem;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+      text-align: center; text-decoration: none; transition: all 0.2s;
+    }
+    .card a:hover {
+      transform: scale(1.03); box-shadow: 0 6px 20px rgba(168,85,247,0.4);
+    }
+    .footer {
+      text-align: center; padding: 3rem 1rem; font-size: 0.85rem;
+      color: #444; border-top: 1px solid rgba(168,85,247,0.1); margin-top: 2rem;
+    }
+    .footer strong { color: #a855f7; }
+    .category { display: none; }
+    .category.active { display: block; }
+    .category.hidden { display: none; }
+    .no-results {
+      text-align: center; padding: 3rem 1rem; color: #555;
+      font-size: 1rem; display: none;
+    }
+    .no-results.show { display: block; }
+    @media (max-width: 600px) {
+      .header h1 { font-size: 2.2rem; letter-spacing: 3px; }
+      .grid { grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+      .card { padding: 1rem; }
+      .card h3 { font-size: 0.85rem; }
+      .topbar { padding: 0.6rem 1rem; }
+      .topbar .logo { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" style="font-size:0.85rem;">&larr; Back</a>
+  <span class="logo">5 STAR LINKS</span>
+  <span></span>
+</div>
+
+<div class="header">
+  <h1>DHG</h1>
+  <p>Premium Sneakers & Streetwear</p>
+</div>
+
+<div class="container">
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="Search shoes..." oninput="filterShoes()" />
+  </div>
+  <div id="noResults" class="no-results">No shoes found matching your search.</div>
+
+  <div class="section-label">LKS <span class="cat-count" id="totalCount"></span></div>
+
+  <div id="shoeGrid" class="grid"></div>
+</div>
+
+<div class="footer">
+  &copy; 2026 <strong>5 Star Links</strong> &bull; All rights reserved &bull; <a href="terms.html" style="color:#a855f7;text-decoration:none;">Terms of Service</a>
+</div>
+
+<script>
+const shoes = [
+  { name: "Jason Jewelry (Chrome Heart Rings)", link: "https://docs.google.com/spreadsheets/d/1g4lQLqgqwFC5A3v-6jXOkgH-bUOpVSj6r6-Wx-gYmDQ/edit#gid=1953553672&range=A2", cat: "Other" },
+  { name: "1:1 Multi LV wallet and card holder", link: "https://sale.dhgate.com/ZM7moQ47", cat: "LV" },
+  { name: "Dior Alpha Sandal Oblique", link: "https://sale.dhgate.com/u1n8pm73", cat: "Other" },
+  { name: "Air Jordan 1 Low Travis Scott Shy Pink", link: "https://www.dhgate.com/product/ts-2-0-lkss-jason-high-quality-1-sneaker/1084950762.html", cat: "Jordan 1" },
+  { name: "Air Jordan 1 Low Travis Scott Sail Tropical Pink", link: "https://www.dhgate.com/product/ts-2-0-lkss-jason-high-quality-1-sneaker/1084950762.html", cat: "Jordan 1" },
+  { name: "Jordan 4 Nigel Sylvester Brick After Brick", link: "https://www.dhgate.com/product/bike-lkss-jason-high-quality-4-sneaker-shoes/1069071589.html", cat: "Jordan 4" },
+  { name: "Balenciaga LED Runner", link: "https://www.dhgate.com/product/lkss-jason-runner-led-high-quality-sneaker/1101719733.html", cat: "Balenciaga" },
+  { name: "Lanvin", link: "https://www.dhgate.com/product/lkss-jason-high-quality-curb-sneaker-shoes/1100338097.html", cat: "Other" },
+  { name: "Mind 001 Slide", link: "https://www.dhgate.com/product/lkss-jason-high-quality-mind-001-slide-shoes/1103248255.html", cat: "Other" },
+  { name: "Jordan 11 Gamma Blue 2025", link: "https://sale.dhgate.com/RSXyDG22", cat: "Jordan 11" },
+  { name: "LV Band", link: "https://sale.dhgate.com/8WSqEc21", cat: "LV" },
+  { name: "Air Jordan 5 Retro Wolf Grey 2026", link: "https://sale.dhgate.com/AJRcmr90", cat: "Jordan 5" },
+  { name: "Air Force 1 Lil Yachty Concrete Boys", link: "https://sale.dhgate.com/UTmvAv21", cat: "Air Force 1" },
+  { name: "Air Jordan 4 Lakers", link: "https://sale.dhgate.com/LgbbzU28", cat: "Jordan 4" },
+  { name: "Nike SB Dunk Low Supreme 94 Ink", link: "https://sale.dhgate.com/HC3yZz54", cat: "Nike Dunk" },
+  { name: "SB Dunk Low Supreme 94 Ocean Fog", link: "https://sale.dhgate.com/HC3yZz54", cat: "Nike Dunk" },
+  { name: "Balenciaga Furry Open Mule", link: "https://sale.dhgate.com/d7974q53", cat: "Balenciaga" },
+  { name: "CPFM AF1 Reflective", link: "https://sale.dhgate.com/WvZk7J37", cat: "Air Force 1" },
+  { name: "Maison Margiela Sneakers", link: "https://sale.dhgate.com/6BQOcN85", cat: "Other" },
+  { name: "Balenciaga Speed", link: "https://sale.dhgate.com/pYRxhP69", cat: "Balenciaga" },
+  { name: "Balenciaga Bouncer", link: "https://sale.dhgate.com/9rRsju43", cat: "Balenciaga" },
+  { name: "Travis Scott x Fragment x Air Jordan 1 Low", link: "https://sale.dhgate.com/cYeDro51", cat: "Jordan 1" },
+  { name: "Crystal LV Sneakers", link: "https://sale.dhgate.com/Wj81DR32", cat: "LV" },
+  { name: "LV Skate", link: "https://sale.dhgate.com/l9aTQL83", cat: "LV" },
+  { name: "LV Skate (alt)", link: "https://www.dhgate.com/product/lkss-high-quality-skate-sneaker-shoes-for/1083833051.html", cat: "LV" },
+  { name: "LV Trainer", link: "https://sale.dhgate.com/bHJSxK43", cat: "LV" },
+  { name: "Be right back", link: "https://sale.dhgate.com/o7msBk93", cat: "Other" },
+  { name: "Supreme Dunk", link: "https://sale.dhgate.com/HC3yZz54", cat: "Nike Dunk" },
+  { name: "Jordan 11 Rare Air", link: "https://sale.dhgate.com/7IHmC028", cat: "Jordan 11" },
+  { name: "Jordan 4 Rare Air", link: "https://sale.dhgate.com/Gd3phN84", cat: "Jordan 4" },
+  { name: "Jordan 4 Pizza", link: "https://sale.dhgate.com/JNm8pf09", cat: "Jordan 4" },
+  { name: "Prada America's Cup", link: "https://sale.dhgate.com/OEg0JM99", cat: "Other" },
+  { name: "Grey Track (No LED)", link: "https://sale.dhgate.com/nCpWZX93", cat: "Balenciaga" },
+  { name: "Rick Owen Brown", link: "https://sale.dhgate.com/V3Rt6563", cat: "Rick Owens" },
+  { name: "Jordan 4 Cave Stone", link: "https://sale.dhgate.com/H70Jha72", cat: "Jordan 4" },
+  { name: "Jordan 4 Undefeated", link: "https://sale.dhgate.com/JqRurV09", cat: "Jordan 4" },
+  { name: "Jordan 14 Ferrari", link: "https://sale.dhgate.com/4S59sO97", cat: "Jordan 14" },
+  { name: "Jordan 4 Wet Cement", link: "https://sale.dhgate.com/7HllZC81", cat: "Jordan 4" },
+  { name: "Jordan 4 Black Cat", link: "https://sale.dhgate.com/KNG3XA57", cat: "Jordan 4" },
+  { name: "Jordan 4 White Thunder", link: "https://sale.dhgate.com/EnCcIy55", cat: "Jordan 4" },
+  { name: "Jordan 4 Orchid", link: "https://sale.dhgate.com/t4EIGx85", cat: "Jordan 4" },
+  { name: "Jordan 4 Bred Reimagined", link: "https://sale.dhgate.com/KEnZv979", cat: "Jordan 4" },
+  { name: "Jordan 4 Thunder", link: "https://sale.dhgate.com/D61iZb76", cat: "Jordan 4" },
+  { name: "Jordan 4 Midnight Navy", link: "https://sale.dhgate.com/ekLCjb86", cat: "Jordan 4" },
+  { name: "Jordan 4 Metallic Gold", link: "https://sale.dhgate.com/xuBU0v02", cat: "Jordan 4" },
+  { name: "Jordan 4 Metallic Green", link: "https://sale.dhgate.com/WNgR5414", cat: "Jordan 4" },
+  { name: "Jordan 4 Military Black", link: "https://sale.dhgate.com/b7chxo30", cat: "Jordan 4" },
+  { name: "Jordan 4 Metallic Purple", link: "https://sale.dhgate.com/QshmnO49", cat: "Jordan 4" },
+  { name: "Jordan 4 Fire Red", link: "https://sale.dhgate.com/dLTmRQ43", cat: "Jordan 4" },
+  { name: "Jordan 4 Red Thunder", link: "https://sale.dhgate.com/t0JQC975", cat: "Jordan 4" },
+  { name: "Jordan 4 SE 95 Neon", link: "https://sale.dhgate.com/r3y7xF87", cat: "Jordan 4" },
+  { name: "Jordan 4 Bred", link: "https://sale.dhgate.com/amkI9H87", cat: "Jordan 4" },
+  { name: "Jordan 4 Pine Green SB", link: "https://sale.dhgate.com/46k3hD93", cat: "Jordan 4" },
+  { name: "Jordan 4 A Ma Maniere While You Were Sleeping", link: "https://sale.dhgate.com/htALHt32", cat: "Jordan 4" },
+  { name: "Jordan 4 Pure Money", link: "https://sale.dhgate.com/F941oU37", cat: "Jordan 4" },
+  { name: "Jordan 4 A Ma Maniere Violet Ore", link: "https://sale.dhgate.com/087yZA62", cat: "Jordan 4" },
+  { name: "Jordan 4 Black Canvas", link: "https://sale.dhgate.com/bdMpuo15", cat: "Jordan 4" },
+  { name: "Jordan 4 White Cement", link: "https://sale.dhgate.com/OA7oYb95", cat: "Jordan 4" },
+  { name: "Jordan 4 Cool Grey", link: "https://sale.dhgate.com/Ha2V4j70", cat: "Jordan 4" },
+  { name: "Jordan 4 Craft Photon Dust", link: "https://sale.dhgate.com/LDUngu98", cat: "Jordan 4" },
+  { name: "Jordan 4 Motorsports", link: "https://sale.dhgate.com/M1ds8F10", cat: "Jordan 4" },
+  { name: "Jordan 4 Frozen Moments", link: "https://sale.dhgate.com/DlvYTM46", cat: "Jordan 4" },
+  { name: "Jordan 4 Taupe Haze", link: "https://sale.dhgate.com/SwyGzT64", cat: "Jordan 4" },
+  { name: "Jordan 4 Seafoam", link: "https://sale.dhgate.com/LiIWhj53", cat: "Jordan 4" },
+  { name: "Jordan 4 Sail", link: "https://sale.dhgate.com/JWRgph06", cat: "Jordan 4" },
+  { name: "Jordan 4 University Blue", link: "https://sale.dhgate.com/cUj90E94", cat: "Jordan 4" },
+  { name: "Jordan 4 Raptors", link: "https://sale.dhgate.com/eyxq6I40", cat: "Jordan 4" },
+  { name: "Jordan 4 Canyon Purple", link: "https://sale.dhgate.com/vQ2RLM11", cat: "Jordan 4" },
+  { name: "Jordan 4 Oreo", link: "https://sale.dhgate.com/EEPGTl28", cat: "Jordan 4" },
+  { name: "Jordan 4 Levis Black", link: "https://sale.dhgate.com/Bkqkfh10", cat: "Jordan 4" },
+  { name: "Jordan 4 Levis Denim", link: "https://sale.dhgate.com/9kolAl04", cat: "Jordan 4" },
+  { name: "Jordan 4 Levis White", link: "https://sale.dhgate.com/tNzm5b15", cat: "Jordan 4" },
+  { name: "Jordan 4 Oxidized Green", link: "https://sale.dhgate.com/3bt5aL92", cat: "Jordan 4" },
+  { name: "Jordan 4 Union Off Noir", link: "https://sale.dhgate.com/kvDYFK63", cat: "Jordan 4" },
+  { name: "Jordan 4 Red Cement", link: "https://sale.dhgate.com/yCqcQZ84", cat: "Jordan 4" },
+  { name: "Jordan 4 Metallic Red", link: "https://sale.dhgate.com/jZ9DLI29", cat: "Jordan 4" },
+  { name: "Jordan 4 Union Desert Moss", link: "https://sale.dhgate.com/2dz3XW07", cat: "Jordan 4" },
+  { name: "Jordan 4 Union Taupe Haze", link: "https://sale.dhgate.com/iNyRhk53", cat: "Jordan 4" },
+  { name: "Jordan 4 Vivid Sulfur", link: "https://sale.dhgate.com/mPx4vq46", cat: "Jordan 4" },
+  { name: "Jordan 4 Union Guava Ice", link: "https://sale.dhgate.com/3XjSAs00", cat: "Jordan 4" },
+  { name: "Jordan 4 Royalty", link: "https://sale.dhgate.com/1uXgzP45", cat: "Jordan 4" },
+  { name: "Jordan 4 Green Glow", link: "https://sale.dhgate.com/Jk9r8445", cat: "Jordan 4" },
+  { name: "Jordan 4 PSG Paris", link: "https://sale.dhgate.com/Uv0lfo95", cat: "Jordan 4" },
+  { name: "Jordan 4 Lightning", link: "https://sale.dhgate.com/1OeN2y22", cat: "Jordan 4" },
+  { name: "Jordan 4 Military Blue 2024", link: "https://sale.dhgate.com/bC5GLD10", cat: "Jordan 4" },
+  { name: "Jordan 4 Blue Thunder", link: "https://sale.dhgate.com/vMClQb45", cat: "Jordan 4" },
+  { name: "Jordan 4 Craft Olive", link: "https://sale.dhgate.com/jivP6n59", cat: "Jordan 4" },
+  { name: "Jordan 4 Infrared", link: "https://sale.dhgate.com/ea5Yu057", cat: "Jordan 4" },
+  { name: "LV Skate (alt2)", link: "https://sale.dhgate.com/xNKZwD18", cat: "LV" },
+  { name: "LV Trainer (alt)", link: "https://sale.dhgate.com/kFqvev00", cat: "LV" },
+  { name: "Jordan 11 Bred Low", link: "https://sale.dhgate.com/WMOxUq38", cat: "Jordan 11" },
+  { name: "Jordan Rust Pink", link: "https://sale.dhgate.com/vl7Pig35", cat: "Jordan 1" },
+  { name: "Amiri x MMY", link: "https://sale.dhgate.com/yWgXqL02", cat: "Amiri" },
+  { name: "Amiri x MMY (alt)", link: "https://sale.dhgate.com/JEP39a16", cat: "Amiri" },
+  { name: "Bape Sneaker", link: "https://sale.dhgate.com/t37Eve00", cat: "Bape" },
+  { name: "Bape Sneaker (alt1)", link: "https://sale.dhgate.com/s0tUSz17", cat: "Bape" },
+  { name: "Bape Sneaker (alt2)", link: "https://sale.dhgate.com/KMGeEJ73", cat: "Bape" },
+  { name: "Bape Sneaker (alt3)", link: "https://sale.dhgate.com/eOkn1178", cat: "Bape" },
+  { name: "Bape Sneaker (alt4)", link: "https://sale.dhgate.com/eKWTzT49", cat: "Bape" },
+  { name: "Bape Sneaker (alt5)", link: "https://sale.dhgate.com/rLAvnc18", cat: "Bape" },
+  { name: "Bape Sneaker (alt6)", link: "https://sale.dhgate.com/7Yrdnt79", cat: "Bape" },
+  { name: "Bape Sneaker (alt7)", link: "https://sale.dhgate.com/D5n87s19", cat: "Bape" },
+  { name: "Bape Sneaker (alt8)", link: "https://sale.dhgate.com/7c1vlY56", cat: "Bape" },
+  { name: "Bape Sneaker (alt9)", link: "https://sale.dhgate.com/SsiRYf72", cat: "Bape" },
+  { name: "Bape Sneaker (alt10)", link: "https://sale.dhgate.com/BaIH9421", cat: "Bape" },
+  { name: "Bape Sneaker (alt11)", link: "https://sale.dhgate.com/ud2loq01", cat: "Bape" },
+  { name: "Bape Sneaker (alt12)", link: "https://sale.dhgate.com/9RWNjl44", cat: "Bape" },
+  { name: "Bape Sneaker (alt13)", link: "https://sale.dhgate.com/K9DCMY90", cat: "Bape" },
+  { name: "Bape Sneaker (alt14)", link: "https://sale.dhgate.com/DUTm1A47", cat: "Bape" },
+  { name: "Bape Sneaker (alt15)", link: "https://sale.dhgate.com/OCRHGg63", cat: "Bape" },
+  { name: "Bape Sneaker (alt16)", link: "https://sale.dhgate.com/6kFwHp18", cat: "Bape" },
+  { name: "Bape Sneaker (alt17)", link: "https://sale.dhgate.com/IOyffa36", cat: "Bape" },
+  { name: "Bape Sneaker (alt18)", link: "https://sale.dhgate.com/CORKZW72", cat: "Bape" },
+  { name: "Bape Sneaker (alt19)", link: "https://sale.dhgate.com/N26cNr35", cat: "Bape" },
+  { name: "McQueen", link: "https://sale.dhgate.com/W6BbrD44", cat: "Other" },
+  { name: "Jordan 3 Rare Air", link: "https://sale.dhgate.com/g7dKq799", cat: "Jordan 3" },
+  { name: "Rick Owen Vans Leather", link: "https://sale.dhgate.com/V3Rt6563", cat: "Rick Owens" },
+  { name: "Rick Owen Vans Canvas", link: "https://sale.dhgate.com/V3Rt6563", cat: "Rick Owens" },
+  { name: "B22", link: "https://sale.dhgate.com/HOmJgw17", cat: "Balenciaga" },
+  { name: "B30", link: "https://www.dhgate.com/product/lkss-jason-high-quality-do-sneaker-shoes/1077648538.html", cat: "Balenciaga" },
+  { name: "Foam Runner Sand", link: "https://sale.dhgate.com/M4Sba000", cat: "Yeezy" },
+  { name: "Foam Runner Sulfur", link: "https://sale.dhgate.com/9EHClu64", cat: "Yeezy" },
+  { name: "Foam Runner MXT Moon Gray", link: "https://sale.dhgate.com/xRDijZ58", cat: "Yeezy" },
+  { name: "Foam Runner Ochre", link: "https://sale.dhgate.com/Jwe8Xm14", cat: "Yeezy" },
+  { name: "Foam Runner Vermillion", link: "https://sale.dhgate.com/VygkF333", cat: "Yeezy" },
+  { name: "Foam Runner Stone Sage", link: "https://sale.dhgate.com/SAZq9T63", cat: "Yeezy" },
+  { name: "Foam Runner MX Cream Clay", link: "https://sale.dhgate.com/cStarh39", cat: "Yeezy" },
+  { name: "Foam Runner Onyx", link: "https://sale.dhgate.com/5RyB4549", cat: "Yeezy" },
+  { name: "Foam Runner MX Carbon", link: "https://sale.dhgate.com/wSIBRR00", cat: "Yeezy" },
+  { name: "Jordan 4 SB Varsity Red", link: "https://sale.dhgate.com/rSSIic30", cat: "Jordan 4" },
+  { name: "Amiri MA-1", link: "https://sale.dhgate.com/XpfuZA00", cat: "Amiri" },
+  { name: "Amiri SKEL-TOP LOW", link: "https://sale.dhgate.com/frLjr605", cat: "Amiri" },
+  { name: "Amiri SKEL-TOP LOW (alt1)", link: "https://sale.dhgate.com/aCXZro51", cat: "Amiri" },
+  { name: "Amiri SKEL-TOP LOW (alt2)", link: "https://sale.dhgate.com/oV33Y151", cat: "Amiri" },
+  { name: "Amiri SKEL-TOP LOW (alt3)", link: "https://sale.dhgate.com/O8G1U374", cat: "Amiri" },
+  { name: "Amiri SKEL-TOP LOW (alt4)", link: "https://sale.dhgate.com/hVxZJZ97", cat: "Amiri" },
+  { name: "Amiri SKEL-TOP LOW (alt5)", link: "https://sale.dhgate.com/CYxzeJ63", cat: "Amiri" },
+  { name: "Amiri SKEL-TOP LOW (alt6)", link: "https://sale.dhgate.com/QNAG3u27", cat: "Amiri" },
+  { name: "Amiri SKEL-TOP LOW (alt7)", link: "https://sale.dhgate.com/igcddb98", cat: "Amiri" },
+  { name: "Amiri SKEL-TOP LOW (alt8)", link: "https://sale.dhgate.com/vVTlyj17", cat: "Amiri" },
+  { name: "Jordan 4 Brick with Suede", link: "https://sale.dhgate.com/ih7yf941", cat: "Jordan 4" },
+  { name: "Jordan 4 Navy SB", link: "https://sale.dhgate.com/DjkAjw87", cat: "Jordan 4" },
+  { name: "RICK OWENS Sneakers Low", link: "https://sale.dhgate.com/V3Rt6563", cat: "Rick Owens" },
+  { name: "RICK OWENS Sneakers High", link: "https://sale.dhgate.com/V3Rt6563", cat: "Rick Owens" },
+  { name: "Green Lobster", link: "https://sale.dhgate.com/1JmYHB60", cat: "Nike Dunk" },
+  { name: "Blue Lobster", link: "https://sale.dhgate.com/BzY0W635", cat: "Nike Dunk" },
+  { name: "Yellow Lobster", link: "https://sale.dhgate.com/XW4nXI08", cat: "Nike Dunk" },
+  { name: "White Lobster", link: "https://sale.dhgate.com/5YfPXp85", cat: "Nike Dunk" },
+  { name: "Panda Dunk", link: "https://sale.dhgate.com/s25hfz00", cat: "Nike Dunk" },
+  { name: "Dunk Jarritos", link: "https://sale.dhgate.com/VWzQMM11", cat: "Nike Dunk" },
+  { name: "Dunk Purple Lobster", link: "https://sale.dhgate.com/p9cLhl14", cat: "Nike Dunk" },
+  { name: "Jordan 11 Bred", link: "https://sale.dhgate.com/x2Eslu82", cat: "Jordan 11" },
+  { name: "Jordan 11 Cap and Gown", link: "https://sale.dhgate.com/EeoM9711", cat: "Jordan 11" },
+  { name: "Jordan 11 Cherry", link: "https://sale.dhgate.com/RM5Cbr76", cat: "Jordan 11" },
+  { name: "Jordan 11 Concord", link: "https://sale.dhgate.com/EUCRd563", cat: "Jordan 11" },
+  { name: "Jordan 11 Cool Grey", link: "https://sale.dhgate.com/71yITb89", cat: "Jordan 11" },
+  { name: "Jordan 11 DMP", link: "https://sale.dhgate.com/PxPEEn41", cat: "Jordan 11" },
+  { name: "Jordan 11 Gamma Blue", link: "https://sale.dhgate.com/EgoOCh76", cat: "Jordan 11" },
+  { name: "Jordan 11 Jubilee", link: "https://sale.dhgate.com/i3GeRL76", cat: "Jordan 11" },
+  { name: "Jordan 11 Legend Blue 2024", link: "https://sale.dhgate.com/tNh2Zv45", cat: "Jordan 11" },
+  { name: "Jordan 11 Platinum Tint", link: "https://sale.dhgate.com/aKhPaJ04", cat: "Jordan 11" },
+  { name: "Jordan 11 Space Jam", link: "https://sale.dhgate.com/9JpuIQ37", cat: "Jordan 11" },
+  { name: "Jordan 11 Space Jam Low", link: "https://sale.dhgate.com/72CAIA40", cat: "Jordan 11" },
+  { name: "Jordan 1 Fragment x Travis Scott", link: "https://sale.dhgate.com/Uv6K4o44", cat: "Jordan 1" },
+  { name: "Jordan 1 Bred Toe", link: "https://sale.dhgate.com/bR6aDl55", cat: "Jordan 1" },
+  { name: "Jordan 1 Union Los Angeles Black Toe", link: "https://sale.dhgate.com/VsT0z384", cat: "Jordan 1" },
+  { name: "Jordan 1 Union Los Angeles Blue Toe", link: "https://sale.dhgate.com/XeCzQ968", cat: "Jordan 1" },
+  { name: "Jordan 1 Sea Foam", link: "https://sale.dhgate.com/Q0mgqy66", cat: "Jordan 1" },
+  { name: "Jordan 1 Lucky Green", link: "https://sale.dhgate.com/ukS7em71", cat: "Jordan 1" },
+  { name: "Jordan 1 UNC Toe", link: "https://sale.dhgate.com/tWgzoL03", cat: "Jordan 1" },
+  { name: "Jordan 1 Washed Blacks", link: "https://sale.dhgate.com/i3HgQm75", cat: "Jordan 1" },
+  { name: "Jordan 1 Spider-Man Across the Spider-Verse", link: "https://sale.dhgate.com/uWvmz913", cat: "Jordan 1" },
+  { name: "Jordan 1 Travis Scott Suede", link: "https://sale.dhgate.com/SYLPmP88", cat: "Jordan 1" },
+  { name: "Jordan 1 True Blue", link: "https://sale.dhgate.com/IQIo8F35", cat: "Jordan 1" },
+  { name: "Jordan 1 UNC Patent", link: "https://sale.dhgate.com/0jTIzG14", cat: "Jordan 1" },
+  { name: "Jordan 1 University Blue", link: "https://sale.dhgate.com/UYyfTc52", cat: "Jordan 1" },
+  { name: "Jordan 1 Bleached Coral", link: "https://sale.dhgate.com/nIth2y59", cat: "Jordan 1" },
+  { name: "Jordan 1 Royal Blue", link: "https://sale.dhgate.com/vaP1zw76", cat: "Jordan 1" },
+  { name: "Jordan 1 Dark Mocha Suede", link: "https://sale.dhgate.com/NgSxWJ65", cat: "Jordan 1" },
+  { name: "Jordan 1 Denim", link: "https://sale.dhgate.com/y8cR1q71", cat: "Jordan 1" },
+  { name: "Jordan 1 Fearless UNC", link: "https://sale.dhgate.com/YUGQRB01", cat: "Jordan 1" },
+  { name: "Jordan 1 Hyper Royal", link: "https://sale.dhgate.com/gWmc2z57", cat: "Jordan 1" },
+  { name: "Jordan 1 Lost and Found", link: "https://sale.dhgate.com/KoZlPt80", cat: "Jordan 1" },
+  { name: "Jordan 1 Midnight Navy", link: "https://sale.dhgate.com/fQA8zB18", cat: "Jordan 1" },
+  { name: "Jordan 1 Obsidian UNC", link: "https://sale.dhgate.com/GNDHth22", cat: "Jordan 1" },
+  { name: "Jordan 1 Off White UNC", link: "https://sale.dhgate.com/sTQnMb76", cat: "Off-White" },
+  { name: "Air Jordan 1 Off-White Euro Release", link: "https://sale.dhgate.com/CjCWTm96", cat: "Off-White" },
+  { name: "Jordan 1 Off-White Chicago", link: "https://sale.dhgate.com/ZjK38r37", cat: "Off-White" },
+  { name: "Jordan 1 Patent Bred", link: "https://sale.dhgate.com/GJ7eD150", cat: "Jordan 1" },
+  { name: "Jordan 1 Chicago", link: "https://sale.dhgate.com/UbchXm84", cat: "Jordan 1" },
+  { name: "Jordan 1 Black Toe", link: "https://sale.dhgate.com/dKTa8g55", cat: "Jordan 1" },
+  { name: "Jordan 1 Dark Iris", link: "https://sale.dhgate.com/YnvCIN35", cat: "Jordan 1" },
+  { name: "Jordan 1 Electro Orange", link: "https://sale.dhgate.com/N7dIbz19", cat: "Jordan 1" },
+  { name: "Jordan 1 Lakers", link: "https://sale.dhgate.com/43cz6v20", cat: "Jordan 1" },
+  { name: "Jordan 1 Panda", link: "https://sale.dhgate.com/fEnQPK24", cat: "Jordan 1" },
+  { name: "Jordan 1 Shattered Backboard", link: "https://sale.dhgate.com/iBXLq364", cat: "Jordan 1" },
+  { name: "Jordan 1 Starfish", link: "https://sale.dhgate.com/3incDv94", cat: "Jordan 1" },
+  { name: "Jordan 1 Union LA Chicago", link: "https://sale.dhgate.com/UphqnV65", cat: "Jordan 1" },
+  { name: "Jordan 1 Yellow Ochre", link: "https://sale.dhgate.com/uskYPu42", cat: "Jordan 1" },
+  { name: "Jordan 1 Travis Scott Olive", link: "https://sale.dhgate.com/Lhj0DY69", cat: "Jordan 1" },
+  { name: "Jordan 1 Travis Scott Black Phantom", link: "https://sale.dhgate.com/4XCKB816", cat: "Jordan 1" },
+  { name: "Jordan 1 Fragment x Travis Scott (alt)", link: "https://sale.dhgate.com/05cqLM31", cat: "Jordan 1" },
+  { name: "Jordan 1 Travis Scott Mocha", link: "https://sale.dhgate.com/85HrJf86", cat: "Jordan 1" },
+  { name: "Jordan 1 Travis Scott Reverse Mocha", link: "https://sale.dhgate.com/1iujqC84", cat: "Jordan 1" },
+  { name: "Jordan 1 Low Black Siren Red", link: "https://sale.dhgate.com/RakpQZ09", cat: "Jordan 1" },
+  { name: "Jordan 1 Low Bred Toe 2.0", link: "https://sale.dhgate.com/LoduW085", cat: "Jordan 1" },
+  { name: "Jordan 1 Canary", link: "https://sale.dhgate.com/0MBEPV65", cat: "Jordan 1" },
+  { name: "Jordan 1 Low Mocha", link: "https://sale.dhgate.com/3YdeBI28", cat: "Jordan 1" },
+  { name: "Jordan 1 Palomino", link: "https://sale.dhgate.com/imhcgN62", cat: "Jordan 1" },
+  { name: "Jordan 1 Medium Olive", link: "https://sale.dhgate.com/OELYQz27", cat: "Jordan 1" },
+  { name: "Jordan 1 Travis Scott Shy Pink", link: "https://sale.dhgate.com/nZcQDX86", cat: "Jordan 1" },
+  { name: "Jordan 1 Travis Scott Velvet Brown", link: "https://sale.dhgate.com/22CxyR51", cat: "Jordan 1" },
+  { name: "Jordan 1 Low Triple Black", link: "https://sale.dhgate.com/M744gY60", cat: "Jordan 1" },
+  { name: "Jordan 3 Pure Money", link: "https://sale.dhgate.com/uPeO7y49", cat: "Jordan 3" },
+  { name: "Jordan 3 Black Cat", link: "https://sale.dhgate.com/NmKyWJ12", cat: "Jordan 3" },
+  { name: "Jordan 3 Infrared 23", link: "https://sale.dhgate.com/NJ4W5y00", cat: "Jordan 3" },
+  { name: "Jordan 3 Knicks", link: "https://sale.dhgate.com/vjDkta70", cat: "Jordan 3" },
+  { name: "Jordan 3 Fragment", link: "https://sale.dhgate.com/DupWUV67", cat: "Jordan 3" },
+  { name: "Jordan 3 UNC", link: "https://sale.dhgate.com/F0J8IN98", cat: "Jordan 3" },
+  { name: "Jordan 3 Racer Blue", link: "https://sale.dhgate.com/xCtF5g15", cat: "Jordan 3" },
+  { name: "Jordan 3 Dark Iris", link: "https://sale.dhgate.com/ZFR7JR20", cat: "Jordan 3" },
+  { name: "Jordan 3 Laser Orange", link: "https://sale.dhgate.com/0tKqSB67", cat: "Jordan 3" },
+  { name: "Jordan 3 Neapolitan Dark Mocha", link: "https://sale.dhgate.com/cyIkx626", cat: "Jordan 3" },
+  { name: "Jordan 3 Black Court Purple", link: "https://sale.dhgate.com/7ad0ZR13", cat: "Jordan 3" },
+  { name: "Jordan 3 Sport Blue", link: "https://sale.dhgate.com/JyPl9112", cat: "Jordan 3" },
+  { name: "Jordan 3 Fire Red", link: "https://sale.dhgate.com/liFVEP36", cat: "Jordan 3" },
+  { name: "Jordan 3 Black Cement", link: "https://sale.dhgate.com/KnZwmS21", cat: "Jordan 3" },
+  { name: "Jordan 3 Lucky Green", link: "https://sale.dhgate.com/iyfDSJ60", cat: "Jordan 3" },
+  { name: "Jordan 3 White Cement", link: "https://sale.dhgate.com/vVNtRD04", cat: "Jordan 3" },
+  { name: "Jordan 3 Desert Elephant", link: "https://sale.dhgate.com/F7LY3r36", cat: "Jordan 3" },
+  { name: "Jordan 3 A Ma Maniere", link: "https://sale.dhgate.com/mN9TrF20", cat: "Jordan 3" },
+  { name: "Jordan 3 J Balvin Rio", link: "https://sale.dhgate.com/64i0jl10", cat: "Jordan 3" },
+  { name: "Jordan 3 J Balvin Sunset", link: "https://sale.dhgate.com/gbMDLF81", cat: "Jordan 3" },
+  { name: "Jordan 5 Black Metallic Reimagined", link: "https://sale.dhgate.com/tXWc2084", cat: "Jordan 5" },
+  { name: "Jordan 5 Dark Concord", link: "https://sale.dhgate.com/1pywTI73", cat: "Jordan 5" },
+  { name: "Jordan 5 DJ Khaled", link: "https://sale.dhgate.com/Xg4aye67", cat: "Jordan 5" },
+  { name: "Jordan 5 DJ Khaled Sail", link: "https://sale.dhgate.com/sPr9HP69", cat: "Jordan 5" },
+  { name: "Jordan 5 Oreo", link: "https://sale.dhgate.com/HqUssf62", cat: "Jordan 5" },
+  { name: "Jordan 5 Racer Blue", link: "https://sale.dhgate.com/qJeYJU94", cat: "Jordan 5" },
+  { name: "Jordan 5 Top 3", link: "https://sale.dhgate.com/vW3Acc99", cat: "Jordan 5" },
+  { name: "Jordan 5 UNC", link: "https://sale.dhgate.com/YQnh8630", cat: "Jordan 5" },
+  { name: "Balenciaga Track LED", link: "https://sale.dhgate.com/m6RYgJ73", cat: "Balenciaga" },
+  { name: "Balenciaga Track", link: "https://sale.dhgate.com/idYoct18", cat: "Balenciaga" },
+  { name: "Balenciaga Runner", link: "https://sale.dhgate.com/1usHbj03", cat: "Balenciaga" },
+  { name: "Air Force 1 Triple White", link: "https://sale.dhgate.com/jckzCB98", cat: "Air Force 1" },
+  { name: "Air Force 1 Triple Black", link: "https://sale.dhgate.com/XHIdBt37", cat: "Air Force 1" },
+  { name: "Air Force 1 Supreme White", link: "https://sale.dhgate.com/Zb2kaa26", cat: "Air Force 1" },
+  { name: "Air Force 1 Supreme Black", link: "https://sale.dhgate.com/6cRJTq94", cat: "Air Force 1" },
+  { name: "Air Force 1 Flax Wheat", link: "https://sale.dhgate.com/t5edGN78", cat: "Air Force 1" },
+  { name: "Air Force 1 Supreme Wheat", link: "https://sale.dhgate.com/QWrij344", cat: "Air Force 1" },
+  { name: "Air Force 1 Low 07 White", link: "https://sale.dhgate.com/5AOW9l30", cat: "Air Force 1" },
+  { name: "Certified Lover Boy", link: "https://sale.dhgate.com/txDiiT90", cat: "Other" },
+  { name: "McQueen (alt)", link: "https://sale.dhgate.com/YFZBjL66", cat: "Other" },
+  { name: "Yeezy Slides", link: "https://sale.dhgate.com/3D0ewQ77", cat: "Yeezy" },
+  { name: "Out Of Office", link: "https://sale.dhgate.com/oQwqOb14", cat: "Other" },
+  { name: "Jordan Jumpman Jack TR Travis Scott Sail", link: "https://sale.dhgate.com/h9QLnY89", cat: "Jordan 1" },
+  { name: "Jordan Jumpman Jack TR Travis Scott University Red", link: "https://sale.dhgate.com/h9QLnY89", cat: "Jordan 1" },
+  { name: "Maison Mihara Yasuhiro", link: "https://sale.dhgate.com/MIC1PC80", cat: "Other" },
+  { name: "Kobe 5 Protro PJ Tuker PE", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Nike Kobe 5 Protro Chaos", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Nike Kobe 5 Protro Lakers", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Nike Zoom Kobe 5 Chaos", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Kobe 6 Italian Camo", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Kobe 6 Mambacita Sweet 16", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Nike Kobe 6 Grinch", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Nike Kobe 6 Kay Yow Think Pink", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Nike Kobe 6 Prelude All Star MVP", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Nike Kobe 6 Protro Del Sol", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Nike Kobe 6 Protro Reverse Grinch", link: "https://sale.dhgate.com/4HD1fj96", cat: "Nike Kobe" },
+  { name: "Nike Kobe 6 Protro All-Star", link: "https://www.dhgate.com/product/lkss-jason-high-quality-k-sneaker-shoes-for/1038039353.html", cat: "Nike Kobe" },
+  { name: "Nike Zoom Kobe 6 Protro EYBL", link: "https://www.dhgate.com/product/lkss-jason-high-quality-k-sneaker-shoes-for/1038039353.html", cat: "Nike Kobe" }
+];
+
+const catOrder = [
+  "Jordan 1", "Jordan 3", "Jordan 4", "Jordan 5", "Jordan 11", "Jordan 14",
+  "Nike Dunk", "Air Force 1", "Nike Kobe", "Balenciaga", "LV", "Rick Owens",
+  "Amiri", "Bape", "Yeezy", "Off-White", "Other"
+];
+
+function getShoesByCat(cat) {
+  return shoes.filter(s => s.cat === cat);
+}
+
+function render() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  const grid = document.getElementById('shoeGrid');
+  const noRes = document.getElementById('noResults');
+  let total = 0;
+  let html = '';
+
+  catOrder.forEach(cat => {
+    const filtered = getShoesByCat(cat).filter(s => s.name.toLowerCase().includes(q));
+    if (filtered.length === 0) return;
+    total += filtered.length;
+    html += `<div class="section-label">${cat} <span class="cat-count">${filtered.length}</span></div>`;
+    html += `<div class="grid">`;
+    filtered.forEach(s => {
+      html += `<div class="card">
+        <h3>${s.name}</h3>
+        <a href="${s.link}" target="_blank" rel="noopener noreferrer">View on DHGate</a>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  grid.innerHTML = html;
+  document.getElementById('totalCount').textContent = total + ' shoes';
+  noRes.classList.toggle('show', total === 0);
+}
+
+function filterShoes() { render(); }
+render();
+</script>
+
+</body>
+</html>
