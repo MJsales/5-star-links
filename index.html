@@ -278,6 +278,24 @@
       font-size: 0.95rem; font-weight: 600; cursor: pointer;
     }
     .auth-guest-btn:hover { background: rgba(168,85,247,0.2); }
+    @media (max-width: 640px) {
+      nav {
+        position: static !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        padding: 0.6rem 0.5rem !important;
+      }
+      nav a, nav button {
+        font-size: 0.72rem !important;
+        padding: 0.35rem 0.7rem !important;
+      }
+      .header { padding-top: 1.5rem; }
+      .header h1 { font-size: 2.2rem; letter-spacing: 3px; }
+      .plush-3d { width: 160px; height: 160px; }
+      .plush-front img { width: 160px; height: 160px; }
+      .plush-back .back-text { font-size: 2.5rem; }
+      .plush-back .back-sub, .plush-back .back-sub2 { font-size: 1.3rem; letter-spacing: 5px; }
+    }
   </style>
 </head>
 <body>
