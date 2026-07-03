@@ -211,77 +211,103 @@ function sendMsg() {
   messages.innerHTML += '<div class="msg user">' + escHtml(text) + '</div>';
   messages.scrollTop = messages.scrollHeight;
 
-  var credits = getCredits();
-  if (credits <= 0) {
-    messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>You\'ve used all free predictions for today. Come back tomorrow for more!</div>';
+  var user = window.authModule && window.authModule.getCurrentUser();
+  if (!user) {
+    messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>Please sign in to use AI Sports Picks. It\'s free!</div>';
     messages.scrollTop = messages.scrollHeight;
+    authModule.showAuth();
     return;
   }
 
-  var thinkingMsg = '<div class="msg ai"><div class="label">AI Sports Bot</div><span style="color:#a855f7;">Analyzing matchup...</span></div>';
-  messages.innerHTML += thinkingMsg;
-  messages.scrollTop = messages.scrollHeight;
+  getCredits().then(function(credits) {
+    if (credits <= 0) {
+      messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>You\'ve used all 10 free predictions for today. Come back tomorrow!</div>';
+      messages.scrollTop = messages.scrollHeight;
+      return;
+    }
 
-  fetch('/api/ai-picks', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: text,
-      sportsData: sportsData,
-      scheduledGames: scheduledGames ? scheduledGames.slice(0, 20) : [],
-      liveOdds: Object.keys(liveOdds).length > 0 ? liveOdds : null
+    var thinkingMsg = '<div class="msg ai"><div class="label">AI Sports Bot</div><span style="color:#a855f7;">Analyzing matchup... (' + (credits - 1) + ' credits left)</span></div>';
+    messages.innerHTML += thinkingMsg;
+    messages.scrollTop = messages.scrollHeight;
+
+    fetch('/api/ai-picks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        sportsData: sportsData,
+        scheduledGames: scheduledGames ? scheduledGames.slice(0, 20) : [],
+        liveOdds: Object.keys(liveOdds).length > 0 ? liveOdds : null
+      })
     })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    var lastMsg = messages.querySelector('.msg.ai:last-child');
-    if (lastMsg) lastMsg.remove();
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var lastMsg = messages.querySelector('.msg.ai:last-child');
+      if (lastMsg) lastMsg.remove();
 
-    if (data.reply) {
-      var formatted = data.reply.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
-      messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>' + formatted + '</div>';
-      useCredit();
-    } else {
+      if (data.reply) {
+        var formatted = data.reply.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+        messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>' + formatted + '</div>';
+        useCredit();
+      } else {
+        var fallback = generatePrediction(text);
+        messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>' + fallback + '</div>';
+        useCredit();
+      }
+      messages.scrollTop = messages.scrollHeight;
+    })
+    .catch(function(e) {
+      console.error('AI API error, using fallback:', e);
+      var lastMsg = messages.querySelector('.msg.ai:last-child');
+      if (lastMsg) lastMsg.remove();
+
       var fallback = generatePrediction(text);
       messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>' + fallback + '</div>';
       useCredit();
-    }
-    messages.scrollTop = messages.scrollHeight;
-  })
-  .catch(function(e) {
-    console.error('AI API error, using fallback:', e);
-    var lastMsg = messages.querySelector('.msg.ai:last-child');
-    if (lastMsg) lastMsg.remove();
-
-    var fallback = generatePrediction(text);
-    messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>' + fallback + '</div>';
-    useCredit();
-    messages.scrollTop = messages.scrollHeight;
+      messages.scrollTop = messages.scrollHeight;
+    });
   });
 }
 
 function getCredits() {
-  var today = new Date().toDateString();
-  var data = JSON.parse(localStorage.getItem('aiCredits') || '{}');
-  if (data.date !== today) return 10;
-  return data.count || 0;
+  return new Promise(function(resolve) {
+    var user = window.authModule && window.authModule.getCurrentUser();
+    if (!user) { resolve(10); return; }
+    var today = new Date().toDateString();
+    window._fbDb.collection('aiCredits').doc(user.uid).get().then(function(doc) {
+      if (doc.exists && doc.data().date === today) {
+        resolve(Math.max(0, 10 - (doc.data().count || 0)));
+      } else {
+        resolve(10);
+      }
+    }).catch(function() { resolve(10); });
+  });
 }
 
 function useCredit() {
+  var user = window.authModule && window.authModule.getCurrentUser();
+  if (!user) return;
   var today = new Date().toDateString();
-  var data = JSON.parse(localStorage.getItem('aiCredits') || '{}');
-  if (data.date !== today) {
-    data = { date: today, count: 0 };
-  }
-  data.count++;
-  localStorage.setItem('aiCredits', JSON.stringify(data));
+  var ref = window._fbDb.collection('aiCredits').doc(user.uid);
+  ref.get().then(function(doc) {
+    if (doc.exists && doc.data().date === today) {
+      ref.update({ count: firebase.firestore.FieldValue.increment(1) });
+    } else {
+      ref.set({ date: today, count: 1 });
+    }
+  }).catch(function() {});
   updateCreditDisplay();
 }
 
 function updateCreditDisplay() {
-  var credits = getCredits();
   var el = document.getElementById('creditDisplay');
-  if (el) el.textContent = credits + '/10 free predictions today';
+  if (!el) return;
+  getCredits().then(function(remaining) {
+    el.textContent = remaining + '/10 free predictions today';
+    if (remaining <= 0) el.style.color = '#ef4444';
+    else if (remaining <= 3) el.style.color = '#f59e0b';
+    else el.style.color = '#666';
+  });
 }
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -664,10 +690,15 @@ async function handleAuthSubmit() {
     if (authMode === 'signup') await authModule.signUp(name, email, pass);
     else await authModule.signIn(email, pass);
     authModule.hideAuth();
+    setTimeout(updateCreditDisplay, 500);
   } catch (e) {
     err.textContent = e.message.replace('Firebase: ', '').replace(/\(auth\/.*?\)\.?/, '');
   }
 }
+
+firebase.auth().onAuthStateChanged(function() {
+  setTimeout(updateCreditDisplay, 300);
+});
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
