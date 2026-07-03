@@ -643,7 +643,7 @@ function applyReferral() {
 
 document.getElementById('myReferralCode').value = getReferralCode();
 
-if (!localStorage.getItem('reviewsSeeded')) {
+if (!localStorage.getItem('reviewsSeededV2')) {
   const seeded = {
     'ai-picks': [
       { stars: 5, text: 'AI called 3 out of 5 games correctly. Impressive.', name: 'Kevin B.', date: '5/29/2026' },
@@ -662,7 +662,7 @@ if (!localStorage.getItem('reviewsSeeded')) {
     ]
   };
   localStorage.setItem('reviews', JSON.stringify(seeded));
-  localStorage.setItem('reviewsSeeded', 'true');
+  localStorage.setItem('reviewsSeededV2', 'true');
 }
 
 function addToCart(id) {
