@@ -331,7 +331,13 @@ function fetchSchedule() {
         var exists = scheduledGames.find(function(sg) {
           return sg.home === g.home && sg.away === g.away;
         });
-        if (!exists) {
+        if (exists) {
+          exists.status = g.status;
+          exists.score = g.score;
+          exists.inning = g.inning;
+          exists.hits = g.hits;
+          exists.errors = g.errors;
+        } else {
           var dt = g.timestamp ? new Date(g.timestamp) : null;
           scheduledGames.push({
             sport: 'mlb',
@@ -341,7 +347,12 @@ function fetchSchedule() {
             awayFull: g.awayFull,
             date: dt ? dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : g.date,
             time: dt ? dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : g.time,
-            venue: g.venue
+            venue: g.venue,
+            status: g.status,
+            score: g.score,
+            inning: g.inning,
+            hits: g.hits,
+            errors: g.errors
           });
         }
       });
@@ -388,6 +399,7 @@ function fetchOdds(sport) {
 }
 
 setInterval(fetchAllOdds, 300000);
+setInterval(fetchSchedule, 120000);
 
 var teams = {
   nfl: ['Chiefs','Bills','Ravens','49ers','Cowboys','Eagles','Lions','Dolphins','Bengals','Texans','Jets','Browns','Jaguars','Chargers','Broncos','Raiders','Steelers','Colts','Seahawks','Rams','Packers','Vikings','Buccaneers','Saints','Falcons','Panthers','Cardinals','Commanders','Giants','Patriots','Titans'],
@@ -524,6 +536,20 @@ function findSportFromInput(input) {
 
 function getGamesBySport(sport) { return scheduledGames.filter(function(g) { return g.sport === sport; }); }
 
+function formatLiveStatus(game) {
+  if (!game.score) return '';
+  var isFinal = game.status === 'Final' || game.status === 'Game Over' || game.status === 'Completed Early';
+  var s;
+  if (isFinal) {
+    s = '<b style="color:#f5c842;">FINAL:</b> ' + game.away + ' ' + game.score.away + ' &#8212; ' + game.home + ' ' + game.score.home;
+  } else {
+    s = '<b style="color:#22c55e;">&#9679; LIVE' + (game.inning ? ' &#8212; ' + game.inning : '') + ':</b> ' + game.away + ' ' + game.score.away + ' &#8212; ' + game.home + ' ' + game.score.home;
+  }
+  if (game.hits) s += '<br>Hits: ' + game.away + ' ' + game.hits.away + ', ' + game.home + ' ' + game.hits.home;
+  if (game.errors) s += ' | Errors: ' + game.away + ' ' + game.errors.away + ', ' + game.home + ' ' + game.errors.home;
+  return s + '<br><br>';
+}
+
 function generatePrediction(input) {
   var lower = input.toLowerCase();
   var seed = hashString(lower + today.toISOString().slice(0, 10));
@@ -603,6 +629,7 @@ function generatePrediction(input) {
         reason = pickSeeded(reasonPool, rng);
         var oddsHTML = oddsData ? formatOdds(oddsData) : '';
         return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + ' ' + game.time + '<br><br>' +
+          formatLiveStatus(game) +
           '<b>' + game.home + ':</b> ' + (t1Data.record || '') + ' Rank #' + t1Data.rank + ' | Off: ' + t1Data.offense + '/10 | Def: ' + t1Data.defense + '/10<br>' +
           '<b>' + game.away + ':</b> ' + (t2Data.record || '') + ' Rank #' + t2Data.rank + ' | Off: ' + t2Data.offense + '/10 | Def: ' + t2Data.defense + '/10<br><br>' +
           'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins, rng) +
@@ -614,6 +641,7 @@ function generatePrediction(input) {
     var margins2 = getSportMargins(game.sport);
     var oddsHTML2 = oddsData ? formatOdds(oddsData) : '';
     return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + ' ' + game.time + '<br><br>' +
+      formatLiveStatus(game) +
       'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins2, rng) + oddsHTML2;
   }
 

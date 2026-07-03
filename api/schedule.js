@@ -20,6 +20,10 @@ module.exports = async (req, res) => {
       const awayFull = g.teams.away.team.name;
       const homeShort = homeFull.split(' ').pop();
       const awayShort = awayFull.split(' ').pop();
+      const abstractState = g.status.abstractGameState;
+      const isLive = abstractState === 'Live';
+      const isFinal = abstractState === 'Final';
+      const ls = g.linescore;
       return {
         home: homeShort,
         away: awayShort,
@@ -30,9 +34,18 @@ module.exports = async (req, res) => {
         time: new Date(g.gameDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
         venue: g.venue.name,
         status: g.status.detailedState,
-        score: g.status.detailedState === 'Final' ? {
+        score: (isLive || isFinal) && g.teams.home.score !== undefined ? {
           home: g.teams.home.score,
           away: g.teams.away.score
+        } : null,
+        inning: isLive && ls && ls.currentInningOrdinal ? ((ls.inningState || '') + ' ' + ls.currentInningOrdinal).trim() : null,
+        hits: (isLive || isFinal) && ls && ls.teams && ls.teams.home.hits !== undefined ? {
+          home: ls.teams.home.hits,
+          away: ls.teams.away.hits
+        } : null,
+        errors: (isLive || isFinal) && ls && ls.teams && ls.teams.home.errors !== undefined ? {
+          home: ls.teams.home.errors,
+          away: ls.teams.away.errors
         } : null
       };
     });
