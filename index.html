@@ -643,27 +643,28 @@ function applyReferral() {
 
 document.getElementById('myReferralCode').value = getReferralCode();
 
-if (!localStorage.getItem('reviewsSeededV2')) {
-  const seeded = {
-    'ai-picks': [
-      { stars: 5, text: 'AI called 3 out of 5 games correctly. Impressive.', name: 'Kevin B.', date: '5/29/2026' },
-      { stars: 4, text: 'Fun to use. Predictions are pretty solid.', name: 'Brandon J.', date: '5/24/2026' },
-      { stars: 5, text: 'Worth it for the sports insights alone.', name: 'Terrence D.', date: '5/19/2026' }
-    ],
-    'ai-stocks': [
-      { stars: 5, text: 'Called the NVDA rally perfectly. Made profits.', name: 'Jason W.', date: '5/30/2026' },
-      { stars: 5, text: 'Crypto predictions are on point. BTC call was spot on.', name: 'Ryan M.', date: '5/28/2026' },
-      { stars: 4, text: 'Good for quick market insights. RSI signals are useful.', name: 'Alex K.', date: '5/25/2026' }
-    ],
-    'ai-video': [
-      { stars: 5, text: 'Split a 2hr podcast into 6 TikToks. One got 200K views.', name: 'Marcus T.', date: '6/1/2026' },
-      { stars: 5, text: 'The viral scores it gives are accurate. My Part 3 went crazy.', name: 'Sasha L.', date: '5/30/2026' },
-      { stars: 4, text: 'Great for content creators. Saves hours of editing time.', name: 'Jordan P.', date: '5/27/2026' }
-    ]
-  };
-  localStorage.setItem('reviews', JSON.stringify(seeded));
-  localStorage.setItem('reviewsSeededV2', 'true');
-}
+// Always force fresh reviews - clear old cached data
+localStorage.removeItem('reviews');
+localStorage.removeItem('reviewsSeeded');
+localStorage.removeItem('reviewsSeededV2');
+const seeded = {
+  'ai-picks': [
+    { stars: 5, text: 'AI called 3 out of 5 games correctly. Impressive.', name: 'Kevin B.', date: '5/29/2026' },
+    { stars: 4, text: 'Fun to use. Predictions are pretty solid.', name: 'Brandon J.', date: '5/24/2026' },
+    { stars: 5, text: 'Worth it for the sports insights alone.', name: 'Terrence D.', date: '5/19/2026' }
+  ],
+  'ai-stocks': [
+    { stars: 5, text: 'Called the NVDA rally perfectly. Made profits.', name: 'Jason W.', date: '5/30/2026' },
+    { stars: 5, text: 'Crypto predictions are on point. BTC call was spot on.', name: 'Ryan M.', date: '5/28/2026' },
+    { stars: 4, text: 'Good for quick market insights. RSI signals are useful.', name: 'Alex K.', date: '5/25/2026' }
+  ],
+  'ai-video': [
+    { stars: 5, text: 'Split a 2hr podcast into 6 TikToks. One got 200K views.', name: 'Marcus T.', date: '6/1/2026' },
+    { stars: 5, text: 'The viral scores it gives are accurate. My Part 3 went crazy.', name: 'Sasha L.', date: '5/30/2026' },
+    { stars: 4, text: 'Great for content creators. Saves hours of editing time.', name: 'Jordan P.', date: '5/27/2026' }
+  ]
+};
+localStorage.setItem('reviews', JSON.stringify(seeded));
 
 function addToCart(id) {
   const cart = getCart();
