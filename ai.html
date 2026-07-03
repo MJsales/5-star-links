@@ -323,19 +323,24 @@ fetch('sports-data.json').then(function(r) { return r.json(); }).then(function(d
 }).catch(function(e) { console.error('Failed to load sports data:', e); });
 
 function fetchSchedule() {
-  fetch('/api/schedule').then(function(r) { return r.json(); }).then(function(data) {
+  var now = new Date();
+  var localDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  fetch('/api/schedule?date=' + localDate).then(function(r) { return r.json(); }).then(function(data) {
     if (data.games && data.games.length > 0) {
       data.games.forEach(function(g) {
         var exists = scheduledGames.find(function(sg) {
           return sg.home === g.home && sg.away === g.away;
         });
         if (!exists) {
+          var dt = g.timestamp ? new Date(g.timestamp) : null;
           scheduledGames.push({
             sport: 'mlb',
             home: g.home,
             away: g.away,
-            date: g.date,
-            time: g.time,
+            homeFull: g.homeFull,
+            awayFull: g.awayFull,
+            date: dt ? dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : g.date,
+            time: dt ? dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : g.time,
             venue: g.venue
           });
         }

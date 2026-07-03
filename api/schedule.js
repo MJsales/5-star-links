@@ -25,6 +25,7 @@ module.exports = async (req, res) => {
         away: awayShort,
         homeFull: homeFull,
         awayFull: awayFull,
+        timestamp: g.gameDate,
         date: new Date(g.gameDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
         time: new Date(g.gameDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
         venue: g.venue.name,
