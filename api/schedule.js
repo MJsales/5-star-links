@@ -15,20 +15,26 @@ module.exports = async (req, res) => {
   try {
     const data = await fetchJSON(url);
     const games = (data.dates && data.dates[0] && data.dates[0].games) || [];
-    const formatted = games.map(g => ({
-      home: g.teams.home.team.name,
-      away: g.teams.away.team.name,
-      homeId: g.teams.home.team.id,
-      awayId: g.teams.away.team.id,
-      date: new Date(g.gameDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-      time: new Date(g.gameDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
-      venue: g.venue.name,
-      status: g.status.detailedState,
-      score: g.status.detailedState === 'Final' ? {
-        home: g.teams.home.score,
-        away: g.teams.away.score
-      } : null
-    }));
+    const formatted = games.map(g => {
+      const homeFull = g.teams.home.team.name;
+      const awayFull = g.teams.away.team.name;
+      const homeShort = homeFull.split(' ').pop();
+      const awayShort = awayFull.split(' ').pop();
+      return {
+        home: homeShort,
+        away: awayShort,
+        homeFull: homeFull,
+        awayFull: awayFull,
+        date: new Date(g.gameDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        time: new Date(g.gameDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }),
+        venue: g.venue.name,
+        status: g.status.detailedState,
+        score: g.status.detailedState === 'Final' ? {
+          home: g.teams.home.score,
+          away: g.teams.away.score
+        } : null
+      };
+    });
     res.status(200).json({ date, games: formatted });
   } catch (error) {
     res.status(500).json({ error: error.message });

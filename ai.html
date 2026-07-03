@@ -415,8 +415,9 @@ function pickSeeded(arr, rng) { return arr[Math.floor(rng() * arr.length)]; }
 function findGameByTeams(input) {
   var lower = input.toLowerCase();
   var fromScheduled = scheduledGames.find(function(g) {
-    return lower.includes(g.home.toLowerCase()) && lower.includes(g.away.toLowerCase()) ||
-           lower.includes(g.away.toLowerCase()) && lower.includes(g.home.toLowerCase());
+    var homeMatch = lower.includes(g.home.toLowerCase()) || (g.homeFull && lower.includes(g.homeFull.toLowerCase()));
+    var awayMatch = lower.includes(g.away.toLowerCase()) || (g.awayFull && lower.includes(g.awayFull.toLowerCase()));
+    return (homeMatch && awayMatch);
   });
   if (fromScheduled) return fromScheduled;
 
