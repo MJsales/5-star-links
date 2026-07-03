@@ -322,6 +322,12 @@ fetch('sports-data.json').then(function(r) { return r.json(); }).then(function(d
   fetchSchedule();
 }).catch(function(e) { console.error('Failed to load sports data:', e); });
 
+function teamsMatch(a, b) {
+  if (!a || !b) return false;
+  a = a.toLowerCase(); b = b.toLowerCase();
+  return a === b || a.indexOf(b) !== -1 || b.indexOf(a) !== -1;
+}
+
 function fetchSchedule() {
   var now = new Date();
   var localDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
@@ -329,28 +335,30 @@ function fetchSchedule() {
     if (data.games && data.games.length > 0) {
       data.games.forEach(function(g) {
         var exists = scheduledGames.find(function(sg) {
-          return sg.home === g.home && sg.away === g.away;
+          return sg.sport === (g.sport || 'mlb') && teamsMatch(sg.home, g.home) && teamsMatch(sg.away, g.away);
         });
         if (exists) {
           exists.status = g.status;
           exists.score = g.score;
-          exists.inning = g.inning;
+          exists.liveDetail = g.liveDetail;
           exists.hits = g.hits;
           exists.errors = g.errors;
+          if (!exists.homeFull) exists.homeFull = g.homeFull;
+          if (!exists.awayFull) exists.awayFull = g.awayFull;
         } else {
           var dt = g.timestamp ? new Date(g.timestamp) : null;
           scheduledGames.push({
-            sport: 'mlb',
+            sport: g.sport || 'mlb',
             home: g.home,
             away: g.away,
             homeFull: g.homeFull,
             awayFull: g.awayFull,
-            date: dt ? dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : g.date,
-            time: dt ? dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : g.time,
+            date: dt ? dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'TBD',
+            time: dt ? dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : 'TBD',
             venue: g.venue,
             status: g.status,
             score: g.score,
-            inning: g.inning,
+            liveDetail: g.liveDetail,
             hits: g.hits,
             errors: g.errors
           });
@@ -543,7 +551,7 @@ function formatLiveStatus(game) {
   if (isFinal) {
     s = '<b style="color:#f5c842;">FINAL:</b> ' + game.away + ' ' + game.score.away + ' &#8212; ' + game.home + ' ' + game.score.home;
   } else {
-    s = '<b style="color:#22c55e;">&#9679; LIVE' + (game.inning ? ' &#8212; ' + game.inning : '') + ':</b> ' + game.away + ' ' + game.score.away + ' &#8212; ' + game.home + ' ' + game.score.home;
+    s = '<b style="color:#22c55e;">&#9679; LIVE' + (game.liveDetail ? ' &#8212; ' + game.liveDetail : '') + ':</b> ' + game.away + ' ' + game.score.away + ' &#8212; ' + game.home + ' ' + game.score.home;
   }
   if (game.hits) s += '<br>Hits: ' + game.away + ' ' + game.hits.away + ', ' + game.home + ' ' + game.hits.home;
   if (game.errors) s += ' | Errors: ' + game.away + ' ' + game.errors.away + ', ' + game.home + ' ' + game.errors.home;
