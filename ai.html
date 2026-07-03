@@ -319,7 +319,30 @@ fetch('sports-data.json').then(function(r) { return r.json(); }).then(function(d
   sportsData = d;
   if (d.scheduledGames) scheduledGames = d.scheduledGames;
   fetchAllOdds();
+  fetchSchedule();
 }).catch(function(e) { console.error('Failed to load sports data:', e); });
+
+function fetchSchedule() {
+  fetch('/api/schedule').then(function(r) { return r.json(); }).then(function(data) {
+    if (data.games && data.games.length > 0) {
+      data.games.forEach(function(g) {
+        var exists = scheduledGames.find(function(sg) {
+          return sg.home === g.home && sg.away === g.away;
+        });
+        if (!exists) {
+          scheduledGames.push({
+            sport: 'mlb',
+            home: g.home,
+            away: g.away,
+            date: g.date,
+            time: g.time,
+            venue: g.venue
+          });
+        }
+      });
+    }
+  }).catch(function(e) { console.error('Schedule fetch failed:', e); });
+}
 
 function fetchAllOdds() {
   var sports = ['americanfootball_nfl', 'basketball_nba', 'baseball_mlb', 'icehockey_nhl'];
