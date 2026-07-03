@@ -159,6 +159,7 @@
     <div contenteditable="true" class="chat-input" id="chatInput" placeholder="Ask about any game..." onkeypress="if(event.key==='Enter'){event.preventDefault();sendMsg();}" style="min-height:48px;"></div>
     <button class="send-btn" onclick="sendMsg()">Send</button>
   </div>
+  <div id="creditDisplay" style="text-align:center;font-size:0.8rem;color:#666;padding:4px 0;"></div>
 </div>
 
 <div style="max-width:700px;margin:0 auto;width:100%;padding:1rem;">
@@ -210,11 +211,77 @@ function sendMsg() {
   messages.innerHTML += '<div class="msg user">' + escHtml(text) + '</div>';
   messages.scrollTop = messages.scrollHeight;
 
-  setTimeout(function() {
-    var reply = generatePrediction(text);
-    messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>' + reply + '</div>';
+  var credits = getCredits();
+  if (credits <= 0) {
+    messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>You\'ve used all free predictions for today. Come back tomorrow for more!</div>';
     messages.scrollTop = messages.scrollHeight;
-  }, 800 + Math.random() * 1200);
+    return;
+  }
+
+  var thinkingMsg = '<div class="msg ai"><div class="label">AI Sports Bot</div><span style="color:#a855f7;">Analyzing matchup...</span></div>';
+  messages.innerHTML += thinkingMsg;
+  messages.scrollTop = messages.scrollHeight;
+
+  fetch('/api/ai-picks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: text,
+      sportsData: sportsData,
+      scheduledGames: scheduledGames ? scheduledGames.slice(0, 20) : [],
+      liveOdds: Object.keys(liveOdds).length > 0 ? liveOdds : null
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var lastMsg = messages.querySelector('.msg.ai:last-child');
+    if (lastMsg) lastMsg.remove();
+
+    if (data.reply) {
+      var formatted = data.reply.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+      messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>' + formatted + '</div>';
+      useCredit();
+    } else {
+      var fallback = generatePrediction(text);
+      messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>' + fallback + '</div>';
+      useCredit();
+    }
+    messages.scrollTop = messages.scrollHeight;
+  })
+  .catch(function(e) {
+    console.error('AI API error, using fallback:', e);
+    var lastMsg = messages.querySelector('.msg.ai:last-child');
+    if (lastMsg) lastMsg.remove();
+
+    var fallback = generatePrediction(text);
+    messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>' + fallback + '</div>';
+    useCredit();
+    messages.scrollTop = messages.scrollHeight;
+  });
+}
+
+function getCredits() {
+  var today = new Date().toDateString();
+  var data = JSON.parse(localStorage.getItem('aiCredits') || '{}');
+  if (data.date !== today) return 10;
+  return data.count || 0;
+}
+
+function useCredit() {
+  var today = new Date().toDateString();
+  var data = JSON.parse(localStorage.getItem('aiCredits') || '{}');
+  if (data.date !== today) {
+    data = { date: today, count: 0 };
+  }
+  data.count++;
+  localStorage.setItem('aiCredits', JSON.stringify(data));
+  updateCreditDisplay();
+}
+
+function updateCreditDisplay() {
+  var credits = getCredits();
+  var el = document.getElementById('creditDisplay');
+  if (el) el.textContent = credits + '/10 free predictions today';
 }
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -378,6 +445,19 @@ function formatOdds(odds) {
   return result;
 }
 
+function getSportMargins(sport) {
+  if (sport === 'mlb') {
+    return ['1-2 runs','3-4 runs','5+ runs','in extra innings','by a walk-off','by a shutout','by a grand slam'];
+  } else if (sport === 'nhl') {
+    return ['1 goal','2 goals','3+ goals','in overtime','in a shootout','by a power play','by an empty netter'];
+  } else if (sport === 'nba') {
+    return ['1-5 points','6-10 points','11-15 points','16+ points','in overtime','by a buzzer-beater','by a dominant 4th quarter'];
+  } else if (sport === 'nfl') {
+    return ['1-3 points','4-7 points','8-14 points','14+ points','in overtime','by a touchdown','by a field goal'];
+  }
+  return ['1-3 points','4-7 points','8-14 points','14+ points','by a comfortable margin','by a close finish','in extra time'];
+}
+
 function findSportFromInput(input) {
   var lower = input.toLowerCase();
   if (lower.match(/\b(nfl|football)\b/)) return 'nfl';
@@ -448,7 +528,7 @@ function generatePrediction(input) {
         var diff = Math.abs(score1 - score2);
         if (score1 > score2) { pickTeam = game.home; } else if (score2 > score1) { pickTeam = game.away; } else { pickTeam = rng() > 0.5 ? game.home : game.away; }
         confidence = Math.min(89, 55 + diff * 3 + Math.floor(rng() * 10));
-        var margins = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal'];
+        var margins = getSportMargins(game.sport);
         var reasonPool = [];
         if (oddsData && oddsData.bookmakers && oddsData.bookmakers.length > 0) {
           var h2hCheck = oddsData.bookmakers[0].markets.find(function(m) { return m.key === 'h2h'; });
@@ -476,7 +556,7 @@ function generatePrediction(input) {
     }
     pickTeam = rng() > 0.5 ? game.home : game.away;
     confidence = 51 + Math.floor(rng() * 39);
-    var margins2 = ['1-3 points','3-7 points','7-14 points','10+ points','in overtime','by a touchdown','by a field goal'];
+    var margins2 = getSportMargins(game.sport);
     var oddsHTML2 = oddsData ? formatOdds(oddsData) : '';
     return '<b>' + game.away + ' @ ' + game.home + '</b> (' + game.sport.toUpperCase() + ')<br>Date: ' + game.date + ' ' + game.time + '<br><br>' +
       'My pick: <b>' + pickTeam + '</b><br>Confidence: <b>' + confidence + '%</b><br>Predicted margin: ' + pickSeeded(margins2, rng) + oddsHTML2;
@@ -553,7 +633,8 @@ function submitReview() {
   reviews.push({ stars: reviewRating, text: text, name: 'Customer', date: new Date().toLocaleDateString() });
   saveReviews(reviews);
   closeReviewModal();
-  renderReviews();
+renderReviews();
+updateCreditDisplay();
 }
 
 renderReviews();
