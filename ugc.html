@@ -568,6 +568,90 @@
                 font-size: 1.25rem;
             }
         }
+
+        /* Platform iframe modal */
+        .platform-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #050208;
+            flex-direction: column;
+        }
+        .platform-modal.active {
+            display: flex;
+        }
+        .platform-modal-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1.2rem;
+            background: rgba(10, 6, 18, 0.98);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+            flex-shrink: 0;
+        }
+        .platform-modal-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #a855f7;
+        }
+        .platform-modal-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .platform-modal-open {
+            color: #a855f7;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .platform-modal-open:hover {
+            background: rgba(168, 85, 247, 0.15);
+        }
+        .platform-modal-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 0 8px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        .platform-modal-close:hover {
+            color: #ef4444;
+        }
+        .platform-modal-frame {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: #fff;
+        }
+        .apply-btn {
+            display: inline-block;
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+            text-align: center;
+            width: 100%;
+            margin-top: auto;
+        }
+        .apply-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -659,7 +743,7 @@
                     <span class="platform-tag">Beginner</span>
                     <span class="platform-tag">All Niches</span>
                 </div>
-                <a href="https://ugcjobs.com" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://ugcjobs.com','UGCJobs')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- JoinBrands -->
@@ -675,7 +759,7 @@
                     <span class="platform-tag">Beginner</span>
                     <span class="platform-tag">Mobile App</span>
                 </div>
-                <a href="https://joinbrands.com" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://joinbrands.com','JoinBrands')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- Billo -->
@@ -691,7 +775,7 @@
                     <span class="platform-tag">Performance</span>
                     <span class="platform-tag">Weekly Pay</span>
                 </div>
-                <a href="https://billo.app" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://billo.app','Billo')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- Insense -->
@@ -707,7 +791,7 @@
                     <span class="platform-tag">DTC Brands</span>
                     <span class="platform-tag">Escrow</span>
                 </div>
-                <a href="https://insense.com" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://insense.com','Insense')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- Trend.io -->
@@ -723,7 +807,7 @@
                     <span class="platform-tag">Beauty</span>
                     <span class="platform-tag">Fashion</span>
                 </div>
-                <a href="https://trend.io" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://trend.io','Trend.io')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- Collabstr -->
@@ -739,7 +823,7 @@
                     <span class="platform-tag">DTC</span>
                     <span class="platform-tag">Agencies</span>
                 </div>
-                <a href="https://collabstr.com" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://collabstr.com','Collabstr')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- TikTok Shop Creator -->
@@ -755,7 +839,7 @@
                     <span class="platform-tag">TikTok</span>
                     <span class="platform-tag">Commission</span>
                 </div>
-                <a href="https://shop.tiktok.com" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://shop.tiktok.com','TikTok Shop')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- Promote -->
@@ -771,7 +855,7 @@
                     <span class="platform-tag">Multi-Platform</span>
                     <span class="platform-tag">No Minimum</span>
                 </div>
-                <a href="https://promote.sh" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://promote.sh','Promote')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- Veel -->
@@ -787,7 +871,7 @@
                     <span class="platform-tag">Global Brands</span>
                     <span class="platform-tag">Verified</span>
                 </div>
-                <a href="https://veelapp.com" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://veelapp.com','Veel')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- TRIBE -->
@@ -803,7 +887,7 @@
                     <span class="platform-tag">Marketplace</span>
                     <span class="platform-tag">Global</span>
                 </div>
-                <a href="https://tribe.com.au" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://tribe.com.au','TRIBE')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- Aspire -->
@@ -819,7 +903,7 @@
                     <span class="platform-tag">Enterprise</span>
                     <span class="platform-tag">Premium</span>
                 </div>
-                <a href="https://aspire.io" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://aspire.io','Aspire')" class="apply-btn">Apply Now</button>
             </div>
 
             <!-- Brandbassador -->
@@ -835,7 +919,7 @@
                     <span class="platform-tag">Mission-Based</span>
                     <span class="platform-tag">Free Products</span>
                 </div>
-                <a href="https://brandbassador.com" target="_blank" class="apply-btn">Apply Now</a>
+                <button onclick="openPlatform('https://brandbassador.com','Brandbassador')" class="apply-btn">Apply Now</button>
             </div>
 
         </div>
@@ -1014,7 +1098,34 @@
             alert(`Thank you, ${data.name}! Your application has been submitted. We'll contact you at ${data.email} soon.`);
             signupForm.reset();
         });
+
+        // Platform iframe modal
+        function openPlatform(url, name) {
+            document.getElementById('platformFrame').src = url;
+            document.getElementById('platformName').textContent = name;
+            document.getElementById('platformFrameLink').href = url;
+            document.getElementById('platformModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePlatform() {
+            document.getElementById('platformModal').classList.remove('active');
+            document.getElementById('platformFrame').src = '';
+            document.body.style.overflow = '';
+        }
     </script>
+
+    <!-- Platform Iframe Modal -->
+    <div id="platformModal" class="platform-modal">
+        <div class="platform-modal-topbar">
+            <span id="platformName" class="platform-modal-title">Platform</span>
+            <div class="platform-modal-actions">
+                <a id="platformFrameLink" href="#" target="_blank" class="platform-modal-open">Open in New Tab</a>
+                <button onclick="closePlatform()" class="platform-modal-close">&times;</button>
+            </div>
+        </div>
+        <iframe id="platformFrame" class="platform-modal-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    </div>
 
 </body>
 </html>
