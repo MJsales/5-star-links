@@ -115,7 +115,9 @@ function clipVideo(inputPath, outputDir, startSec, duration, index, total) {
   return new Promise((resolve, reject) => {
     const outputPath = path.join(outputDir, 'clip_' + String(index).padStart(2, '0') + '.mp4');
     console.log('  Creating clip ' + index + '/' + total + ' (' + startSec + 's)...');
-    const proc = require('child_process').spawn(FFMPEG, ['-i', inputPath, '-ss', String(startSec), '-t', String(duration), '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'fast', '-y', outputPath]);
+    // TikTok 9:16: blurred zoomed copy fills the frame behind a slightly cropped (4:3) foreground
+    const TIKTOK_VF = 'split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:3[bgb];[fg]crop=min(iw\\,ih*4/3):ih,scale=1080:-2[fgs];[bgb][fgs]overlay=(W-w)/2:(H-h)/2';
+    const proc = require('child_process').spawn(FFMPEG, ['-i', inputPath, '-ss', String(startSec), '-t', String(duration), '-vf', TIKTOK_VF, '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'fast', '-pix_fmt', 'yuv420p', '-y', outputPath]);
     let stderr = '';
     proc.stdout.on('data', () => {});
     proc.stderr.on('data', d => { stderr += d.toString(); });
