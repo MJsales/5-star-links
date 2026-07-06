@@ -689,12 +689,11 @@ async function handleAuthSubmit() {
   const ctx = canvas.getContext('2d');
   ctx.setTransform(2, 0, 0, 2, 0, 0);
   const W = DISP, H = DISP, CX = W/2, CY = H/2;
-  const outerR = 88, innerR = 36, DEPTH = 38; // thick stuffed pillow
+  const outerR = 88, innerR = 36, DEPTH = 20;
 
   const logoImg = new Image();
   logoImg.src = 'pics/logo/logo.png.png';
 
-  // Get star points (flat array of {x,y})
   function starPoints(cx, cy, oR, iR, sx) {
     const pts = [];
     for (let i = 0; i < 5; i++) {
@@ -710,6 +709,37 @@ async function handleAuthSubmit() {
     ctx.beginPath();
     pts.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
     ctx.closePath();
+  }
+
+  // Purple stripe drip design — two bands with teardrop drips hanging off bottom
+  function drawDrips() {
+    const bands = [
+      { y: CY - 24, h: 14, a: 0.78 },
+      { y: CY + 5,  h: 12, a: 0.65 },
+    ];
+    bands.forEach(b => {
+      const gr = ctx.createLinearGradient(0, b.y, 0, b.y + b.h);
+      gr.addColorStop(0, `rgba(168,85,247,${b.a})`);
+      gr.addColorStop(1, `rgba(124,58,237,${b.a * 0.9})`);
+      ctx.fillStyle = gr;
+      ctx.fillRect(0, b.y, W, b.h);
+
+      // Drips hanging from bottom of band
+      for (let d = 0; d < 6; d++) {
+        const dx = CX - outerR*0.68 + d * (outerR*1.36 / 5);
+        const dLen = 9 + Math.abs(Math.sin(d * 1.9 + b.y * 0.05)) * 10;
+        const dR   = 2.8 + Math.sin(d * 2.5) * 0.7;
+        const tipY  = b.y + b.h + dLen;
+        // tube
+        ctx.fillStyle = `rgba(140,50,220,${b.a * 0.85})`;
+        ctx.fillRect(dx - dR * 0.7, b.y + b.h, dR * 1.4, dLen);
+        // teardrop tip
+        ctx.beginPath();
+        ctx.arc(dx, tipY, dR * 1.35, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(168,85,247,${b.a * 0.8})`;
+        ctx.fill();
+      }
+    });
   }
 
   function drawEdge(spin, sx) {
@@ -777,27 +807,18 @@ async function handleAuthSubmit() {
     ctx.fillStyle = '#0c0117';
     ctx.fillRect(0, 0, W, H);
 
-    if (isFront) {
-      if (logoImg.complete && logoImg.naturalWidth > 0) {
-        ctx.drawImage(logoImg, CX-outerR*0.9, CY-outerR*0.9, outerR*1.8, outerR*1.8);
-      } else {
-        ctx.fillStyle = '#a855f7';
-        ctx.font = 'bold 78px Arial Black';
-        ctx.textAlign = 'center';
-        ctx.fillText('5★', CX, CY+26);
-      }
+    // Logo on both sides
+    if (logoImg.complete && logoImg.naturalWidth > 0) {
+      ctx.drawImage(logoImg, CX-outerR*0.9, CY-outerR*0.9, outerR*1.8, outerR*1.8);
     } else {
+      ctx.fillStyle = '#a855f7';
+      ctx.font = 'bold 78px Arial Black';
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#a855f7';
-      ctx.font = 'bold 66px Arial Black,Arial';
-      ctx.fillText('5', CX, CY-14);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 27px Arial Black,Arial';
-      ctx.fillText('STAR', CX, CY+22);
-      ctx.fillStyle = '#a855f7';
-      ctx.font = 'bold 22px Arial Black,Arial';
-      ctx.fillText('LINKS', CX, CY+50);
+      ctx.fillText('5★', CX, CY+26);
     }
+
+    // Purple drip stripe overlay
+    drawDrips();
 
     // Stuffed puff: center raised, edges shadowed inward
     const puff = ctx.createRadialGradient(CX, CY-10, 5, CX, CY, outerR*0.9);
