@@ -273,6 +273,40 @@
             display: none;
         }
 
+        .platform-card.pinned {
+            border-color: rgba(250, 204, 21, 0.5);
+            box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.15), 0 10px 40px rgba(250, 204, 21, 0.1);
+            position: relative;
+        }
+
+        .pinned-badge {
+            position: absolute;
+            top: -10px;
+            right: 1rem;
+            background: linear-gradient(135deg, #facc15, #f59e0b);
+            color: #1a1206;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 0.25rem 0.7rem;
+            border-radius: 20px;
+        }
+
+        .referral-box {
+            background: rgba(250, 204, 21, 0.08);
+            border: 1px solid rgba(250, 204, 21, 0.3);
+            border-radius: 10px;
+            padding: 0.6rem 0.8rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #fde68a;
+        }
+
+        .referral-box strong {
+            color: #facc15;
+        }
+
         .platform-name {
             font-size: 1.25rem;
             font-weight: 700;
@@ -711,9 +745,11 @@
         <div class="platforms-grid" id="platformsGrid">
 
             <!-- Billo -->
-            <div class="platform-card" data-categories="beauty,fashion,food,fitness">
+            <div class="platform-card pinned" data-categories="beauty,fashion,food,fitness">
+                <span class="pinned-badge">★ Recommended</span>
                 <div class="platform-name">Billo</div>
                 <div class="platform-pay">$50 - $200/video</div>
+                <div class="referral-box">+$10 welcome bonus on your first payout — use code <strong>MCEHR</strong> when you sign up</div>
                 <div class="platform-details">
                     <div class="platform-detail">22,000+ brands post briefs</div>
                     <div class="platform-detail">No followers needed</div>
@@ -723,7 +759,7 @@
                     <span class="platform-tag">Beginner</span>
                     <span class="platform-tag">All Niches</span>
                 </div>
-                <button onclick="openPlatform('https://billo.app/for-creators/','Billo')" class="apply-btn">Apply Now</button>
+                <button onclick="openPlatform('https://billo.onelink.me/TbbD/alxtxg5w','Billo')" class="apply-btn">Apply Now (+$10 Bonus)</button>
             </div>
 
             <!-- JoinBrands -->
