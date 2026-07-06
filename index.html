@@ -712,55 +712,67 @@ async function handleAuthSubmit() {
     ctx.closePath();
   }
 
-  // Draw plush edge — soft rounded seam between front and back
+  // Draw plush edge — rounded stuffed pillow look: bright at seam, dark at both face boundaries
   function drawPlushEdge(spin, scaleX) {
     const edgeW = (1 - scaleX) * DEPTH;
     if (edgeW < 0.5) return;
     const dir = spin >= 0 ? 1 : -1;
-    const pts = starPoints(CX, CY, outerR, innerR, scaleX);
-    const n = pts.length;
+    // Seam bulges slightly beyond flat depth — stuffing pushes fabric outward
+    const bulge = edgeW * 0.55;
+    const totalOut = edgeW + bulge;
+
+    const facePts = starPoints(CX, CY, outerR, innerR, scaleX);
+    const seamPts = facePts.map(p => ({ x: p.x + dir * totalOut, y: p.y }));
+    const n = facePts.length;
 
     for (let i = 0; i < n; i++) {
-      const a = pts[i], b = pts[(i+1) % n];
-      const ax2 = a.x + dir*edgeW, bx2 = b.x + dir*edgeW;
+      const fa = facePts[i], fb = facePts[(i+1) % n];
+      const sa = seamPts[i],  sb = seamPts[(i+1) % n];
 
-      // Compute segment angle for lighting
-      const segAngle = Math.atan2(b.y - a.y, (b.x - a.x) / (scaleX || 0.01));
-      const light = 0.45 + 0.55 * Math.abs(Math.cos(segAngle));
+      // Lighting: top segments brighter (like overhead light hitting plush)
+      const avgY = (fa.y + fb.y) / 2;
+      const light = 0.45 + 0.55 * (1 - (avgY - (CY - outerR)) / (outerR * 2));
 
-      // Plush fabric gradient across edge depth
-      const grad = ctx.createLinearGradient(a.x, a.y, ax2, a.y);
-      const r = Math.round(110 * light), g = Math.round(40 * light), v = Math.round(200 * light);
-      grad.addColorStop(0,   `rgba(${r},${g},${v},1)`);
-      grad.addColorStop(0.3, `rgba(${Math.min(255,r+40)},${Math.min(100,g+30)},${Math.min(255,v+30)},1)`);
-      grad.addColorStop(0.7, `rgba(${r},${g},${v},1)`);
-      grad.addColorStop(1,   `rgba(${Math.round(r*0.6)},${Math.round(g*0.6)},${Math.round(v*0.6)},1)`);
+      // Gradient: dark at face boundary → bright peak at seam → dark at seam tail
+      // This gives the rounded-pillow look instead of flat coin
+      const x0 = dir > 0 ? fa.x : sa.x;
+      const x1 = dir > 0 ? sa.x : fa.x;
+      const g = ctx.createLinearGradient(x0, 0, x1, 0);
+      const rB = Math.round(100 * light), gB = Math.round(32 * light), vB = Math.round(190 * light);
+      // dark shadow where face fabric folds around to edge
+      g.addColorStop(0,    `rgba(${Math.round(rB*0.3)},${Math.round(gB*0.3)},${Math.round(vB*0.3)},1)`);
+      // mid fabric
+      g.addColorStop(0.35, `rgba(${rB},${gB},${vB},1)`);
+      // bright highlight at seam (outermost stuffed point)
+      g.addColorStop(0.68, `rgba(${Math.min(255,rB+90)},${Math.min(130,gB+55)},${Math.min(255,vB+60)},1)`);
+      // slightly less bright right at stitch line
+      g.addColorStop(1,    `rgba(${Math.min(255,rB+45)},${Math.min(80,gB+22)},${Math.min(255,vB+28)},1)`);
 
       ctx.beginPath();
-      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-      ctx.lineTo(bx2, b.y); ctx.lineTo(ax2, a.y);
+      ctx.moveTo(fa.x, fa.y);
+      ctx.lineTo(fb.x, fb.y);
+      ctx.lineTo(sb.x, sb.y);
+      ctx.lineTo(sa.x, sa.y);
       ctx.closePath();
-      ctx.fillStyle = grad;
+      ctx.fillStyle = g;
       ctx.fill();
-
-      // Seam stitch line at midpoint of edge
-      const mx = (a.x + ax2) / 2, my = (a.y + a.y) / 2;
-      const mx2 = (b.x + bx2) / 2, my2 = (b.y + b.y) / 2;
-      ctx.beginPath();
-      ctx.moveTo(mx, a.y); ctx.lineTo(mx2, b.y);
-      ctx.strokeStyle = `rgba(180,100,255,${0.3 * light})`;
-      ctx.lineWidth = 0.7;
-      ctx.setLineDash([2, 3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
     }
 
-    // Soft shadow along seam edge
-    const seamX = dir > 0 ? pts[0].x + edgeW : pts[0].x;
+    // Seam stitching at outermost line — prominent dashed thread
     ctx.save();
-    traceStar(starPoints(CX + dir*edgeW, CY, outerR, innerR, scaleX));
-    ctx.strokeStyle = `rgba(0,0,0,${0.18 * (1-scaleX)})`;
-    ctx.lineWidth = 4;
+    traceStar(seamPts);
+    ctx.strokeStyle = `rgba(220,155,255,0.65)`;
+    ctx.lineWidth = 1.3;
+    ctx.setLineDash([2.5, 3.5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Dark fold shadow right where face meets edge
+    ctx.save();
+    traceStar(facePts);
+    ctx.strokeStyle = `rgba(0,0,0,${0.28 * (1-scaleX)})`;
+    ctx.lineWidth = 3.5;
     ctx.stroke();
     ctx.restore();
   }
@@ -768,7 +780,8 @@ async function handleAuthSubmit() {
   // Draw plush face (front or back)
   function drawFace(showFront, scaleX) {
     ctx.save();
-    traceStar(starPoints(CX, CY, outerR, innerR, scaleX));
+    // Clip slightly inset so fabric edge/fold shows around the star perimeter
+    traceStar(starPoints(CX, CY, outerR - 1, innerR - 1, scaleX));
     ctx.clip();
 
     ctx.translate(CX, CY);
@@ -820,11 +833,19 @@ async function handleAuthSubmit() {
 
     ctx.restore();
 
-    // Plush border seam — dashed outline at star edge
+    // Dark fold shadow at face perimeter — fabric wrapping around the edge
     ctx.save();
-    traceStar(starPoints(CX, CY, outerR - 3, innerR - 2, scaleX));
-    ctx.strokeStyle = 'rgba(200,140,255,0.25)';
-    ctx.lineWidth = 1.5;
+    traceStar(starPoints(CX, CY, outerR - 1, innerR - 1, scaleX));
+    ctx.strokeStyle = 'rgba(0,0,0,0.38)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.restore();
+
+    // Inner seam stitching on face — dashed thread just inside edge
+    ctx.save();
+    traceStar(starPoints(CX, CY, outerR - 5, innerR - 3, scaleX));
+    ctx.strokeStyle = 'rgba(200,130,255,0.28)';
+    ctx.lineWidth = 1.2;
     ctx.setLineDash([3, 4]);
     ctx.stroke();
     ctx.setLineDash([]);
