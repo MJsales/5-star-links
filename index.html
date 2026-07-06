@@ -311,16 +311,7 @@
 
 <div class="header">
   <div class="logo-wrap">
-    <div class="plush-3d">
-      <div class="plush-face plush-back">
-        <div class="back-text">5</div>
-        <div class="back-sub">STAR</div>
-        <div class="back-sub2">LINKS</div>
-      </div>
-      <div class="plush-face plush-front">
-        <img src="pics/logo/logo.png.png" alt="5 Star Links logo"/>
-      </div>
-    </div>
+    <canvas id="logo3d" width="220" height="220" style="display:block;"></canvas>
     <svg class="logo-drips" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
       <path class="drip drip-path" d="M60,170 C58,180 56,195 58,210"/>
       <ellipse class="drip-fill drip-drop" cx="58" cy="218" rx="4" ry="6"/>
@@ -686,6 +677,127 @@ async function handleAuthSubmit() {
     err.textContent = e.message.replace('Firebase: ', '').replace(/\(auth\/.*?\)\.?/, '');
   }
 }
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function() {
+  const canvas = document.getElementById('logo3d');
+  if (!canvas) return;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(220, 220);
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+  camera.position.set(0, 0, 4);
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const purpleLight = new THREE.PointLight(0xa855f7, 3, 12);
+  purpleLight.position.set(3, 3, 4);
+  scene.add(purpleLight);
+  scene.add(new THREE.PointLight(0xffffff, 1.5, 12)).position.set(-3, -2, 3);
+  const backLight = new THREE.PointLight(0x7c3aed, 2, 12);
+  backLight.position.set(0, 0, -4);
+  scene.add(backLight);
+
+  // Build 5-pointed star shape
+  function starShape(outerR, innerR, points) {
+    const shape = new THREE.Shape();
+    const step = (Math.PI * 2) / points;
+    const half = step / 2;
+    for (let i = 0; i < points; i++) {
+      const outerA = i * step - Math.PI / 2;
+      const innerA = outerA + half;
+      const ox = Math.cos(outerA) * outerR;
+      const oy = Math.sin(outerA) * outerR;
+      const ix = Math.cos(innerA) * innerR;
+      const iy = Math.sin(innerA) * innerR;
+      if (i === 0) shape.moveTo(ox, oy);
+      else shape.lineTo(ox, oy);
+      shape.lineTo(ix, iy);
+    }
+    shape.closePath();
+    return shape;
+  }
+
+  const shape = starShape(1.0, 0.42, 5);
+  const extrudeSettings = { depth: 0.28, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05, bevelSegments: 6 };
+  const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  geo.center();
+
+  // Back face canvas — "5 STAR LINKS" text
+  const backCanvas = document.createElement('canvas');
+  backCanvas.width = 512; backCanvas.height = 512;
+  const bctx = backCanvas.getContext('2d');
+  bctx.clearRect(0, 0, 512, 512);
+  bctx.fillStyle = '#0d0118';
+  // Draw star background on back canvas
+  bctx.save();
+  bctx.translate(256, 256);
+  bctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const outerA = i * (Math.PI*2/5) - Math.PI/2;
+    const innerA = outerA + Math.PI/5;
+    const ox = Math.cos(outerA)*220, oy = Math.sin(outerA)*220;
+    const ix = Math.cos(innerA)*92, iy = Math.sin(innerA)*92;
+    if (i===0) bctx.moveTo(ox,oy); else bctx.lineTo(ox,oy);
+    bctx.lineTo(ix,iy);
+  }
+  bctx.closePath();
+  bctx.fillStyle = '#0d0118';
+  bctx.fill();
+  bctx.restore();
+  // Text
+  bctx.textAlign = 'center';
+  bctx.fillStyle = '#a855f7';
+  bctx.font = 'bold 160px Arial Black, Arial';
+  bctx.fillText('5', 256, 210);
+  bctx.fillStyle = '#ffffff';
+  bctx.font = 'bold 72px Arial Black, Arial';
+  bctx.fillText('STAR', 256, 310);
+  bctx.fillStyle = '#a855f7';
+  bctx.font = 'bold 64px Arial Black, Arial';
+  bctx.fillText('LINKS', 256, 390);
+  const backTex = new THREE.CanvasTexture(backCanvas);
+
+  const loader = new THREE.TextureLoader();
+  loader.load('pics/logo/logo.png.png', function(frontTex) {
+    frontTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+    // Front face — logo
+    const frontMat = new THREE.MeshStandardMaterial({
+      map: frontTex, transparent: true, metalness: 0.2, roughness: 0.3
+    });
+    // Back face — text
+    const backMat = new THREE.MeshStandardMaterial({
+      map: backTex, metalness: 0.2, roughness: 0.3
+    });
+    // Side/bevel — shiny purple gold
+    const sideMat = new THREE.MeshStandardMaterial({
+      color: 0x7c3aed, metalness: 0.9, roughness: 0.15,
+      emissive: 0x3b0764, emissiveIntensity: 0.3
+    });
+
+    // ExtrudeGeometry: groups 0=side/bevel, 1=front cap, 2=back cap
+    const star = new THREE.Mesh(geo, [sideMat, frontMat, backMat]);
+    scene.add(star);
+
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.013;
+      star.rotation.y = t;
+      star.position.y = Math.sin(t * 0.5) * 0.1;
+      purpleLight.intensity = 2.5 + Math.sin(t * 0.9) * 1;
+      renderer.render(scene, camera);
+    }
+    animate();
+  });
+})();
 </script>
 
 </body>
