@@ -1223,33 +1223,13 @@
             signupForm.reset();
         });
 
-        // Platform iframe modal
+        // Open the platform's real signup page in a new tab.
+        // (These sites block iframe embedding, so an in-page modal shows a blank screen.)
         function openPlatform(url, name) {
-            document.getElementById('platformFrame').src = url;
-            document.getElementById('platformName').textContent = name;
-            document.getElementById('platformFrameLink').href = url;
-            document.getElementById('platformModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closePlatform() {
-            document.getElementById('platformModal').classList.remove('active');
-            document.getElementById('platformFrame').src = '';
-            document.body.style.overflow = '';
+            window.open(url, '_blank', 'noopener');
         }
     </script>
 
-    <!-- Platform Iframe Modal -->
-    <div id="platformModal" class="platform-modal">
-        <div class="platform-modal-topbar">
-            <span id="platformName" class="platform-modal-title">Platform</span>
-            <div class="platform-modal-actions">
-                <a id="platformFrameLink" href="#" target="_blank" class="platform-modal-open">Open in New Tab</a>
-                <button onclick="closePlatform()" class="platform-modal-close">&times;</button>
-            </div>
-        </div>
-        <iframe id="platformFrame" class="platform-modal-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
-    </div>
 
 </body>
 </html>
