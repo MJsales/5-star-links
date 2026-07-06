@@ -764,39 +764,49 @@ async function handleAuthSubmit() {
   bctx.fillText('LINKS', 256, 390);
   const backTex = new THREE.CanvasTexture(backCanvas);
 
-  const loader = new THREE.TextureLoader();
-  loader.load('pics/logo/logo.png.png', function(frontTex) {
-    frontTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  // Front face canvas — draw logo via Image (no CORS issues)
+  const frontCanvas = document.createElement('canvas');
+  frontCanvas.width = 512; frontCanvas.height = 512;
+  const fctx = frontCanvas.getContext('2d');
+  fctx.fillStyle = '#0d0118';
+  fctx.fillRect(0, 0, 512, 512);
+  // Draw "5★" as placeholder until image loads
+  fctx.textAlign = 'center';
+  fctx.fillStyle = '#a855f7';
+  fctx.font = 'bold 200px Arial Black, Arial';
+  fctx.fillText('5★', 256, 340);
+  const frontTex = new THREE.CanvasTexture(frontCanvas);
 
-    // Front face — logo
-    const frontMat = new THREE.MeshStandardMaterial({
-      map: frontTex, transparent: true, metalness: 0.2, roughness: 0.3
-    });
-    // Back face — text
-    const backMat = new THREE.MeshStandardMaterial({
-      map: backTex, metalness: 0.2, roughness: 0.3
-    });
-    // Side/bevel — shiny purple gold
-    const sideMat = new THREE.MeshStandardMaterial({
-      color: 0x7c3aed, metalness: 0.9, roughness: 0.15,
-      emissive: 0x3b0764, emissiveIntensity: 0.3
-    });
+  // Try to load the actual logo and update texture
+  const img = new Image();
+  img.onload = function() {
+    fctx.clearRect(0, 0, 512, 512);
+    fctx.drawImage(img, 0, 0, 512, 512);
+    frontTex.needsUpdate = true;
+  };
+  img.src = 'pics/logo/logo.png.png';
 
-    // ExtrudeGeometry: groups 0=side/bevel, 1=front cap, 2=back cap
-    const star = new THREE.Mesh(geo, [sideMat, frontMat, backMat]);
-    scene.add(star);
-
-    let t = 0;
-    function animate() {
-      requestAnimationFrame(animate);
-      t += 0.013;
-      star.rotation.y = t;
-      star.position.y = Math.sin(t * 0.5) * 0.1;
-      purpleLight.intensity = 2.5 + Math.sin(t * 0.9) * 1;
-      renderer.render(scene, camera);
-    }
-    animate();
+  const frontMat = new THREE.MeshStandardMaterial({ map: frontTex, metalness: 0.2, roughness: 0.3 });
+  const backMat  = new THREE.MeshStandardMaterial({ map: backTex,  metalness: 0.2, roughness: 0.3 });
+  const sideMat  = new THREE.MeshStandardMaterial({
+    color: 0x7c3aed, metalness: 0.9, roughness: 0.15,
+    emissive: 0x3b0764, emissiveIntensity: 0.4
   });
+
+  // ExtrudeGeometry groups: 0=side/bevel, 1=front cap, 2=back cap
+  const star = new THREE.Mesh(geo, [sideMat, frontMat, backMat]);
+  scene.add(star);
+
+  let t = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    t += 0.013;
+    star.rotation.y = t;
+    star.position.y = Math.sin(t * 0.5) * 0.1;
+    purpleLight.intensity = 2.5 + Math.sin(t * 0.9) * 1;
+    renderer.render(scene, camera);
+  }
+  animate();
 })();
 </script>
 
