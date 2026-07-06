@@ -689,7 +689,7 @@ async function handleAuthSubmit() {
   const ctx = canvas.getContext('2d');
   ctx.setTransform(2, 0, 0, 2, 0, 0);
   const W = DISP, H = DISP, CX = W/2, CY = H/2;
-  const outerR = 88, innerR = 36, DEPTH = 20;
+  const outerR = 86, innerR = 48, DEPTH = 18;
 
   const logoImg = new Image();
   logoImg.src = 'pics/logo/logo.png.png';
@@ -708,6 +708,20 @@ async function handleAuthSubmit() {
   function traceStar(pts) {
     ctx.beginPath();
     pts.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+    ctx.closePath();
+  }
+
+  // Puffy plush silhouette — rounds every corner so it looks soft & stuffed, no sharp points
+  function tracePuffy(pts) {
+    const n = pts.length;
+    ctx.beginPath();
+    let mx = (pts[n-1].x + pts[0].x)/2, my = (pts[n-1].y + pts[0].y)/2;
+    ctx.moveTo(mx, my);
+    for (let i = 0; i < n; i++) {
+      const cur = pts[i], nxt = pts[(i+1)%n];
+      const mx2 = (cur.x + nxt.x)/2, my2 = (cur.y + nxt.y)/2;
+      ctx.quadraticCurveTo(cur.x, cur.y, mx2, my2);
+    }
     ctx.closePath();
   }
 
@@ -781,7 +795,7 @@ async function handleAuthSubmit() {
 
     // Stitch seam at outermost stuffed edge
     ctx.save();
-    traceStar(seamPts);
+    tracePuffy(seamPts);
     ctx.strokeStyle = 'rgba(225,158,255,0.72)';
     ctx.lineWidth = 1.5;
     ctx.setLineDash([3, 4]);
@@ -791,7 +805,7 @@ async function handleAuthSubmit() {
 
     // Dark crease where face fabric folds around to side
     ctx.save();
-    traceStar(facePts);
+    tracePuffy(facePts);
     ctx.strokeStyle = `rgba(0,0,0,${0.35*(1-sx)})`;
     ctx.lineWidth = 4;
     ctx.stroke();
@@ -800,7 +814,7 @@ async function handleAuthSubmit() {
 
   function drawFace(isFront, sx) {
     ctx.save();
-    traceStar(starPoints(CX, CY, outerR-1, innerR-1, sx));
+    tracePuffy(starPoints(CX, CY, outerR-1, innerR-1, sx));
     ctx.clip();
     ctx.translate(CX,CY); ctx.scale(sx,1); ctx.translate(-CX,-CY);
 
@@ -838,7 +852,7 @@ async function handleAuthSubmit() {
 
     // Dark fabric-fold crease at face border
     ctx.save();
-    traceStar(starPoints(CX,CY,outerR-1,innerR-1,sx));
+    tracePuffy(starPoints(CX,CY,outerR-1,innerR-1,sx));
     ctx.strokeStyle = 'rgba(0,0,0,0.45)';
     ctx.lineWidth = 5;
     ctx.stroke();
@@ -846,7 +860,7 @@ async function handleAuthSubmit() {
 
     // Inner stitch seam on face surface
     ctx.save();
-    traceStar(starPoints(CX,CY,outerR-6,innerR-4,sx));
+    tracePuffy(starPoints(CX,CY,outerR-6,innerR-4,sx));
     ctx.strokeStyle = 'rgba(190,115,255,0.32)';
     ctx.lineWidth = 1.2;
     ctx.setLineDash([3,4.5]);
@@ -870,7 +884,7 @@ async function handleAuthSubmit() {
 
     // Drop shadow under pillow
     ctx.save();
-    traceStar(starPoints(CX+3,CY+6,outerR,innerR,sx));
+    tracePuffy(starPoints(CX+3,CY+6,outerR,innerR,sx));
     ctx.fillStyle = 'rgba(55,0,130,0.24)';
     ctx.fill();
     ctx.restore();
@@ -880,7 +894,7 @@ async function handleAuthSubmit() {
 
     // Outer glow pulse
     ctx.save();
-    traceStar(starPoints(CX,CY,outerR+10,innerR+5,sx));
+    tracePuffy(starPoints(CX,CY,outerR+10,innerR+5,sx));
     const glow = ctx.createRadialGradient(CX,CY,outerR*0.75*sx, CX,CY,outerR+14);
     const ga = 0.26 + 0.19*Math.sin(bob*1.2);
     glow.addColorStop(0,'rgba(168,85,247,0)');
