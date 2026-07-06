@@ -679,134 +679,150 @@ async function handleAuthSubmit() {
 }
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function() {
   const canvas = document.getElementById('logo3d');
   if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 220, H = 220, CX = 110, CY = 110;
 
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(220, 220);
-  renderer.setClearColor(0x000000, 0);
+  // Load logo image
+  const logoImg = new Image();
+  logoImg.src = 'pics/logo/logo.png.png';
 
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-  camera.position.set(0, 0, 4);
-
-  // Lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-  const purpleLight = new THREE.PointLight(0xa855f7, 3, 12);
-  purpleLight.position.set(3, 3, 4);
-  scene.add(purpleLight);
-  scene.add(new THREE.PointLight(0xffffff, 1.5, 12)).position.set(-3, -2, 3);
-  const backLight = new THREE.PointLight(0x7c3aed, 2, 12);
-  backLight.position.set(0, 0, -4);
-  scene.add(backLight);
-
-  // Build 5-pointed star shape
-  function starShape(outerR, innerR, points) {
-    const shape = new THREE.Shape();
-    const step = (Math.PI * 2) / points;
-    const half = step / 2;
-    for (let i = 0; i < points; i++) {
-      const outerA = i * step - Math.PI / 2;
-      const innerA = outerA + half;
-      const ox = Math.cos(outerA) * outerR;
-      const oy = Math.sin(outerA) * outerR;
-      const ix = Math.cos(innerA) * innerR;
-      const iy = Math.sin(innerA) * innerR;
-      if (i === 0) shape.moveTo(ox, oy);
-      else shape.lineTo(ox, oy);
-      shape.lineTo(ix, iy);
+  function drawStar(ctx, cx, cy, outerR, innerR, scaleX) {
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const outerA = i * (Math.PI*2/5) - Math.PI/2;
+      const innerA = outerA + Math.PI/5;
+      const ox = cx + Math.cos(outerA) * outerR * scaleX;
+      const oy = cy + Math.sin(outerA) * outerR;
+      const ix = cx + Math.cos(innerA) * innerR * scaleX;
+      const iy = cy + Math.sin(innerA) * innerR;
+      if (i === 0) ctx.moveTo(ox, oy); else ctx.lineTo(ox, oy);
+      ctx.lineTo(ix, iy);
     }
-    shape.closePath();
-    return shape;
+    ctx.closePath();
   }
-
-  const shape = starShape(1.0, 0.42, 5);
-  const extrudeSettings = { depth: 0.28, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05, bevelSegments: 6 };
-  const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  geo.center();
-
-  // Back face canvas — "5 STAR LINKS" text
-  const backCanvas = document.createElement('canvas');
-  backCanvas.width = 512; backCanvas.height = 512;
-  const bctx = backCanvas.getContext('2d');
-  bctx.clearRect(0, 0, 512, 512);
-  bctx.fillStyle = '#0d0118';
-  // Draw star background on back canvas
-  bctx.save();
-  bctx.translate(256, 256);
-  bctx.beginPath();
-  for (let i = 0; i < 5; i++) {
-    const outerA = i * (Math.PI*2/5) - Math.PI/2;
-    const innerA = outerA + Math.PI/5;
-    const ox = Math.cos(outerA)*220, oy = Math.sin(outerA)*220;
-    const ix = Math.cos(innerA)*92, iy = Math.sin(innerA)*92;
-    if (i===0) bctx.moveTo(ox,oy); else bctx.lineTo(ox,oy);
-    bctx.lineTo(ix,iy);
-  }
-  bctx.closePath();
-  bctx.fillStyle = '#0d0118';
-  bctx.fill();
-  bctx.restore();
-  // Text
-  bctx.textAlign = 'center';
-  bctx.fillStyle = '#a855f7';
-  bctx.font = 'bold 160px Arial Black, Arial';
-  bctx.fillText('5', 256, 210);
-  bctx.fillStyle = '#ffffff';
-  bctx.font = 'bold 72px Arial Black, Arial';
-  bctx.fillText('STAR', 256, 310);
-  bctx.fillStyle = '#a855f7';
-  bctx.font = 'bold 64px Arial Black, Arial';
-  bctx.fillText('LINKS', 256, 390);
-  const backTex = new THREE.CanvasTexture(backCanvas);
-
-  // Front face canvas — draw logo via Image (no CORS issues)
-  const frontCanvas = document.createElement('canvas');
-  frontCanvas.width = 512; frontCanvas.height = 512;
-  const fctx = frontCanvas.getContext('2d');
-  fctx.fillStyle = '#0d0118';
-  fctx.fillRect(0, 0, 512, 512);
-  // Draw "5★" as placeholder until image loads
-  fctx.textAlign = 'center';
-  fctx.fillStyle = '#a855f7';
-  fctx.font = 'bold 200px Arial Black, Arial';
-  fctx.fillText('5★', 256, 340);
-  const frontTex = new THREE.CanvasTexture(frontCanvas);
-
-  // Try to load the actual logo and update texture
-  const img = new Image();
-  img.onload = function() {
-    fctx.clearRect(0, 0, 512, 512);
-    fctx.drawImage(img, 0, 0, 512, 512);
-    frontTex.needsUpdate = true;
-  };
-  img.src = 'pics/logo/logo.png.png';
-
-  const frontMat = new THREE.MeshStandardMaterial({ map: frontTex, metalness: 0.2, roughness: 0.3 });
-  const backMat  = new THREE.MeshStandardMaterial({ map: backTex,  metalness: 0.2, roughness: 0.3 });
-  const sideMat  = new THREE.MeshStandardMaterial({
-    color: 0x7c3aed, metalness: 0.9, roughness: 0.15,
-    emissive: 0x3b0764, emissiveIntensity: 0.4
-  });
-
-  // ExtrudeGeometry groups: 0=side/bevel, 1=front cap, 2=back cap
-  const star = new THREE.Mesh(geo, [sideMat, frontMat, backMat]);
-  scene.add(star);
 
   let t = 0;
-  function animate() {
-    requestAnimationFrame(animate);
-    t += 0.013;
-    star.rotation.y = t;
-    star.position.y = Math.sin(t * 0.5) * 0.1;
-    purpleLight.intensity = 2.5 + Math.sin(t * 0.9) * 1;
-    renderer.render(scene, camera);
+  function frame() {
+    requestAnimationFrame(frame);
+    t += 0.018;
+    ctx.clearRect(0, 0, W, H);
+
+    const spin = Math.cos(t);       // -1 to 1: facing direction
+    const scaleX = Math.abs(spin);  // width compression
+    const depth = 16;               // edge thickness in px
+    const showFront = spin >= 0;
+    const outerR = 96, innerR = 40;
+
+    // Draw 3D edge (side) when turning
+    if (scaleX < 0.98) {
+      const edgeW = (1 - scaleX) * depth;
+      const dir = spin >= 0 ? 1 : -1;
+      // Draw edge slices
+      for (let i = 0; i < 5; i++) {
+        const outerA = i * (Math.PI*2/5) - Math.PI/2;
+        const innerA = outerA + Math.PI/5;
+        const nextOuterA = (i+1) * (Math.PI*2/5) - Math.PI/2;
+        // Outer edge segment
+        const ox1 = CX + Math.cos(outerA) * outerR * scaleX;
+        const oy1 = CY + Math.sin(outerA) * outerR;
+        const ox2 = CX + Math.cos(outerA) * outerR * scaleX + dir * edgeW;
+        const oy2 = oy1;
+        const ix1 = CX + Math.cos(innerA) * innerR * scaleX;
+        const iy1 = CY + Math.sin(innerA) * innerR;
+        const ix2 = ix1 + dir * edgeW;
+        const iy2 = iy1;
+        const nox1 = CX + Math.cos(nextOuterA) * outerR * scaleX;
+        const noy1 = CY + Math.sin(nextOuterA) * outerR;
+        const nox2 = nox1 + dir * edgeW;
+        const noy2 = noy1;
+
+        // Outer tip face
+        ctx.beginPath();
+        ctx.moveTo(ox1, oy1); ctx.lineTo(ix1, iy1);
+        ctx.lineTo(ix2, iy2); ctx.lineTo(ox2, oy2);
+        ctx.closePath();
+        const edgeBright = 0.4 + 0.6 * Math.abs(Math.sin(outerA));
+        ctx.fillStyle = `rgba(${Math.round(124*edgeBright)},${Math.round(58*edgeBright)},${Math.round(237*edgeBright)},1)`;
+        ctx.fill();
+
+        // Inner notch face
+        ctx.beginPath();
+        ctx.moveTo(ix1, iy1); ctx.lineTo(nox1, noy1);
+        ctx.lineTo(nox2, noy2); ctx.lineTo(ix2, iy2);
+        ctx.closePath();
+        const notchBright = 0.25 + 0.4 * Math.abs(Math.sin(innerA));
+        ctx.fillStyle = `rgba(${Math.round(80*notchBright)},${Math.round(30*notchBright)},${Math.round(160*notchBright)},1)`;
+        ctx.fill();
+      }
+    }
+
+    // Clip to star shape for face
+    ctx.save();
+    drawStar(ctx, CX, CY, outerR, innerR, scaleX);
+    ctx.clip();
+
+    if (showFront) {
+      // Front face — logo image
+      ctx.save();
+      ctx.translate(CX, CY);
+      ctx.scale(scaleX, 1);
+      ctx.translate(-CX, -CY);
+      if (logoImg.complete && logoImg.naturalWidth > 0) {
+        ctx.drawImage(logoImg, CX - outerR, CY - outerR, outerR*2, outerR*2);
+      } else {
+        ctx.fillStyle = '#0d0118';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#a855f7';
+        ctx.font = 'bold 80px Arial Black, Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('5★', CX, CY + 28);
+      }
+      // Shine overlay
+      const shine = ctx.createLinearGradient(CX - outerR*scaleX, CY - outerR, CX + outerR*scaleX, CY + outerR);
+      shine.addColorStop(0, 'rgba(255,255,255,0.18)');
+      shine.addColorStop(0.4, 'rgba(255,255,255,0.05)');
+      shine.addColorStop(1, 'rgba(0,0,0,0.2)');
+      ctx.fillStyle = shine;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    } else {
+      // Back face — "5 STAR LINKS" text
+      ctx.save();
+      ctx.translate(CX, CY);
+      ctx.scale(scaleX, 1);
+      ctx.translate(-CX, -CY);
+      ctx.fillStyle = '#0d0118';
+      ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#a855f7';
+      ctx.font = 'bold 72px Arial Black, Arial';
+      ctx.fillText('5', CX, CY - 20);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 30px Arial Black, Arial';
+      ctx.fillText('STAR', CX, CY + 20);
+      ctx.fillStyle = '#a855f7';
+      ctx.font = 'bold 26px Arial Black, Arial';
+      ctx.fillText('LINKS', CX, CY + 54);
+      ctx.restore();
+    }
+
+    ctx.restore();
+
+    // Glow ring
+    const glowR = outerR * scaleX + 6;
+    const glow = ctx.createRadialGradient(CX, CY, glowR - 4, CX, CY, glowR + 8);
+    glow.addColorStop(0, `rgba(168,85,247,${0.5 + 0.3*Math.sin(t)})`);
+    glow.addColorStop(1, 'rgba(168,85,247,0)');
+    drawStar(ctx, CX, CY, outerR + 10, innerR + 4, scaleX);
+    ctx.fillStyle = glow;
+    ctx.fill();
   }
-  animate();
+
+  frame();
 })();
 </script>
 
