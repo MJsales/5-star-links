@@ -176,10 +176,13 @@
 <script>
 // Add new deals here. percentOff is computed automatically from origPrice/salePrice,
 // but only items with an ACTUAL discount of 50% or more will ever show up on the page.
+// type: "Online" (needs a link) or "In-Store" (needs sku/location instead of a link).
 const deals = [
-  { name: "1:1 Multi LV Wallet & Card Holder", store: "DHGate", origPrice: 89.99, salePrice: 39.99, link: "https://sale.dhgate.com/ZM7moQ47" },
-  { name: "Balenciaga LED Runner Sneakers", store: "DHGate", origPrice: 199.99, salePrice: 79.99, link: "https://www.dhgate.com/product/lkss-jason-runner-led-high-quality-sneaker/1101719733.html" },
-  { name: "Jason Jewelry (Chrome Heart Rings)", store: "DHGate", origPrice: 60.00, salePrice: 25.00, link: "https://docs.google.com/spreadsheets/d/1g4lQLqgqwFC5A3v-6jXOkgH-bUOpVSj6r6-Wx-gYmDQ/edit#gid=1953553672&range=A2" }
+  { name: "1:1 Multi LV Wallet & Card Holder", store: "DHGate", type: "Online", origPrice: 89.99, salePrice: 39.99, link: "https://sale.dhgate.com/ZM7moQ47" },
+  { name: "Balenciaga LED Runner Sneakers", store: "DHGate", type: "Online", origPrice: 199.99, salePrice: 79.99, link: "https://www.dhgate.com/product/lkss-jason-runner-led-high-quality-sneaker/1101719733.html" },
+  { name: "Jason Jewelry (Chrome Heart Rings)", store: "DHGate", type: "Online", origPrice: 60.00, salePrice: 25.00, link: "https://docs.google.com/spreadsheets/d/1g4lQLqgqwFC5A3v-6jXOkgH-bUOpVSj6r6-Wx-gYmDQ/edit#gid=1953553672&range=A2" },
+  { name: "Example: Cordless Drill Clearance", store: "Home Depot", type: "In-Store", origPrice: 79.00, salePrice: 0.01, sku: "123-456", location: "Garden dept endcap" },
+  { name: "Example: Patio Set Clearance", store: "Target", type: "In-Store", origPrice: 250.00, salePrice: 62.50, sku: "DPCI 087-05-1234", location: "Seasonal aisle" }
 ];
 
 function pctOff(d) {
@@ -188,14 +191,23 @@ function pctOff(d) {
 
 const qualifying = deals.filter(d => pctOff(d) >= 50);
 const stores = ["All", ...new Set(qualifying.map(d => d.store))];
+const types = ["All", "Online", "In-Store"];
 let activeStore = "All";
+let activeType = "All";
 
 function renderFilters() {
   const wrap = document.getElementById('storeFilters');
-  wrap.innerHTML = stores.map(s =>
+  const typeChips = types.map(t =>
+    `<button class="store-chip type-chip${t === activeType ? ' active' : ''}" data-type="${t}">${t}</button>`
+  ).join('');
+  const storeChips = stores.map(s =>
     `<button class="store-chip${s === activeStore ? ' active' : ''}" data-store="${s}">${s}</button>`
   ).join('');
-  wrap.querySelectorAll('.store-chip').forEach(btn => {
+  wrap.innerHTML = typeChips + '<span style="width:1px;background:rgba(255,255,255,0.15);margin:0 4px;"></span>' + storeChips;
+  wrap.querySelectorAll('[data-type]').forEach(btn => {
+    btn.addEventListener('click', () => { activeType = btn.dataset.type; renderFilters(); render(); });
+  });
+  wrap.querySelectorAll('[data-store]').forEach(btn => {
     btn.addEventListener('click', () => { activeStore = btn.dataset.store; renderFilters(); render(); });
   });
 }
@@ -207,20 +219,30 @@ function render() {
 
   let filtered = qualifying.filter(d => d.name.toLowerCase().includes(q));
   if (activeStore !== "All") filtered = filtered.filter(d => d.store === activeStore);
+  if (activeType !== "All") filtered = filtered.filter(d => d.type === activeType);
   filtered.sort((a, b) => pctOff(b) - pctOff(a));
 
-  grid.innerHTML = filtered.map(d => `
+  grid.innerHTML = filtered.map(d => {
+    const isPenny = d.salePrice <= 0.05;
+    const badge = isPenny ? 'PENNY DEAL' : pctOff(d) + '% OFF';
+    const action = d.type === "In-Store"
+      ? `<div style="font-size:0.8rem;color:#ccc;background:rgba(255,255,255,0.05);border-radius:8px;padding:0.5rem 0.7rem;">
+           ${d.sku ? '<div><strong style="color:#a855f7;">SKU:</strong> ' + d.sku + '</div>' : ''}
+           ${d.location ? '<div><strong style="color:#a855f7;">Where:</strong> ' + d.location + '</div>' : ''}
+         </div>`
+      : `<a href="${d.link}" target="_blank" rel="noopener noreferrer">Get Deal</a>`;
+    return `
     <div class="card">
-      <span class="badge">${pctOff(d)}% OFF</span>
-      <div class="store">${d.store}</div>
+      <span class="badge">${badge}</span>
+      <div class="store">${d.store} &bull; ${d.type}</div>
       <h3>${d.name}</h3>
       <div class="price-row">
         <span class="sale">$${d.salePrice.toFixed(2)}</span>
         <span class="orig">$${d.origPrice.toFixed(2)}</span>
       </div>
-      <a href="${d.link}" target="_blank" rel="noopener noreferrer">Get Deal</a>
-    </div>
-  `).join('');
+      ${action}
+    </div>`;
+  }).join('');
 
   document.getElementById('totalCount').textContent = filtered.length + ' deal' + (filtered.length === 1 ? '' : 's') + ' at 50%+ off';
   noRes.classList.toggle('show', filtered.length === 0);
