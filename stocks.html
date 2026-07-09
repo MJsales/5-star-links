@@ -367,7 +367,7 @@ fetch('stocks-data.json').then(function(r) { return r.json(); }).then(function(d
 }).catch(function(e) { console.error('Failed to load stocks data:', e); });
 
 function fetchLiveCryptoPrices() {
-  var coinIds = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOGE': 'dogecoin', 'XRP': 'ripple', 'ADA': 'cardano', 'AVAX': 'avalanche-2', 'LINK': 'chainlink', 'DOT': 'polkadot', 'MATIC': 'matic-network', 'BNB': 'binancecoin', 'TRX': 'tron', 'LTC': 'litecoin', 'SHIB': 'shiba-inu', 'NEAR': 'near', 'ARB': 'arbitrum', 'OP': 'optimism', 'FIL': 'filecoin', 'ATOM': 'cosmos', 'SUI': 'sui', 'INJ': 'injective-protocol', 'RENDER': 'render-token', 'GRT': 'the-graph', 'PEPE': 'pepe', 'BONK': 'bonk', 'FLOKI': 'floki', 'WIF': 'dogwifcoin', 'APT': 'aptos', 'JUP': 'jupiter-exchange-solana', 'USDC': 'usd-coin', 'USDT': 'tether' };
+  var coinIds = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOGE': 'dogecoin', 'XRP': 'ripple', 'ADA': 'cardano', 'AVAX': 'avalanche-2', 'LINK': 'chainlink', 'DOT': 'polkadot', 'MATIC': 'polygon-ecosystem-token', 'BNB': 'binancecoin', 'TRX': 'tron', 'LTC': 'litecoin', 'SHIB': 'shiba-inu', 'NEAR': 'near', 'ARB': 'arbitrum', 'OP': 'optimism', 'FIL': 'filecoin', 'ATOM': 'cosmos', 'SUI': 'sui', 'INJ': 'injective-protocol', 'RENDER': 'render-token', 'GRT': 'the-graph', 'PEPE': 'pepe', 'BONK': 'bonk', 'FLOKI': 'floki', 'WIF': 'dogwifcoin', 'APT': 'aptos', 'JUP': 'jupiter-exchange-solana', 'USDC': 'usd-coin', 'USDT': 'tether' };
   var ids = Object.values(coinIds).join(',');
   fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd&include_24hr_change=true')
     .then(function(r) { return r.json(); })
@@ -375,9 +375,11 @@ function fetchLiveCryptoPrices() {
       if (!stocksData || !stocksData.crypto) return;
       stocksData.crypto.forEach(function(c) {
         var coinId = coinIds[c.symbol];
-        if (coinId && data[coinId]) {
+        if (coinId && data[coinId] && typeof data[coinId].usd === 'number') {
           c.price = data[coinId].usd;
-          c.change = parseFloat(data[coinId].usd_24h_change.toFixed(1));
+          if (typeof data[coinId].usd_24h_change === 'number') {
+            c.change = parseFloat(data[coinId].usd_24h_change.toFixed(1));
+          }
         }
       });
     })
