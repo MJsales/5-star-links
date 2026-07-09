@@ -168,6 +168,9 @@
       <button id="postalBtn" class="store-chip" style="border-color:rgba(74,222,128,0.4);color:#4ade80;">Go</button>
     </div>
     <div id="locStatus" style="font-size:0.75rem;color:#777;"></div>
+    <div style="font-size:0.72rem;color:#666;text-align:center;max-width:560px;margin:0 auto;">
+      📍 In-store deals (penny items, clearance) are community-reported — prices, SKUs &amp; availability vary by location and change fast. Call ahead before making a special trip.
+    </div>
   </div>
 
   <div class="cat-count" id="totalCount"></div>
@@ -183,18 +186,74 @@
 <script>
 // Add new deals here. percentOff is computed automatically from origPrice/salePrice,
 // but only items with an ACTUAL discount of 50% or more will ever show up on the page.
-// type: "Online" (needs a link) or "In-Store" (needs sku/location + lat/lng for distance).
-// lat/lng = the coordinates of that specific store location (look them up on Google Maps:
-// right-click the store's pin -> the top option is the lat,lng).
+// type: "Online" (needs a link) or "In-Store" (needs sku/location; lat/lng optional —
+// only set lat/lng if you know the REAL coordinates of the specific store this applies to).
+//
+// Optional flags:
+//   isHub: true             -> retailer's own live "50%+ off" filtered category page (no
+//                               single item price — set `blurb` + `ctaText`, not origPrice/salePrice).
+//   origPriceUnknown: true  -> for penny/near-free items where the sale price is confirmed
+//                               but the regular price isn't known — skips the fake strikethrough price.
+//   source / sourceUrl      -> attribution for anything community-reported rather than
+//                               personally verified — always include so shoppers can double check.
+//
+// Online example:
+//   { name: "Item Name", store: "DHGate", type: "Online", origPrice: 89.99, salePrice: 39.99, link: "https://..." },
+// In-Store example:
+//   { name: "Item Name", store: "Home Depot", type: "In-Store", origPrice: 79.00, salePrice: 0.01, sku: "123-456", location: "Garden dept endcap", address: "123 Main St, City", lat: 43.78, lng: -79.46 },
+//
+// Only put REAL prices you've verified here — origPrice/salePrice are shown to customers
+// as actual discounts, so made-up numbers would be false advertising. For anything not
+// personally verified (community penny lists, clearance sightings, etc.) always include
+// source/sourceUrl so shoppers can double check before making a trip.
 const deals = [
-  { name: "1:1 Multi LV Wallet & Card Holder", store: "DHGate", type: "Online", origPrice: 89.99, salePrice: 39.99, link: "https://sale.dhgate.com/ZM7moQ47" },
-  { name: "Balenciaga LED Runner Sneakers", store: "DHGate", type: "Online", origPrice: 199.99, salePrice: 79.99, link: "https://www.dhgate.com/product/lkss-jason-runner-led-high-quality-sneaker/1101719733.html" },
-  { name: "Jason Jewelry (Chrome Heart Rings)", store: "DHGate", type: "Online", origPrice: 60.00, salePrice: 25.00, link: "https://docs.google.com/spreadsheets/d/1g4lQLqgqwFC5A3v-6jXOkgH-bUOpVSj6r6-Wx-gYmDQ/edit#gid=1953553672&range=A2" },
-  { name: "Example: Cordless Drill Clearance", store: "Home Depot", type: "In-Store", origPrice: 79.00, salePrice: 0.01, sku: "123-456", location: "Garden dept endcap", address: "2727 Steeles Ave W, Toronto, ON", lat: 43.7823, lng: -79.4661 },
-  { name: "Example: Patio Set Clearance", store: "Target", type: "In-Store", origPrice: 250.00, salePrice: 62.50, sku: "DPCI 087-05-1234", location: "Seasonal aisle", address: "1 Bloor St E, Toronto, ON", lat: 43.6708, lng: -79.3862 }
+  // ---- Online: retailer's own live, pre-filtered 50%+ deal page ----
+  { name: "Clearance Electronics — 50% Off or More", store: "Best Buy", type: "Online", isHub: true,
+    blurb: "Best Buy's own live clearance filter — every item on this page is independently marked 50%+ off list price by Best Buy, updated continuously.",
+    link: "https://www.bestbuy.com/site/outlet-refurbished-clearance/clearance-electronics/pcmcat748300666044.c?qp=percentdiscount_facet%3DDiscount%7E50%25+Off+or+More",
+    ctaText: "Browse Live Deals" },
+
+  // ---- In-Store: Target clearance, spotted & reported by deal-tracking sites ----
+  { name: "Threshold Outdoor Firepit", store: "Target", type: "In-Store", origPrice: 54.99, salePrice: 27.49,
+    address: "Availability varies by store — call ahead", source: "Hip2Save", sourceUrl: "https://hip2save.com/deals/target-clearance/" },
+  { name: "Char-Broil 4-Piece Grill Cookware Set", store: "Target", type: "In-Store", origPrice: 39.99, salePrice: 12.00,
+    address: "Availability varies by store — call ahead", source: "Hip2Save", sourceUrl: "https://hip2save.com/deals/target-clearance/" },
+  { name: "Weber 3-Piece Precision Grill Tool Set", store: "Target", type: "In-Store", origPrice: 39.99, salePrice: 12.00,
+    address: "Availability varies by store — call ahead", source: "Hip2Save", sourceUrl: "https://hip2save.com/deals/target-clearance/" },
+  { name: "Outdoor Throw Pillow (assorted styles)", store: "Target", type: "In-Store", origPrice: 15.00, salePrice: 4.50,
+    address: "Availability varies by store — call ahead", source: "Hip2Save", sourceUrl: "https://hip2save.com/deals/target-clearance/" },
+  { name: "Shark Stratos Lift-Away Vacuum", store: "Target", type: "In-Store", origPrice: 529.99, salePrice: 158.99,
+    address: "Availability varies by store — call ahead", source: "All Things Target", sourceUrl: "https://allthingstarget.com/target-june-clearance-2026/" },
+
+  // ---- In-Store: Home Depot penny list, community-reported 7/3/2026 ----
+  { name: "LIFX Low Voltage Landscape Spotlight", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1010333772",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "Delta Neo-Angle Pivot Shower Enclosure", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1002780539",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "Medium Easy Up Wardrobe Moving Box", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1006223068",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "Polystyrene Russet Quarter Round Moulding", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1001755793",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "DYNAFLEX ULTRA Black Exterior Sealant", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "070798182202",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "Restore Satin White Ceramic Penny Round Mosaic Tile", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1006248224",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "Alpe Ivory Porcelain Floor and Wall Tile", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1006518877",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "Monitor Chrome Wall Mount Valve Trim", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1008143598",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "SHOCKWAVE Impact Duty Screw Driver Bit Set", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1013064797",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "40-Watt ST19 Clear Glass Vintage Edison LED Bulb", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1006211634",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "40-Watt ST19 Amber Glass Vintage Edison LED Bulb", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1005432053",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
+  { name: "Alderston Matte Black Table Lamp", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1008498990",
+    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
 ];
 
 function pctOff(d) {
+  if (d.isHub || d.origPriceUnknown) return 100;
   return Math.round((1 - (d.salePrice / d.origPrice)) * 100);
 }
 
@@ -304,31 +363,38 @@ function render() {
   }
 
   grid.innerHTML = filtered.map(d => {
-    const isPenny = d.salePrice <= 0.05;
-    const badge = isPenny ? 'PENNY DEAL' : pctOff(d) + '% OFF';
+    const isPenny = !d.isHub && d.salePrice <= 0.05;
+    const badge = d.isHub ? '50%+ OFF' : (isPenny ? 'PENNY DEAL' : pctOff(d) + '% OFF');
     const distLine = d._dist != null ? `<div><strong style="color:#4ade80;">${d._dist.toFixed(1)} mi away</strong></div>` : '';
+    const sourceLine = d.sourceUrl ? `<div style="margin-top:4px;"><a href="${d.sourceUrl}" target="_blank" rel="noopener noreferrer" style="color:#4ade80;">Source: ${d.source || 'link'} &rarr;</a></div>` : '';
     const action = d.type === "In-Store"
       ? `<div style="font-size:0.8rem;color:#ccc;background:rgba(255,255,255,0.05);border-radius:8px;padding:0.5rem 0.7rem;">
            ${distLine}
-           ${d.address ? '<div><strong style="color:#a855f7;">Address:</strong> ' + d.address + '</div>' : ''}
+           ${d.address ? '<div><strong style="color:#a855f7;">Where:</strong> ' + d.address + '</div>' : ''}
            ${d.sku ? '<div><strong style="color:#a855f7;">SKU:</strong> ' + d.sku + '</div>' : ''}
-           ${d.location ? '<div><strong style="color:#a855f7;">Where:</strong> ' + d.location + '</div>' : ''}
+           ${d.location ? '<div><strong style="color:#a855f7;">Aisle:</strong> ' + d.location + '</div>' : ''}
+           ${sourceLine}
          </div>`
-      : `<a href="${d.link}" target="_blank" rel="noopener noreferrer">Get Deal</a>`;
+      : `<a href="${d.link}" target="_blank" rel="noopener noreferrer">${d.ctaText || 'Get Deal'}</a>`;
+    const priceRow = d.isHub
+      ? `<div style="font-size:0.82rem;color:#aaa;margin-bottom:0.9rem;line-height:1.4;">${d.blurb || 'Live-updated by the store — filtered to 50%+ off.'}</div>`
+      : d.origPriceUnknown
+        ? `<div class="price-row"><span class="sale">$${d.salePrice.toFixed(2)}</span><span class="orig" style="text-decoration:none;">reg. price varies</span></div>`
+        : `<div class="price-row"><span class="sale">$${d.salePrice.toFixed(2)}</span><span class="orig">$${d.origPrice.toFixed(2)}</span></div>`;
     return `
     <div class="card">
       <span class="badge">${badge}</span>
       <div class="store">${d.store} &bull; ${d.type}</div>
       <h3>${d.name}</h3>
-      <div class="price-row">
-        <span class="sale">$${d.salePrice.toFixed(2)}</span>
-        <span class="orig">$${d.origPrice.toFixed(2)}</span>
-      </div>
+      ${priceRow}
       ${action}
     </div>`;
   }).join('');
 
   document.getElementById('totalCount').textContent = filtered.length + ' deal' + (filtered.length === 1 ? '' : 's') + ' at 50%+ off';
+  noRes.textContent = deals.length === 0
+    ? "No deals posted yet — check back soon!"
+    : "No deals found matching your filters.";
   noRes.classList.toggle('show', filtered.length === 0);
 }
 
