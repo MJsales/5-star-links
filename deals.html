@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Best Deals (50%+ Off) | 5 Star Links</title>
+  <title>Best Deals | 5 Star Links</title>
   <link rel="icon" type="image/png" href="pics/logo/favicon.png">
   <link rel="apple-touch-icon" href="pics/logo/logo.png.png">
   <link rel="manifest" href="manifest.json">
@@ -152,7 +152,7 @@
 
 <div class="header">
   <h1>Best Deals</h1>
-  <p>50% Off Or More &bull; All Stores</p>
+  <p>Every Discount &bull; All Stores</p>
 </div>
 
 <div class="container">
@@ -160,6 +160,7 @@
     <div class="search-wrap">
       <input type="text" id="searchInput" placeholder="Search deals..." oninput="render()" />
     </div>
+    <div class="store-filters" id="pctFilters"></div>
     <div class="store-filters" id="storeFilters"></div>
     <div style="display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center;justify-content:center;">
       <button id="nearMeBtn" class="store-chip" style="border-color:rgba(74,222,128,0.4);color:#4ade80;">📍 Use My Location</button>
@@ -184,14 +185,18 @@
 </div>
 
 <script>
-// Add new deals here. percentOff is computed automatically from origPrice/salePrice,
-// but only items with an ACTUAL discount of 50% or more will ever show up on the page.
+// Add new deals here. percentOff is computed automatically from origPrice/salePrice.
+// Every discount level shows up (use the "min % off" filter on the page to narrow it down).
 // type: "Online" (needs a link) or "In-Store" (needs sku/location; lat/lng optional —
 // only set lat/lng if you know the REAL coordinates of the specific store this applies to).
 //
 // Optional flags:
 //   isHub: true             -> retailer's own live "50%+ off" filtered category page (no
 //                               single item price — set `blurb` + `ctaText`, not origPrice/salePrice).
+//   isGeneralHub: true      -> retailer's general clearance/outlet page where discounts vary
+//                               item to item (not pre-filtered to any specific %) — same
+//                               rendering as isHub, but only shows up under the "All" % filter
+//                               since we can't confirm any specific item on it hits a threshold.
 //   origPriceUnknown: true  -> for penny/near-free items where the sale price is confirmed
 //                               but the regular price isn't known — skips the fake strikethrough price.
 //   source / sourceUrl      -> attribution for anything community-reported rather than
@@ -212,6 +217,27 @@ const deals = [
     blurb: "Best Buy's own live clearance filter — every item on this page is independently marked 50%+ off list price by Best Buy, updated continuously.",
     link: "https://www.bestbuy.com/site/outlet-refurbished-clearance/clearance-electronics/pcmcat748300666044.c?qp=percentdiscount_facet%3DDiscount%7E50%25+Off+or+More",
     ctaText: "Browse Live Deals" },
+  { name: "Clearance & Rollback", store: "Walmart", type: "Online", isGeneralHub: true,
+    blurb: "Walmart's live clearance + rollback hub — thousands of items, discount varies item to item.",
+    link: "https://www.walmart.com/shop/deals/clearance", ctaText: "Browse Clearance" },
+  { name: "Clearance Sale", store: "Kohl's", type: "Online", isGeneralHub: true,
+    blurb: "Kohl's ongoing clearance section — thousands of items, discount varies item to item.",
+    link: "https://www.kohls.com/catalog/clearance.jsp?CN=Promotions%3AClearance", ctaText: "Browse Clearance" },
+  { name: "Outlet: Clearance, Open-Box & Refurbished", store: "Best Buy", type: "Online", isGeneralHub: true,
+    blurb: "Best Buy Outlet — clearance, open-box and refurbished items up to 95% off, discount varies item to item.",
+    link: "https://www.bestbuy.com/site/outlet-refurbished-clearance/pcmcat142300050026.c?id=pcmcat142300050026", ctaText: "Browse Outlet" },
+
+  // ---- Online: Target, real direct product links & current prices ----
+  { name: "Dealworthy Outdoor Portable Camp Chair", store: "Target", type: "Online", origPrice: 10.00, salePrice: 7.00,
+    link: "https://www.target.com/p/adult-outdoor-portable-camp-chair-dealworthy-8482-mineral-blue/-/A-92087240" },
+  { name: "Universal Thread Women's Fitted Pullover Tank Top", store: "Target", type: "Online", origPrice: 5.00, salePrice: 3.50,
+    link: "https://www.target.com/p/women-s-fitted-pullover-tank-top-universal-thread/-/A-95085847" },
+  { name: "Dixie Ultra 10\" Plates, Americana (18ct)", store: "Target", type: "Online", origPrice: 3.79, salePrice: 2.65,
+    link: "https://www.target.com/p/dixie-ultra-plates-10-34-americana-18ct/-/A-90781525" },
+  { name: "Stanley 40oz H2.0 FlowState Quencher Tumbler", store: "Target", type: "Online", origPrice: 50.00, salePrice: 42.50,
+    link: "https://www.target.com/p/stanley-40-oz-stainless-steel-h2-0-flowstate-quencher-tumbler/-/A-1011289211" },
+  { name: "Universal Thread Women's Graphic T-Shirt", store: "Target", type: "Online", origPrice: 8.00, salePrice: 5.60,
+    link: "https://www.target.com/p/women-s-short-sleeve-graphic-t-shirt-universal-thread/-/A-95100733" },
 
   // ---- In-Store: Target clearance, spotted & reported by deal-tracking sites ----
   { name: "Threshold Outdoor Firepit", store: "Target", type: "In-Store", origPrice: 54.99, salePrice: 27.49,
@@ -254,14 +280,16 @@ const deals = [
 
 function pctOff(d) {
   if (d.isHub || d.origPriceUnknown) return 100;
+  if (d.isGeneralHub) return 0;
   return Math.round((1 - (d.salePrice / d.origPrice)) * 100);
 }
 
-const qualifying = deals.filter(d => pctOff(d) >= 50);
-const stores = ["All", ...new Set(qualifying.map(d => d.store))];
+const stores = ["All", ...new Set(deals.map(d => d.store))];
 const types = ["All", "Online", "In-Store"];
+const pctTiers = [0, 10, 25, 50, 70];
 let activeStore = "All";
 let activeType = "All";
+let minPct = 0;
 let userCoords = null;
 
 function milesBetween(lat1, lng1, lat2, lng2) {
@@ -320,6 +348,16 @@ function lookupPostal() {
     });
 }
 
+function renderPctFilters() {
+  const wrap = document.getElementById('pctFilters');
+  wrap.innerHTML = pctTiers.map(p =>
+    `<button class="store-chip${p === minPct ? ' active' : ''}" data-pct="${p}">${p === 0 ? 'All' : p + '%+ Off'}</button>`
+  ).join('');
+  wrap.querySelectorAll('[data-pct]').forEach(btn => {
+    btn.addEventListener('click', () => { minPct = parseInt(btn.dataset.pct, 10); renderPctFilters(); render(); });
+  });
+}
+
 function renderFilters() {
   const wrap = document.getElementById('storeFilters');
   const typeChips = types.map(t =>
@@ -342,9 +380,10 @@ function render() {
   const grid = document.getElementById('dealGrid');
   const noRes = document.getElementById('noResults');
 
-  let filtered = qualifying.filter(d => d.name.toLowerCase().includes(q));
+  let filtered = deals.filter(d => d.name.toLowerCase().includes(q));
   if (activeStore !== "All") filtered = filtered.filter(d => d.store === activeStore);
   if (activeType !== "All") filtered = filtered.filter(d => d.type === activeType);
+  if (minPct > 0) filtered = filtered.filter(d => pctOff(d) >= minPct);
 
   if (userCoords) {
     filtered.forEach(d => {
@@ -363,8 +402,8 @@ function render() {
   }
 
   grid.innerHTML = filtered.map(d => {
-    const isPenny = !d.isHub && d.salePrice <= 0.05;
-    const badge = d.isHub ? '50%+ OFF' : (isPenny ? 'PENNY DEAL' : pctOff(d) + '% OFF');
+    const isPenny = !d.isHub && !d.isGeneralHub && d.salePrice <= 0.05;
+    const badge = d.isHub ? '50%+ OFF' : d.isGeneralHub ? 'CLEARANCE' : (isPenny ? 'PENNY DEAL' : pctOff(d) + '% OFF');
     const distLine = d._dist != null ? `<div><strong style="color:#4ade80;">${d._dist.toFixed(1)} mi away</strong></div>` : '';
     const sourceLine = d.sourceUrl ? `<div style="margin-top:4px;"><a href="${d.sourceUrl}" target="_blank" rel="noopener noreferrer" style="color:#4ade80;">Source: ${d.source || 'link'} &rarr;</a></div>` : '';
     const action = d.type === "In-Store"
@@ -376,8 +415,8 @@ function render() {
            ${sourceLine}
          </div>`
       : `<a href="${d.link}" target="_blank" rel="noopener noreferrer">${d.ctaText || 'Get Deal'}</a>`;
-    const priceRow = d.isHub
-      ? `<div style="font-size:0.82rem;color:#aaa;margin-bottom:0.9rem;line-height:1.4;">${d.blurb || 'Live-updated by the store — filtered to 50%+ off.'}</div>`
+    const priceRow = (d.isHub || d.isGeneralHub)
+      ? `<div style="font-size:0.82rem;color:#aaa;margin-bottom:0.9rem;line-height:1.4;">${d.blurb || 'Live-updated by the store.'}</div>`
       : d.origPriceUnknown
         ? `<div class="price-row"><span class="sale">$${d.salePrice.toFixed(2)}</span><span class="orig" style="text-decoration:none;">reg. price varies</span></div>`
         : `<div class="price-row"><span class="sale">$${d.salePrice.toFixed(2)}</span><span class="orig">$${d.origPrice.toFixed(2)}</span></div>`;
@@ -391,13 +430,15 @@ function render() {
     </div>`;
   }).join('');
 
-  document.getElementById('totalCount').textContent = filtered.length + ' deal' + (filtered.length === 1 ? '' : 's') + ' at 50%+ off';
+  const pctLabel = minPct > 0 ? ' at ' + minPct + '%+ off' : '';
+  document.getElementById('totalCount').textContent = filtered.length + ' deal' + (filtered.length === 1 ? '' : 's') + pctLabel;
   noRes.textContent = deals.length === 0
     ? "No deals posted yet — check back soon!"
     : "No deals found matching your filters.";
   noRes.classList.toggle('show', filtered.length === 0);
 }
 
+renderPctFilters();
 renderFilters();
 render();
 </script>
