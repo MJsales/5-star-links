@@ -175,10 +175,10 @@
     <div class="search-wrap">
       <input type="text" id="searchInput" placeholder="Search deals..." oninput="render()" />
     </div>
-    <div class="store-filters" id="pctFilters"></div>
     <div style="display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center;justify-content:center;">
       <div class="store-filters" id="typeFilters" style="margin:0;"></div>
       <select id="storeSelect" style="padding:0.5rem 1rem;border-radius:50px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:0.8rem;font-family:'Inter',sans-serif;outline:none;cursor:pointer;"></select>
+      <select id="pctSelect" style="padding:0.5rem 1rem;border-radius:50px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:0.8rem;font-family:'Inter',sans-serif;outline:none;cursor:pointer;"></select>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center;justify-content:center;">
       <button id="nearMeBtn" class="store-chip" style="border-color:rgba(74,222,128,0.4);color:#4ade80;">📍 Use My Location</button>
@@ -409,13 +409,11 @@ function lookupPostal() {
 }
 
 function renderPctFilters() {
-  const wrap = document.getElementById('pctFilters');
-  wrap.innerHTML = pctTiers.map(p =>
-    `<button class="store-chip${p === minPct ? ' active' : ''}" data-pct="${p}">${p === 0 ? 'All' : p + '%+ Off'}</button>`
+  const select = document.getElementById('pctSelect');
+  select.innerHTML = pctTiers.map(p =>
+    `<option value="${p}"${p === minPct ? ' selected' : ''}>${p === 0 ? 'Any Discount' : p + '%+ Off'}</option>`
   ).join('');
-  wrap.querySelectorAll('[data-pct]').forEach(btn => {
-    btn.addEventListener('click', () => { minPct = parseInt(btn.dataset.pct, 10); renderPctFilters(); render(); });
-  });
+  select.onchange = () => { minPct = parseInt(select.value, 10); render(); };
 }
 
 function renderFilters() {
