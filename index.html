@@ -305,6 +305,7 @@
   <a href="ugc.html" style="background:rgba(34,197,94,0.12);backdrop-filter:blur(12px);border:1px solid rgba(34,197,94,0.3);color:#22c55e;padding:0.5rem 1rem;border-radius:50px;font-size:0.85rem;font-weight:600;text-decoration:none;white-space:nowrap;">UGC</a>
   <a href="dhg.html" style="background:rgba(168,85,247,0.12);backdrop-filter:blur(12px);border:1px solid rgba(168,85,247,0.3);color:#a855f7;padding:0.5rem 1rem;border-radius:50px;font-size:0.85rem;font-weight:600;text-decoration:none;white-space:nowrap;">DHG</a>
   <a href="deals.html" style="background:rgba(255,92,92,0.12);backdrop-filter:blur(12px);border:1px solid rgba(255,92,92,0.3);color:#ff5c5c;padding:0.5rem 1rem;border-radius:50px;font-size:0.85rem;font-weight:600;text-decoration:none;white-space:nowrap;">🔥 Deals</a>
+  <a href="guides.html" style="background:rgba(168,85,247,0.12);backdrop-filter:blur(12px);border:1px solid rgba(168,85,247,0.3);color:#a855f7;padding:0.5rem 1rem;border-radius:50px;font-size:0.85rem;font-weight:600;text-decoration:none;white-space:nowrap;">Guides</a>
   <a href="orders.html" style="background:rgba(168,85,247,0.12);backdrop-filter:blur(12px);border:1px solid rgba(168,85,247,0.3);color:#fff;padding:0.5rem 1rem;border-radius:50px;font-size:0.85rem;font-weight:600;text-decoration:none;white-space:nowrap;">My Orders</a>
   <button onclick="location.href='cart.html'" style="background:rgba(168,85,247,0.15);backdrop-filter:blur(12px);border:1px solid rgba(168,85,247,0.3);color:#fff;padding:0.5rem 1rem;border-radius:50px;font-size:0.85rem;font-weight:600;cursor:pointer;white-space:nowrap;">&#128722; Cart <span id="cartCount" style="background:#a855f7;color:#fff;border-radius:50%;padding:1px 7px;font-size:0.75rem;margin-left:4px;">0</span></button>
   <button class="auth-btn" id="authBtn" onclick="authModule.showAuth()" style="background:rgba(168,85,247,0.15);backdrop-filter:blur(12px);border:1px solid rgba(168,85,247,0.3);color:#fff;padding:0.5rem 1rem;border-radius:50px;font-size:0.85rem;font-weight:600;cursor:pointer;white-space:nowrap;">Sign In</button>
@@ -454,6 +455,18 @@ const products = [
       <text x="100" y="92" text-anchor="middle" fill="#ff5c5c" font-size="34" font-weight="900" font-family="Inter,sans-serif">🔥</text>
       <text x="100" y="128" text-anchor="middle" fill="#fff" font-size="16" font-weight="900" font-family="Inter,sans-serif">DEALS</text>
       <circle cx="100" cy="100" r="80" fill="none" stroke="#ff5c5c" stroke-width="2" stroke-dasharray="8 4" opacity="0.5">
+        <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite"/>
+      </circle>
+    </svg>`
+  },
+  {
+    id: 'guides', name: 'Buying Guides', free: true, linkOnly: true, url: 'guides.html', desc: 'What to actually look for before you buy',
+    hasColors: false, svg: () => `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#a855f7" stroke-width="3"/>
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#a855f7" stroke-width="1.5" opacity="0.3"/>
+      <text x="100" y="92" text-anchor="middle" fill="#a855f7" font-size="34" font-weight="900" font-family="Inter,sans-serif">📖</text>
+      <text x="100" y="128" text-anchor="middle" fill="#fff" font-size="14" font-weight="900" font-family="Inter,sans-serif">GUIDES</text>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="8 4" opacity="0.5">
         <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite"/>
       </circle>
     </svg>`

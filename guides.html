@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buying Guides | 5 Star Links</title>
+  <link rel="icon" type="image/png" href="pics/logo/favicon.png">
+  <link rel="apple-touch-icon" href="pics/logo/logo.png.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050208;
+      color: #fff;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(5,2,8,0.85); backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding: 0.8rem 1.5rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar a { text-decoration: none; color: #fff; font-weight: 600; font-size: 0.9rem; }
+    .topbar a:hover { color: #a855f7; }
+    .topbar .logo {
+      font-size: 1.2rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 0%, #a855f7 50%, #7c3aed 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header {
+      position: relative; padding: 3.5rem 1rem 2rem; text-align: center;
+      overflow: hidden;
+    }
+    .header::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.18) 0%, transparent 60%);
+    }
+    .header h1 {
+      font-size: 3rem; font-weight: 900; letter-spacing: 5px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 0%, #a855f7 50%, #7c3aed 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      position: relative;
+    }
+    .header p {
+      margin-top: 0.5rem; font-size: 0.9rem; color: #c9a9ff;
+      letter-spacing: 3px; text-transform: uppercase; font-weight: 600;
+      position: relative;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    .grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem; margin-top: 2rem;
+    }
+    .card {
+      background: linear-gradient(145deg, #0d0815 0%, #1a0a0a 100%);
+      border: 1px solid rgba(168,85,247,0.25); border-radius: 14px;
+      padding: 1.4rem; transition: all 0.3s; display: flex;
+      flex-direction: column; justify-content: space-between;
+    }
+    .card:hover {
+      border-color: rgba(168,85,247,0.6);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(168,85,247,0.2);
+    }
+    .card .tag {
+      font-size: 0.7rem; color: #a855f7; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 0.5rem;
+    }
+    .card h3 {
+      font-size: 1.05rem; font-weight: 800; letter-spacing: 0.3px;
+      margin-bottom: 0.6rem; line-height: 1.3; color: #fff;
+    }
+    .card p {
+      font-size: 0.85rem; color: #aaa; margin-bottom: 1.1rem; line-height: 1.5;
+    }
+    .card a {
+      display: block; width: 100%; padding: 0.65rem;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+      text-align: center; text-decoration: none; transition: all 0.2s;
+    }
+    .card a:hover { transform: scale(1.03); box-shadow: 0 6px 20px rgba(168,85,247,0.4); }
+    .disclosure {
+      max-width: 700px; margin: 0.5rem auto 0; text-align: center;
+      font-size: 0.72rem; color: #666; padding: 0 1rem;
+    }
+    .footer {
+      text-align: center; padding: 3rem 1rem; font-size: 0.85rem;
+      color: #444; border-top: 1px solid rgba(168,85,247,0.1); margin-top: 3rem;
+    }
+    .footer strong { color: #a855f7; }
+    @media (max-width: 700px) {
+      .header h1 { font-size: 2rem; letter-spacing: 3px; }
+      .grid { grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+      .card { padding: 1rem; }
+      .card h3 { font-size: 0.9rem; }
+      .topbar { padding: 0.6rem 1rem; }
+      .topbar .logo { font-size: 1rem; }
+    }
+    @media (max-width: 420px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" style="font-size:0.85rem;">&larr; Back</a>
+  <span class="logo">5 STAR LINKS</span>
+  <a href="deals.html" style="font-size:0.85rem;">🔥 Deals</a>
+</div>
+
+<div class="header">
+  <h1>Buying Guides</h1>
+  <p>What to Actually Look For, Before You Buy</p>
+</div>
+
+<div class="container">
+  <p class="disclosure">As an Amazon Associate we earn from qualifying purchases — this doesn't change the price you pay. Every link below goes to Amazon's own live listings, not a specific product we're guessing is in stock.</p>
+  <div class="grid" id="guideGrid"></div>
+</div>
+
+<div class="footer">
+  &copy; 2026 <strong>5 Star Links</strong> &bull; All rights reserved &bull; <a href="terms.html" style="color:#a855f7;text-decoration:none;">Terms of Service</a>
+</div>
+
+<script>
+const AMZ_TAG = "5starlinks0c-20";
+function amzSearch(q) {
+  return "https://www.amazon.com/s?k=" + encodeURIComponent(q) + "&tag=" + AMZ_TAG;
+}
+
+const guides = [
+  {
+    title: "Budget Headphones: What Matters",
+    tag: "Audio",
+    body: "Under $50, prioritize active noise cancellation and battery life over brand name — most budget ANC headphones now use similar chipsets. Check the return window before buying, since fit is personal.",
+    q: "budget wireless headphones"
+  },
+  {
+    title: "Robot Vacuums: Skip the Gimmicks",
+    tag: "Home",
+    body: "Mapping (LIDAR or camera-based) matters far more than suction power for most homes. Self-emptying bases are worth it only if you have pets or carpet — otherwise you're paying for a feature you won't use.",
+    q: "robot vacuum"
+  },
+  {
+    title: "Air Fryers: Size Before Wattage",
+    tag: "Kitchen",
+    body: "A 6-quart basket fits a whole chicken; 2-3 quart baskets are for sides. Wattage differences between models are marketing noise — cook times vary more by how full the basket is than by watts.",
+    q: "air fryer"
+  },
+  {
+    title: "Fitness Trackers: Battery Life First",
+    tag: "Wearables",
+    body: "If you don't need an app ecosystem (Apple/Google), a basic tracker with 7+ day battery life beats a smartwatch you have to charge nightly. Check whether GPS is built-in or phone-dependent before buying for running.",
+    q: "fitness tracker"
+  },
+  {
+    title: "Portable Chargers: mAh Isn't Everything",
+    tag: "Tech",
+    body: "A 10,000mAh pack roughly doubles a phone battery — anything higher adds bulk fast. Look for pass-through charging and the actual output wattage (18W+) if you want fast-charging support, not just raw capacity.",
+    q: "portable phone charger power bank"
+  },
+  {
+    title: "Office Chairs: Adjustability Over Padding",
+    tag: "Home Office",
+    body: "Lumbar support you can move up/down, and armrests that adjust in height and width, matter more than how thick the cushion looks in photos. Mesh backs breathe better for long sitting sessions than foam.",
+    q: "ergonomic office chair"
+  }
+];
+
+document.getElementById('guideGrid').innerHTML = guides.map(g => `
+  <div class="card">
+    <div>
+      <div class="tag">${g.tag}</div>
+      <h3>${g.title}</h3>
+      <p>${g.body}</p>
+    </div>
+    <a href="${amzSearch(g.q)}" target="_blank" rel="noopener noreferrer">Shop on Amazon</a>
+  </div>
+`).join('');
+</script>
+
+</body>
+</html>
