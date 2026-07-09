@@ -161,7 +161,12 @@
       <input type="text" id="searchInput" placeholder="Search deals..." oninput="render()" />
     </div>
     <div class="store-filters" id="storeFilters"></div>
-    <button id="nearMeBtn" class="store-chip" style="border-color:rgba(74,222,128,0.4);color:#4ade80;">📍 Use My Location</button>
+    <div style="display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center;justify-content:center;">
+      <button id="nearMeBtn" class="store-chip" style="border-color:rgba(74,222,128,0.4);color:#4ade80;">📍 Use My Location</button>
+      <span style="font-size:0.75rem;color:#555;">or</span>
+      <input type="text" id="postalInput" placeholder="Enter postal/zip code" style="padding:0.4rem 0.8rem;border-radius:50px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:0.8rem;font-family:'Inter',sans-serif;outline:none;width:150px;" />
+      <button id="postalBtn" class="store-chip" style="border-color:rgba(74,222,128,0.4);color:#4ade80;">Go</button>
+    </div>
     <div id="locStatus" style="font-size:0.75rem;color:#777;"></div>
   </div>
 
@@ -227,6 +232,34 @@ document.getElementById('nearMeBtn').addEventListener('click', () => {
     }
   );
 });
+
+document.getElementById('postalBtn').addEventListener('click', lookupPostal);
+document.getElementById('postalInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') lookupPostal();
+});
+
+function lookupPostal() {
+  const statusEl = document.getElementById('locStatus');
+  const raw = document.getElementById('postalInput').value.trim();
+  if (!raw) { statusEl.textContent = "Enter a postal or zip code first."; return; }
+
+  const isCA = /^[A-Za-z]\d[A-Za-z]/.test(raw);
+  const country = isCA ? 'ca' : 'us';
+  const code = isCA ? raw.replace(/\s+/g, '').slice(0, 3) : raw;
+
+  statusEl.textContent = "Looking up " + raw + "...";
+  fetch(`https://api.zippopotam.us/${country}/${code}`)
+    .then(r => { if (!r.ok) throw new Error('not found'); return r.json(); })
+    .then(data => {
+      const place = data.places[0];
+      userCoords = { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude) };
+      statusEl.textContent = `Showing nearest stores to ${place['place name']} ✓`;
+      render();
+    })
+    .catch(() => {
+      statusEl.textContent = "Couldn't find that postal/zip code — double check it.";
+    });
+}
 
 function renderFilters() {
   const wrap = document.getElementById('storeFilters');
