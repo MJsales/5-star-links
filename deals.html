@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Best Deals (50%+ Off) | 5 Star Links</title>
+  <link rel="icon" type="image/png" href="pics/logo/favicon.png">
+  <link rel="apple-touch-icon" href="pics/logo/logo.png.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050208;
+      color: #fff;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(5,2,8,0.85); backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding: 0.8rem 1.5rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar a { text-decoration: none; color: #fff; font-weight: 600; font-size: 0.9rem; }
+    .topbar a:hover { color: #a855f7; }
+    .topbar .logo {
+      font-size: 1.2rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 0%, #a855f7 50%, #7c3aed 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header {
+      position: relative; padding: 3.5rem 1rem 2rem; text-align: center;
+      overflow: hidden;
+    }
+    .header::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,60,60,0.18) 0%, transparent 60%);
+    }
+    .header h1 {
+      font-size: 3rem; font-weight: 900; letter-spacing: 5px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 0%, #ff5c5c 50%, #a855f7 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      position: relative;
+    }
+    .header p {
+      margin-top: 0.5rem; font-size: 0.9rem; color: #ff8a8a;
+      letter-spacing: 4px; text-transform: uppercase; font-weight: 600;
+      position: relative;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    .controls {
+      margin: 1.5rem 0; display: flex; flex-direction: column; align-items: center; gap: 1rem;
+    }
+    .search-wrap { width: 100%; text-align: center; }
+    .search-wrap input {
+      width: 100%; max-width: 500px; padding: 0.8rem 1.2rem;
+      background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25);
+      border-radius: 50px; color: #fff; font-size: 1rem; outline: none;
+      font-family: 'Inter', sans-serif; transition: border-color 0.3s;
+    }
+    .search-wrap input:focus { border-color: #a855f7; }
+    .search-wrap input::placeholder { color: #555; }
+    .store-filters {
+      display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;
+    }
+    .store-chip {
+      padding: 0.4rem 0.9rem; border-radius: 50px; font-size: 0.8rem; font-weight: 700;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+      color: #ccc; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .store-chip:hover { border-color: #a855f7; color: #fff; }
+    .store-chip.active {
+      background: linear-gradient(135deg, #ff5c5c, #a855f7); border-color: transparent; color: #fff;
+    }
+    .cat-count { font-size: 0.85rem; color: #888; text-align: center; margin-bottom: 0.5rem; }
+    .grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem; margin-top: 1rem;
+    }
+    .card {
+      position: relative;
+      background: linear-gradient(145deg, #0d0815 0%, #1a0a0a 100%);
+      border: 1px solid rgba(255,92,92,0.25); border-radius: 14px;
+      padding: 1.2rem; transition: all 0.3s; display: flex;
+      flex-direction: column; justify-content: space-between;
+    }
+    .card:hover {
+      border-color: rgba(255,92,92,0.6);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(255,92,92,0.2);
+    }
+    .badge {
+      position: absolute; top: -10px; right: 12px;
+      background: linear-gradient(135deg, #ff3c3c, #a855f7);
+      color: #fff; font-size: 0.75rem; font-weight: 900;
+      padding: 4px 10px; border-radius: 50px; letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(255,60,60,0.4);
+    }
+    .card .store {
+      font-size: 0.7rem; color: #a855f7; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 0.4rem;
+    }
+    .card h3 {
+      font-size: 0.95rem; font-weight: 700; letter-spacing: 0.3px;
+      margin-bottom: 0.6rem; line-height: 1.3; color: #e0d6f5;
+    }
+    .price-row { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.9rem; }
+    .price-row .sale { font-size: 1.3rem; font-weight: 900; color: #4ade80; }
+    .price-row .orig { font-size: 0.9rem; color: #777; text-decoration: line-through; }
+    .card a {
+      display: block; width: 100%; padding: 0.6rem;
+      background: linear-gradient(135deg, #ff5c5c, #a855f7); color: #fff;
+      border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+      text-align: center; text-decoration: none; transition: all 0.2s;
+    }
+    .card a:hover { transform: scale(1.03); box-shadow: 0 6px 20px rgba(255,92,92,0.4); }
+    .no-results {
+      text-align: center; padding: 3rem 1rem; color: #555;
+      font-size: 1rem; display: none;
+    }
+    .no-results.show { display: block; }
+    .footer {
+      text-align: center; padding: 3rem 1rem; font-size: 0.85rem;
+      color: #444; border-top: 1px solid rgba(168,85,247,0.1); margin-top: 2rem;
+    }
+    .footer strong { color: #a855f7; }
+    @media (max-width: 700px) {
+      .header h1 { font-size: 2rem; letter-spacing: 3px; }
+      .grid { grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+      .card { padding: 1rem; }
+      .card h3 { font-size: 0.85rem; }
+      .topbar { padding: 0.6rem 1rem; }
+      .topbar .logo { font-size: 1rem; }
+    }
+    @media (max-width: 420px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" style="font-size:0.85rem;">&larr; Back</a>
+  <span class="logo">5 STAR LINKS</span>
+  <span></span>
+</div>
+
+<div class="header">
+  <h1>Best Deals</h1>
+  <p>50% Off Or More &bull; All Stores</p>
+</div>
+
+<div class="container">
+  <div class="controls">
+    <div class="search-wrap">
+      <input type="text" id="searchInput" placeholder="Search deals..." oninput="render()" />
+    </div>
+    <div class="store-filters" id="storeFilters"></div>
+  </div>
+
+  <div class="cat-count" id="totalCount"></div>
+  <div id="noResults" class="no-results">No deals found matching your filters.</div>
+
+  <div id="dealGrid" class="grid"></div>
+</div>
+
+<div class="footer">
+  &copy; 2026 <strong>5 Star Links</strong> &bull; All rights reserved &bull; <a href="terms.html" style="color:#a855f7;text-decoration:none;">Terms of Service</a>
+</div>
+
+<script>
+// Add new deals here. percentOff is computed automatically from origPrice/salePrice,
+// but only items with an ACTUAL discount of 50% or more will ever show up on the page.
+const deals = [
+  { name: "1:1 Multi LV Wallet & Card Holder", store: "DHGate", origPrice: 89.99, salePrice: 39.99, link: "https://sale.dhgate.com/ZM7moQ47" },
+  { name: "Balenciaga LED Runner Sneakers", store: "DHGate", origPrice: 199.99, salePrice: 79.99, link: "https://www.dhgate.com/product/lkss-jason-runner-led-high-quality-sneaker/1101719733.html" },
+  { name: "Jason Jewelry (Chrome Heart Rings)", store: "DHGate", origPrice: 60.00, salePrice: 25.00, link: "https://docs.google.com/spreadsheets/d/1g4lQLqgqwFC5A3v-6jXOkgH-bUOpVSj6r6-Wx-gYmDQ/edit#gid=1953553672&range=A2" }
+];
+
+function pctOff(d) {
+  return Math.round((1 - (d.salePrice / d.origPrice)) * 100);
+}
+
+const qualifying = deals.filter(d => pctOff(d) >= 50);
+const stores = ["All", ...new Set(qualifying.map(d => d.store))];
+let activeStore = "All";
+
+function renderFilters() {
+  const wrap = document.getElementById('storeFilters');
+  wrap.innerHTML = stores.map(s =>
+    `<button class="store-chip${s === activeStore ? ' active' : ''}" data-store="${s}">${s}</button>`
+  ).join('');
+  wrap.querySelectorAll('.store-chip').forEach(btn => {
+    btn.addEventListener('click', () => { activeStore = btn.dataset.store; renderFilters(); render(); });
+  });
+}
+
+function render() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  const grid = document.getElementById('dealGrid');
+  const noRes = document.getElementById('noResults');
+
+  let filtered = qualifying.filter(d => d.name.toLowerCase().includes(q));
+  if (activeStore !== "All") filtered = filtered.filter(d => d.store === activeStore);
+  filtered.sort((a, b) => pctOff(b) - pctOff(a));
+
+  grid.innerHTML = filtered.map(d => `
+    <div class="card">
+      <span class="badge">${pctOff(d)}% OFF</span>
+      <div class="store">${d.store}</div>
+      <h3>${d.name}</h3>
+      <div class="price-row">
+        <span class="sale">$${d.salePrice.toFixed(2)}</span>
+        <span class="orig">$${d.origPrice.toFixed(2)}</span>
+      </div>
+      <a href="${d.link}" target="_blank" rel="noopener noreferrer">Get Deal</a>
+    </div>
+  `).join('');
+
+  document.getElementById('totalCount').textContent = filtered.length + ' deal' + (filtered.length === 1 ? '' : 's') + ' at 50%+ off';
+  noRes.classList.toggle('show', filtered.length === 0);
+}
+
+renderFilters();
+render();
+</script>
+
+</body>
+</html>
