@@ -246,21 +246,25 @@ const deals = [
   { name: "Theme Park & Movie Tickets", store: "FunEx", type: "Online", isGeneralHub: true,
     blurb: "FunEx — authorized discount tickets for Six Flags, Universal, LEGOLAND, SeaWorld and more (started as an employee-discount program with Knott's Berry Farm). Discount varies by park.",
     link: "https://www.funex.com/all-attractions", ctaText: "Browse Tickets" },
-  { name: "Disney & Universal Theme Park Tickets", store: "Undercover Tourist", type: "Online", isGeneralHub: true,
-    blurb: "Undercover Tourist — authorized ticket reseller (20+ years) for Disney, Universal, SeaWorld & more. Typically ~4-10% below gate price, sometimes more on bundles.",
-    link: "https://www.undercovertourist.com/theme-parks/", ctaText: "Browse Tickets" },
+
+  // ---- Online: eBay Refurbished, real specific items + prices, 2yr warranty ----
+  { name: "Apple AirPods 4 with Active Noise Cancellation (Refurb.)", store: "eBay", type: "Online", origPrice: 180.00, salePrice: 89.00,
+    link: "https://www.ebay.com/deals/featured/up-to-60-off-ebay-refurbished-cell-phones-and-accessories" },
+  { name: "Samsung Galaxy Watch 7 40mm (Refurbished)", store: "eBay", type: "Online", origPrice: 350.00, salePrice: 135.00,
+    link: "https://www.ebay.com/deals/featured/up-to-60-off-ebay-refurbished-cell-phones-and-accessories" },
+  { name: "Belkin MagSafe 3-in-1 Wireless Charger Stand (Refurb.)", store: "eBay", type: "Online", origPrice: 150.00, salePrice: 60.00,
+    link: "https://www.ebay.com/deals/featured/up-to-60-off-ebay-refurbished-cell-phones-and-accessories" },
+
+  // ---- Online: Nordstrom Rack "Clear the Rack" — extra 25% off clearance, through 7/12 ----
+  { name: "Clear the Rack — Extra 25% Off Clearance", store: "Nordstrom Rack", type: "Online", isGeneralHub: true, pctOverride: 70, badgeText: "UP TO 75% OFF",
+    blurb: "Nordstrom Rack's Clear the Rack event — extra 25% off red-tag clearance on top of everyday markdowns, for a total up to 75% off top brands. Online prices reflect it automatically. Runs through 7/12/2026.",
+    link: "https://www.nordstromrack.com/promo/clear-the-rack", ctaText: "Shop the Rack" },
 
   // ---- Online: Target, real direct product links & current prices ----
   { name: "Dealworthy Outdoor Portable Camp Chair", store: "Target", type: "Online", origPrice: 10.00, salePrice: 7.00,
     link: "https://www.target.com/p/adult-outdoor-portable-camp-chair-dealworthy-8482-mineral-blue/-/A-92087240" },
-  { name: "Universal Thread Women's Fitted Pullover Tank Top", store: "Target", type: "Online", origPrice: 5.00, salePrice: 3.50,
-    link: "https://www.target.com/p/women-s-fitted-pullover-tank-top-universal-thread/-/A-95085847" },
-  { name: "Dixie Ultra 10\" Plates, Americana (18ct)", store: "Target", type: "Online", origPrice: 3.79, salePrice: 2.65,
-    link: "https://www.target.com/p/dixie-ultra-plates-10-34-americana-18ct/-/A-90781525" },
   { name: "Stanley 40oz H2.0 FlowState Quencher Tumbler", store: "Target", type: "Online", origPrice: 50.00, salePrice: 42.50,
     link: "https://www.target.com/p/stanley-40-oz-stainless-steel-h2-0-flowstate-quencher-tumbler/-/A-1011289211" },
-  { name: "Universal Thread Women's Graphic T-Shirt", store: "Target", type: "Online", origPrice: 8.00, salePrice: 5.60,
-    link: "https://www.target.com/p/women-s-short-sleeve-graphic-t-shirt-universal-thread/-/A-95100733" },
 
   // ---- In-Store: Target clearance, spotted & reported by deal-tracking sites ----
   { name: "Threshold Outdoor Firepit", store: "Target", type: "In-Store", origPrice: 54.99, salePrice: 27.49,
@@ -278,18 +282,6 @@ const deals = [
   { name: "LIFX Low Voltage Landscape Spotlight", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1010333772",
     address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
   { name: "Delta Neo-Angle Pivot Shower Enclosure", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1002780539",
-    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
-  { name: "Medium Easy Up Wardrobe Moving Box", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1006223068",
-    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
-  { name: "Polystyrene Russet Quarter Round Moulding", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1001755793",
-    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
-  { name: "DYNAFLEX ULTRA Black Exterior Sealant", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "070798182202",
-    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
-  { name: "Restore Satin White Ceramic Penny Round Mosaic Tile", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1006248224",
-    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
-  { name: "Alpe Ivory Porcelain Floor and Wall Tile", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1006518877",
-    address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
-  { name: "Monitor Chrome Wall Mount Valve Trim", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1008143598",
     address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
   { name: "SHOCKWAVE Impact Duty Screw Driver Bit Set", store: "Home Depot", type: "In-Store", salePrice: 0.01, origPriceUnknown: true, sku: "1013064797",
     address: "Reported 7/3/2026 — availability varies by store", source: "Penny Pinchin' Mom", sourceUrl: "https://pennypinchinmom.com/home-depot-penny-list/" },
