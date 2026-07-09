@@ -426,7 +426,7 @@ const products = [
     </svg>`
   },
   {
-    id: 'ai-video', name: 'AI Video Splicer', price: 5, desc: 'Turn YouTube videos into viral TikTok series',
+    id: 'ai-video', name: 'AI Video Splicer', free: true, desc: 'Turn YouTube videos into viral TikTok series',
     hasColors: false, svg: () => `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#ef4444" stroke-width="3"/>
       <circle cx="100" cy="100" r="60" fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0.3"/>
@@ -442,6 +442,41 @@ const products = [
       <rect x="112" y="55" width="16" height="10" rx="2" fill="#22c55e" opacity="0.6"/>
       <text x="120" y="63" text-anchor="middle" fill="#fff" font-size="7" font-weight="700">P3</text>
       <circle cx="100" cy="100" r="80" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="8 4" opacity="0.5">
+        <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite"/>
+      </circle>
+    </svg>`
+  },
+  {
+    id: 'deals', name: 'Best Deals', free: true, linkOnly: true, url: 'deals.html', desc: '50% off or more, across every store',
+    hasColors: false, svg: () => `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#ff5c5c" stroke-width="3"/>
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#ff5c5c" stroke-width="1.5" opacity="0.3"/>
+      <text x="100" y="92" text-anchor="middle" fill="#ff5c5c" font-size="34" font-weight="900" font-family="Inter,sans-serif">🔥</text>
+      <text x="100" y="128" text-anchor="middle" fill="#fff" font-size="16" font-weight="900" font-family="Inter,sans-serif">DEALS</text>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#ff5c5c" stroke-width="2" stroke-dasharray="8 4" opacity="0.5">
+        <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite"/>
+      </circle>
+    </svg>`
+  },
+  {
+    id: 'dhg', name: 'DHG Sneaker Links', free: true, linkOnly: true, url: 'dhg.html', desc: 'Browse premium sneakers & streetwear links',
+    hasColors: false, svg: () => `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#a855f7" stroke-width="3"/>
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#a855f7" stroke-width="1.5" opacity="0.3"/>
+      <text x="100" y="115" text-anchor="middle" fill="#a855f7" font-size="38" font-weight="900" font-family="Inter,sans-serif">DHG</text>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="8 4" opacity="0.5">
+        <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite"/>
+      </circle>
+    </svg>`
+  },
+  {
+    id: 'ugc', name: 'UGC: Earn Money', free: true, linkOnly: true, url: 'ugc.html', desc: 'Get paid $50-$1,500+ per video, no followers needed',
+    hasColors: false, svg: () => `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#22c55e" stroke-width="3"/>
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#22c55e" stroke-width="1.5" opacity="0.3"/>
+      <text x="100" y="90" text-anchor="middle" fill="#22c55e" font-size="30" font-weight="900" font-family="Inter,sans-serif">UGC</text>
+      <text x="100" y="120" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="Inter,sans-serif">EARN MONEY</text>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="8 4" opacity="0.5">
         <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="20s" repeatCount="indefinite"/>
       </circle>
     </svg>`
@@ -617,18 +652,21 @@ function render() {
     return `<div class="card">
       <div class="card-icon">${svg}</div>
       <h3>${p.name}</h3>
-      <div class="price">$${p.price}</div>
+      <div class="price"${p.free ? ' style="color:#22c55e;"' : ''}>${p.free ? 'Free' : '$' + p.price}</div>
       <div class="desc">${p.desc}</div>
-      ${renderStarsHTML(p.id)}
+      ${p.linkOnly ? '' : renderStarsHTML(p.id)}
       ${p.hasColors ? `<div class="color-picker">${maskColors.map(c =>
         `<div class="color-dot${(selectedColors[p.id] || maskColors[0].id) === c.id ? ' active' : ''}"
           style="background:${c.fill}" title="${c.name}"
           onclick="selectColor('${p.id}','${c.id}')"></div>`
       ).join('')}</div>` : ''}
-      <button class="add-btn" onclick="addToCart('${p.id}')">Add to Cart</button>
-      ${(p.id === 'ai-video') ? `<a href="download.html" style="display:block;text-align:center;margin-top:6px;padding:8px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Download Free Tool</a>` : ''}
+      ${p.linkOnly
+        ? `<a href="${p.url}" style="display:block;text-align:center;padding:8px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Explore Free &rarr;</a>`
+        : `${p.free
+            ? `<a href="download.html" style="display:block;text-align:center;padding:8px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-radius:8px;font-size:0.85rem;font-weight:700;text-decoration:none;">Download Free Tool</a>`
+            : `<button class="add-btn" onclick="addToCart('${p.id}')">Add to Cart</button>`}
       <button onclick="openReviewModal('${p.id}')" style="margin-top:6px;width:100%;padding:8px;background:rgba(168,85,247,0.1);color:#a855f7;border:1px solid rgba(168,85,247,0.2);border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">Write a Review</button>
-      ${renderReviewsHTML(p.id)}
+      ${renderReviewsHTML(p.id)}`}
     </div>`;
   }).join('');
 }
