@@ -18,7 +18,8 @@ function banner() {
 }
 
 function checkCmd(cmd) {
-  try { execSync(cmd + ' --version', { stdio: 'ignore', timeout: 5000 }); return true; } catch { return false; }
+  const flag = cmd === 'ffmpeg' ? '-version' : '--version';
+  try { execSync(cmd + ' ' + flag, { stdio: 'ignore', timeout: 5000 }); return true; } catch { return false; }
 }
 
 const IS_WIN = process.platform === 'win32';
