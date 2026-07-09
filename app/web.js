@@ -24,19 +24,24 @@ function checkCommand(cmd) {
 }
 
 function findTools() {
+  const isWin = process.platform === 'win32';
+  const sep = isWin ? ';' : ':';
   const home = process.env.USERPROFILE || '';
-  const ytdlpPaths = [
+
+  const ytdlpPaths = isWin ? [
     path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages', 'yt-dlp.yt-dlp_Microsoft.Winget.Source_8wekyb3d8bbwe', 'yt-dlp.exe'),
     path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages', 'yt-dlp.yt-dlp_Microsoft.Winget.Source_8wekyb3d8bbwe', 'yt-dlp_cmd.exe'),
-  ];
-  const ffmpegPaths = [
+  ] : ['/opt/homebrew/bin/yt-dlp', '/usr/local/bin/yt-dlp'];
+
+  const ffmpegPaths = isWin ? [
     path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages', 'Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe', 'ffmpeg-8.1.1-full_build', 'bin', 'ffmpeg.exe'),
-  ];
+  ] : ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg'];
+
   for (const p of ytdlpPaths) {
-    if (fs.existsSync(p)) { try { execSync('"' + p + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); break; } catch {} }
+    if (fs.existsSync(p)) { try { execSync('"' + p + '" --version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + sep + (process.env.PATH || ''); break; } catch {} }
   }
   for (const p of ffmpegPaths) {
-    if (fs.existsSync(p)) { try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + ';' + (process.env.PATH || ''); break; } catch {} }
+    if (fs.existsSync(p)) { try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); process.env.PATH = path.dirname(p) + sep + (process.env.PATH || ''); break; } catch {} }
   }
   return { ytDlp: checkCommand('yt-dlp'), ffmpeg: checkCommand('ffmpeg') };
 }
@@ -94,8 +99,9 @@ async function startSplice(url, clipDuration) {
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
   try {
     const tools = findTools();
-    if (!tools.ytDlp) { status = 'error'; log('ERROR: yt-dlp not found. Run: winget install yt-dlp'); return; }
-    if (!tools.ffmpeg) { status = 'error'; log('ERROR: ffmpeg not found. Run: winget install ffmpeg'); return; }
+    const installHint = process.platform === 'win32' ? 'winget install' : 'brew install';
+    if (!tools.ytDlp) { status = 'error'; log('ERROR: yt-dlp not found. Run: ' + installHint + ' yt-dlp'); return; }
+    if (!tools.ffmpeg) { status = 'error'; log('ERROR: ffmpeg not found. Run: ' + installHint + ' ffmpeg'); return; }
     log('Fetching video info...');
     const info = await getVideoInfo(url);
     videoInfo = { title: info.title, duration: info.duration, channel: info.channel, thumbnail: info.thumbnail };
