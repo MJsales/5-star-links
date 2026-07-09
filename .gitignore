@@ -13,4 +13,7 @@ test-yti.js
 app/5star-splicer.exe  
 app/5star-splicer-mac  
 app/5star-splicer-linux  
-app/5star-splicer.bat 
+app/5star-splicer.bat
+graphify-out/
+app/dist-mac/
+.DS_Store

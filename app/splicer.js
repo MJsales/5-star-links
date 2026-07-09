@@ -21,61 +21,102 @@ function checkCmd(cmd) {
   try { execSync(cmd + ' --version', { stdio: 'ignore', timeout: 5000 }); return true; } catch { return false; }
 }
 
+const IS_WIN = process.platform === 'win32';
+const IS_MAC = process.platform === 'darwin';
+
 function findExe(name) {
   if (checkCmd(name)) return name;
-  const home = process.env.USERPROFILE || '';
-  const localPath = 'D:\\0ne\\' + name + '.exe';
-  if (fs.existsSync(localPath)) {
-    try { execSync('"' + localPath + '" --version', { stdio: 'ignore', timeout: 5000 }); return localPath; } catch {}
-  }
-  const winGetDir = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
-  if (fs.existsSync(winGetDir)) {
-    try {
-      for (const d of fs.readdirSync(winGetDir)) {
-        const dp = path.join(winGetDir, d);
-        try { if (!fs.statSync(dp).isDirectory()) continue; } catch { continue; }
-        if (name === 'yt-dlp' && d.toLowerCase().includes('yt-dlp') && !d.toLowerCase().includes('ffmpeg')) {
-          const exe = path.join(dp, 'yt-dlp.exe');
-          if (fs.existsSync(exe)) {
-            try { execSync('"' + exe + '" --version', { stdio: 'ignore', timeout: 5000 }); return exe; } catch {}
+
+  if (IS_WIN) {
+    const home = process.env.USERPROFILE || '';
+    const localPath = 'D:\\0ne\\' + name + '.exe';
+    if (fs.existsSync(localPath)) {
+      try { execSync('"' + localPath + '" --version', { stdio: 'ignore', timeout: 5000 }); return localPath; } catch {}
+    }
+    const winGetDir = path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Packages');
+    if (fs.existsSync(winGetDir)) {
+      try {
+        for (const d of fs.readdirSync(winGetDir)) {
+          const dp = path.join(winGetDir, d);
+          try { if (!fs.statSync(dp).isDirectory()) continue; } catch { continue; }
+          if (name === 'yt-dlp' && d.toLowerCase().includes('yt-dlp') && !d.toLowerCase().includes('ffmpeg')) {
+            const exe = path.join(dp, 'yt-dlp.exe');
+            if (fs.existsSync(exe)) {
+              try { execSync('"' + exe + '" --version', { stdio: 'ignore', timeout: 5000 }); return exe; } catch {}
+            }
           }
-        }
-        if (name === 'ffmpeg' && d.toLowerCase().includes('ffmpeg')) {
-          try {
-            for (const s of fs.readdirSync(dp)) {
-              const sp = path.join(dp, s);
-              try { if (!fs.statSync(sp).isDirectory()) continue; } catch { continue; }
-              const bin = path.join(sp, 'bin');
-              if (fs.existsSync(bin)) {
-                for (const f of fs.readdirSync(bin)) {
-                  if (f.toLowerCase() === 'ffmpeg.exe') {
-                    const p = path.join(bin, f);
-                    try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); return p; } catch {}
+          if (name === 'ffmpeg' && d.toLowerCase().includes('ffmpeg')) {
+            try {
+              for (const s of fs.readdirSync(dp)) {
+                const sp = path.join(dp, s);
+                try { if (!fs.statSync(sp).isDirectory()) continue; } catch { continue; }
+                const bin = path.join(sp, 'bin');
+                if (fs.existsSync(bin)) {
+                  for (const f of fs.readdirSync(bin)) {
+                    if (f.toLowerCase() === 'ffmpeg.exe') {
+                      const p = path.join(bin, f);
+                      try { execSync('"' + p + '" -version', { stdio: 'ignore', timeout: 5000 }); return p; } catch {}
+                    }
                   }
                 }
               }
-            }
-          } catch {}
+            } catch {}
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    }
+    return null;
+  }
+
+  // Mac/Linux: check common Homebrew install locations not yet on PATH
+  // (Apple Silicon brew lives in /opt/homebrew, Intel brew in /usr/local)
+  const candidates = [
+    '/opt/homebrew/bin/' + name,
+    '/usr/local/bin/' + name,
+    '/usr/bin/' + name,
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      try { execSync('"' + p + '" --version', { stdio: 'ignore', timeout: 5000 }); return p; } catch {}
+    }
   }
   return null;
 }
 
-function installTool(name, wingetId) {
-  console.log('  Installing ' + name + ' via winget...');
+function installTool(name, wingetId, brewId) {
+  if (IS_WIN) {
+    console.log('  Installing ' + name + ' via winget...');
+    try {
+      execSync('winget install --id ' + wingetId + ' --accept-source-agreements --accept-package-agreements', { stdio: 'pipe', timeout: 300000 });
+      console.log('  ✓ ' + name + ' installed');
+      return true;
+    } catch (e) {
+      const out = (e.stdout || '') + (e.stderr || '');
+      if (out.includes('already installed') || out.includes('No available upgrade')) {
+        console.log('  ✓ ' + name + ' already installed');
+        return true;
+      }
+      console.log('  ✗ Failed to install ' + name);
+      return false;
+    }
+  }
+
+  if (!checkCmd('brew')) {
+    console.log('  ✗ Homebrew not found. Install it from https://brew.sh, then run: brew install ' + (brewId || name));
+    return false;
+  }
+  console.log('  Installing ' + name + ' via Homebrew...');
   try {
-    execSync('winget install --id ' + wingetId + ' --accept-source-agreements --accept-package-agreements', { stdio: 'pipe', timeout: 300000 });
+    execSync('brew install ' + (brewId || name), { stdio: 'pipe', timeout: 300000 });
     console.log('  ✓ ' + name + ' installed');
     return true;
   } catch (e) {
     const out = (e.stdout || '') + (e.stderr || '');
-    if (out.includes('already installed') || out.includes('No available upgrade')) {
+    if (out.includes('already installed')) {
       console.log('  ✓ ' + name + ' already installed');
       return true;
     }
-    console.log('  ✗ Failed to install ' + name);
+    console.log('  ✗ Failed to install ' + name + ': ' + (e.message || ''));
     return false;
   }
 }
@@ -141,11 +182,11 @@ async function main() {
   let ytDlpPath = findExe('yt-dlp');
   let ffmpegPath = findExe('ffmpeg');
 
-  if (!ytDlpPath) { installTool('yt-dlp', 'yt-dlp.yt-dlp'); ytDlpPath = findExe('yt-dlp'); }
-  if (!ffmpegPath) { installTool('ffmpeg', 'yt-dlp.FFmpeg'); ffmpegPath = findExe('ffmpeg'); }
+  if (!ytDlpPath) { installTool('yt-dlp', 'yt-dlp.yt-dlp', 'yt-dlp'); ytDlpPath = findExe('yt-dlp'); }
+  if (!ffmpegPath) { installTool('ffmpeg', 'yt-dlp.FFmpeg', 'ffmpeg'); ffmpegPath = findExe('ffmpeg'); }
 
-  if (!ytDlpPath) { console.log('  ✗ yt-dlp not found. Run: winget install yt-dlp.yt-dlp'); return; }
-  if (!ffmpegPath) { console.log('  ✗ ffmpeg not found. Run: winget install yt-dlp.FFmpeg'); return; }
+  if (!ytDlpPath) { console.log('  ✗ yt-dlp not found. Run: ' + (IS_WIN ? 'winget install yt-dlp.yt-dlp' : 'brew install yt-dlp')); return; }
+  if (!ffmpegPath) { console.log('  ✗ ffmpeg not found. Run: ' + (IS_WIN ? 'winget install yt-dlp.FFmpeg' : 'brew install ffmpeg')); return; }
 
   YTDLP = ytDlpPath;
   FFMPEG = ffmpegPath;

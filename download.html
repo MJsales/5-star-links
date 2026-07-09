@@ -113,6 +113,16 @@
       </a>
     </div>
   </div>
+  <div class="download-card">
+    <h3>Download for Mac</h3>
+    <p>Requires FFmpeg and yt-dlp via Homebrew (see step 2 below).</p>
+    <div class="dl-buttons">
+      <a href="downloads/5starclips-mac.zip" class="dl-btn mac" download="5starclips-mac.zip">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        Mac (.zip)
+      </a>
+    </div>
+  </div>
 </div>
 
 <div class="steps">
@@ -140,7 +150,8 @@
     <div class="step-num">3</div>
     <div class="step-text">
       <h4>Run It</h4>
-      <p><strong>Windows:</strong> Unzip <code>5starclips.zip</code> and double-click <code>5starclips.exe</code> — opens a terminal with a purple banner. Paste a YouTube URL and it auto-clips.</p>
+      <p><strong>Windows:</strong> Unzip <code>5starclips.zip</code> and double-click <code>5starclips.exe</code> — opens a terminal with a purple banner. Paste a YouTube URL and it auto-clips.<br>
+         <strong>Mac:</strong> Unzip <code>5starclips-mac.zip</code>, then in Terminal run <code>chmod +x 5star-splicer-mac && ./5star-splicer-mac</code> (first run: right-click the file → Open to bypass Gatekeeper).</p>
     </div>
   </div>
 
@@ -165,8 +176,8 @@
   <div class="req-card">
     <h3>System Requirements</h3>
     <ul>
-      <li>Windows 10+</li>
-      <li>FFmpeg & yt-dlp (auto-detected or auto-installed via WinGet)</li>
+      <li>Windows 10+ or macOS 11+ (Intel or Apple Silicon via Rosetta)</li>
+      <li>FFmpeg & yt-dlp (auto-detected, or auto-installed via WinGet on Windows / Homebrew on Mac)</li>
       <li>Optional: Python + openai-whisper for AI-powered viral detection</li>
       <li>~200MB disk space for video downloads</li>
       <li>Works 100% locally. Nothing sent to cloud.</li>
