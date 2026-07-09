@@ -176,7 +176,10 @@
       <input type="text" id="searchInput" placeholder="Search deals..." oninput="render()" />
     </div>
     <div class="store-filters" id="pctFilters"></div>
-    <div class="store-filters" id="storeFilters"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center;justify-content:center;">
+      <div class="store-filters" id="typeFilters" style="margin:0;"></div>
+      <select id="storeSelect" style="padding:0.5rem 1rem;border-radius:50px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:0.8rem;font-family:'Inter',sans-serif;outline:none;cursor:pointer;"></select>
+    </div>
     <div style="display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center;justify-content:center;">
       <button id="nearMeBtn" class="store-chip" style="border-color:rgba(74,222,128,0.4);color:#4ade80;">📍 Use My Location</button>
       <span style="font-size:0.75rem;color:#555;">or</span>
@@ -416,20 +419,19 @@ function renderPctFilters() {
 }
 
 function renderFilters() {
-  const wrap = document.getElementById('storeFilters');
-  const typeChips = types.map(t =>
+  const typeWrap = document.getElementById('typeFilters');
+  typeWrap.innerHTML = types.map(t =>
     `<button class="store-chip type-chip${t === activeType ? ' active' : ''}" data-type="${t}">${t}</button>`
   ).join('');
-  const storeChips = stores.map(s =>
-    `<button class="store-chip${s === activeStore ? ' active' : ''}" data-store="${s}">${s}</button>`
-  ).join('');
-  wrap.innerHTML = typeChips + '<span style="width:1px;background:rgba(255,255,255,0.15);margin:0 4px;"></span>' + storeChips;
-  wrap.querySelectorAll('[data-type]').forEach(btn => {
+  typeWrap.querySelectorAll('[data-type]').forEach(btn => {
     btn.addEventListener('click', () => { activeType = btn.dataset.type; renderFilters(); render(); });
   });
-  wrap.querySelectorAll('[data-store]').forEach(btn => {
-    btn.addEventListener('click', () => { activeStore = btn.dataset.store; renderFilters(); render(); });
-  });
+
+  const select = document.getElementById('storeSelect');
+  select.innerHTML = stores.map(s =>
+    `<option value="${s}"${s === activeStore ? ' selected' : ''}>${s === 'All' ? 'All Stores' : s}</option>`
+  ).join('');
+  select.onchange = () => { activeStore = select.value; render(); };
 }
 
 function render() {
