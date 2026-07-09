@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Income Dashboard | 5 Star Links</title>
+  <link rel="icon" type="image/png" href="pics/logo/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050208;
+      color: #fff;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(5,2,8,0.85); backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding: 0.8rem 1.5rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar a { text-decoration: none; color: #fff; font-weight: 600; font-size: 0.9rem; }
+    .topbar .logo {
+      font-size: 1.2rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 0%, #a855f7 50%, #7c3aed 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+    h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 0.4rem; }
+    .sub { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+
+    #gate { max-width: 380px; margin: 4rem auto; text-align: center; }
+    #gate input {
+      width: 100%; padding: 0.8rem 1.2rem; margin-top: 1.2rem;
+      background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25);
+      border-radius: 50px; color: #fff; font-size: 1rem; outline: none;
+      font-family: 'Inter', sans-serif; text-align: center;
+    }
+    #gate button {
+      margin-top: 1rem; padding: 0.7rem 1.6rem; border: none; border-radius: 50px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; font-weight: 700;
+      font-size: 0.9rem; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    }
+    #gate .err { color: #ff5c5c; font-size: 0.85rem; margin-top: 0.8rem; min-height: 1.2em; }
+
+    #dashboard { display: none; }
+    .stat-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: linear-gradient(145deg, #0d0815 0%, #1a0a0a 100%);
+      border: 1px solid rgba(168,85,247,0.2); border-radius: 14px; padding: 1.2rem;
+    }
+    .stat-card .label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+    .stat-card .value { font-size: 1.6rem; font-weight: 900; color: #4ade80; }
+    .stat-card .value.neutral { color: #fff; }
+    .stat-card .value.warn { color: #ff8a8a; }
+
+    .section { margin-bottom: 2rem; }
+    .section h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem; }
+    .day-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.5rem; font-size: 0.85rem; }
+    .day-row .date { width: 90px; color: #888; }
+    .day-row .bar-wrap { flex: 1; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; height: 20px; }
+    .day-row .bar { height: 100%; background: linear-gradient(90deg, #a855f7, #4ade80); }
+    .day-row .amt { width: 70px; text-align: right; color: #4ade80; font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; padding: 0.6rem; color: #888; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; text-transform: uppercase; }
+    td { padding: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .refresh { background: none; border: 1px solid rgba(168,85,247,0.3); color: #a855f7; padding: 0.4rem 1rem; border-radius: 50px; cursor: pointer; font-size: 0.8rem; font-weight: 700; }
+    .cap-note { color: #ff8a8a; font-size: 0.75rem; margin-top: 0.5rem; }
+    .loading, .error { text-align: center; padding: 3rem; color: #888; }
+    .error { color: #ff5c5c; }
+    @media (max-width: 700px) {
+      .stat-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html">&larr; Back</a>
+  <span class="logo">5 STAR LINKS</span>
+  <span></span>
+</div>
+
+<div class="container">
+  <div id="gate">
+    <h1>Income Dashboard</h1>
+    <p class="sub">Enter your admin key to view live Stripe data.</p>
+    <input type="password" id="keyInput" placeholder="Admin key" autocomplete="off" />
+    <br>
+    <button id="unlockBtn">Unlock</button>
+    <div class="err" id="gateErr"></div>
+  </div>
+
+  <div id="dashboard">
+    <h1>Income Dashboard</h1>
+    <p class="sub">Live from Stripe &bull; <button class="refresh" id="refreshBtn">Refresh</button></p>
+    <div id="content"><div class="loading">Loading…</div></div>
+  </div>
+</div>
+
+<script>
+const ADMIN_KEY_STORAGE = '5star_admin_key';
+
+function centsToUsd(cents) {
+  return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function fetchIncome(key) {
+  const res = await fetch('/api/get-income?key=' + encodeURIComponent(key), {
+    headers: { 'X-Admin-Key': key }
+  });
+  if (res.status === 401) throw new Error('unauthorized');
+  if (!res.ok) throw new Error('Request failed (' + res.status + ')');
+  return res.json();
+}
+
+function render(data) {
+  const available = data.availableBalance.map(b => centsToUsd(b.amountCents) + ' ' + b.currency.toUpperCase()).join(', ') || '$0.00';
+  const pending = data.pendingBalance.map(b => centsToUsd(b.amountCents) + ' ' + b.currency.toUpperCase()).join(', ') || '$0.00';
+
+  const days = Object.keys(data.byDay).sort().reverse().slice(0, 14);
+  const maxDay = Math.max(1, ...days.map(d => data.byDay[d]));
+
+  const dayRows = days.map(d => `
+    <div class="day-row">
+      <div class="date">${d}</div>
+      <div class="bar-wrap"><div class="bar" style="width:${(data.byDay[d] / maxDay * 100).toFixed(1)}%"></div></div>
+      <div class="amt">${centsToUsd(data.byDay[d])}</div>
+    </div>`).join('') || '<p class="sub">No charges yet.</p>';
+
+  const chargeRows = data.recentCharges.map(c => `
+    <tr>
+      <td>${new Date(c.created * 1000).toLocaleString()}</td>
+      <td>${c.description || '—'}</td>
+      <td>${c.email || '—'}</td>
+      <td style="text-align:right;color:#4ade80;font-weight:700;">${centsToUsd(c.amountCents)}</td>
+    </tr>`).join('') || '<tr><td colspan="4" class="sub">No charges yet.</td></tr>';
+
+  document.getElementById('content').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="label">Available Balance</div><div class="value">${available}</div></div>
+      <div class="stat-card"><div class="label">Pending Balance</div><div class="value neutral">${pending}</div></div>
+      <div class="stat-card"><div class="label">Total Gross (all-time)</div><div class="value">${centsToUsd(data.totalGrossCents)}</div></div>
+      <div class="stat-card"><div class="label">Refunded</div><div class="value warn">${centsToUsd(data.totalRefundedCents)}</div></div>
+    </div>
+    ${data.chargesCapped ? '<p class="cap-note">Showing the most recent 1,000 charges — totals may not reflect full history.</p>' : ''}
+
+    <div class="section">
+      <h2>Last 14 Days</h2>
+      ${dayRows}
+    </div>
+
+    <div class="section">
+      <h2>Recent Charges (${data.chargeCount} total succeeded)</h2>
+      <table>
+        <thead><tr><th>Date</th><th>Item</th><th>Email</th><th style="text-align:right;">Amount</th></tr></thead>
+        <tbody>${chargeRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function load(key) {
+  document.getElementById('content').innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const data = await fetchIncome(key);
+    render(data);
+  } catch (e) {
+    if (e.message === 'unauthorized') {
+      sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('gate').style.display = 'block';
+      document.getElementById('gateErr').textContent = 'Wrong key — try again.';
+    } else {
+      document.getElementById('content').innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>';
+    }
+  }
+}
+
+function unlock() {
+  const key = document.getElementById('keyInput').value.trim();
+  if (!key) return;
+  sessionStorage.setItem(ADMIN_KEY_STORAGE, key);
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  load(key);
+}
+
+document.getElementById('unlockBtn').addEventListener('click', unlock);
+document.getElementById('keyInput').addEventListener('keydown', e => { if (e.key === 'Enter') unlock(); });
+document.getElementById('refreshBtn').addEventListener('click', () => load(sessionStorage.getItem(ADMIN_KEY_STORAGE)));
+
+const savedKey = sessionStorage.getItem(ADMIN_KEY_STORAGE);
+if (savedKey) {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  load(savedKey);
+}
+</script>
+
+</body>
+</html>
