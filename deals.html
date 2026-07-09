@@ -217,18 +217,38 @@ const deals = [
     blurb: "Best Buy's own live clearance filter — every item on this page is independently marked 50%+ off list price by Best Buy, updated continuously.",
     link: "https://www.bestbuy.com/site/outlet-refurbished-clearance/clearance-electronics/pcmcat748300666044.c?qp=percentdiscount_facet%3DDiscount%7E50%25+Off+or+More",
     ctaText: "Browse Live Deals" },
-  { name: "Clearance & Rollback", store: "Walmart", type: "Online", isGeneralHub: true,
+  { name: "Clearance & Rollback", store: "Walmart", type: "Online", isGeneralHub: true, badgeText: "CLEARANCE",
     blurb: "Walmart's live clearance + rollback hub — thousands of items, discount varies item to item.",
     link: "https://www.walmart.com/shop/deals/clearance", ctaText: "Browse Clearance" },
-  { name: "Clearance Sale", store: "Kohl's", type: "Online", isGeneralHub: true,
+  { name: "Clearance Sale", store: "Kohl's", type: "Online", isGeneralHub: true, badgeText: "CLEARANCE",
     blurb: "Kohl's ongoing clearance section — thousands of items, discount varies item to item.",
     link: "https://www.kohls.com/catalog/clearance.jsp?CN=Promotions%3AClearance", ctaText: "Browse Clearance" },
-  { name: "Outlet: Clearance, Open-Box & Refurbished", store: "Best Buy", type: "Online", isGeneralHub: true,
+  { name: "Outlet: Clearance, Open-Box & Refurbished", store: "Best Buy", type: "Online", isGeneralHub: true, badgeText: "CLEARANCE",
     blurb: "Best Buy Outlet — clearance, open-box and refurbished items up to 95% off, discount varies item to item.",
     link: "https://www.bestbuy.com/site/outlet-refurbished-clearance/pcmcat142300050026.c?id=pcmcat142300050026", ctaText: "Browse Outlet" },
   { name: "Regal Premiere Cinema Ticket or Snack Choice", store: "Regal", type: "Online", isGeneralHub: true, pctOverride: 40, badgeText: "UP TO 40% OFF",
     blurb: "Via dealsFor.me — discounted Regal Premiere movie tickets or snack choices, valid at 436+ theaters nationwide. Redeem at the box office, kiosk, Regal app, or REGmovies.com. Limit 5 per person.",
     link: "https://www.dealsfor.me/Deal/Regal-Cinemas/77666", ctaText: "Get This Deal" },
+
+  // ---- Online: entertainment & attractions ----
+  { name: "Ferox Ninja Park Entrance Ticket", store: "dealsFor.me", type: "Online", isGeneralHub: true, pctOverride: 25, badgeText: "~26% OFF",
+    blurb: "Via dealsFor.me — discounted entrance ticket to Ferox Ninja Park.",
+    link: "https://www.dealsfor.me/Deal/Ferox-Ninja-Park/76928", ctaText: "Get This Deal" },
+  { name: "Water Park Deals", store: "dealsFor.me", type: "Online", isGeneralHub: true,
+    blurb: "Via dealsFor.me — discounted tickets to water parks nationwide, discount varies by park and deal.",
+    link: "https://www.dealsfor.me/Deals/Waterpark/", ctaText: "Browse Deals" },
+  { name: "Discount Tuesdays — 50% Off (AMC Stubs)", store: "AMC", type: "Online", isGeneralHub: true, pctOverride: 50, badgeText: "50% OFF TUESDAYS",
+    blurb: "Official AMC promo — AMC Stubs members get 50% off the evening ticket price and 50% off small combos, every Tuesday.",
+    link: "https://www.amctheatres.com/discount-tuesdays", ctaText: "See Details" },
+  { name: "Discount Matinees — 20% Off Before 4pm", store: "AMC", type: "Online", isGeneralHub: true, pctOverride: 20, badgeText: "20% OFF MATINEES",
+    blurb: "Official AMC promo — tickets are 20% off the evening price before 4pm, every day, at any AMC theatre nationwide.",
+    link: "https://www.amctheatres.com/discount-matinees", ctaText: "See Details" },
+  { name: "Theme Park & Movie Tickets", store: "FunEx", type: "Online", isGeneralHub: true,
+    blurb: "FunEx — authorized discount tickets for Six Flags, Universal, LEGOLAND, SeaWorld and more (started as an employee-discount program with Knott's Berry Farm). Discount varies by park.",
+    link: "https://www.funex.com/all-attractions", ctaText: "Browse Tickets" },
+  { name: "Disney & Universal Theme Park Tickets", store: "Undercover Tourist", type: "Online", isGeneralHub: true,
+    blurb: "Undercover Tourist — authorized ticket reseller (20+ years) for Disney, Universal, SeaWorld & more. Typically ~4-10% below gate price, sometimes more on bundles.",
+    link: "https://www.undercovertourist.com/theme-parks/", ctaText: "Browse Tickets" },
 
   // ---- Online: Target, real direct product links & current prices ----
   { name: "Dealworthy Outdoor Portable Camp Chair", store: "Target", type: "Online", origPrice: 10.00, salePrice: 7.00,
@@ -407,7 +427,7 @@ function render() {
 
   grid.innerHTML = filtered.map(d => {
     const isPenny = !d.isHub && !d.isGeneralHub && d.salePrice <= 0.05;
-    const badge = d.isHub ? '50%+ OFF' : d.isGeneralHub ? (d.badgeText || 'CLEARANCE') : (isPenny ? 'PENNY DEAL' : pctOff(d) + '% OFF');
+    const badge = d.isHub ? '50%+ OFF' : d.isGeneralHub ? (d.badgeText || 'DEALS VARY') : (isPenny ? 'PENNY DEAL' : pctOff(d) + '% OFF');
     const distLine = d._dist != null ? `<div><strong style="color:#4ade80;">${d._dist.toFixed(1)} mi away</strong></div>` : '';
     const sourceLine = d.sourceUrl ? `<div style="margin-top:4px;"><a href="${d.sourceUrl}" target="_blank" rel="noopener noreferrer" style="color:#4ade80;">Source: ${d.source || 'link'} &rarr;</a></div>` : '';
     const action = d.type === "In-Store"
