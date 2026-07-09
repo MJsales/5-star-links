@@ -24,6 +24,7 @@
       border-bottom: 1px solid rgba(168,85,247,0.15);
       padding: 1rem 1.5rem;
       display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; row-gap: 10px;
       max-width: 800px; margin: 0 auto;
     }
     .topbar-left { display: flex; align-items: center; gap: 12px; }
@@ -70,9 +71,16 @@
 
     .topbar h1 {
       font-size: 1.3rem; font-weight: 800; letter-spacing: 3px;
-      text-transform: uppercase;
+      text-transform: uppercase; white-space: nowrap;
       background: linear-gradient(135deg, #fff, #a855f7);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    @media (max-width: 480px) {
+      .topbar { padding: 0.8rem 1rem; justify-content: center; }
+      .topbar h1 { font-size: 1.05rem; letter-spacing: 2px; }
+      .topbar-left { flex: 1 1 auto; }
+      .topbar > div[style] { gap: 8px !important; flex-wrap: wrap; justify-content: center; width: 100%; }
+      .back-btn, .auth-btn-sm { font-size: 0.8rem; white-space: nowrap; }
     }
     .back-btn {
       color: #a78bfa; text-decoration: none; font-weight: 600; font-size: 0.9rem;
