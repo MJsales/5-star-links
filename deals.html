@@ -226,6 +226,9 @@ const deals = [
   { name: "Outlet: Clearance, Open-Box & Refurbished", store: "Best Buy", type: "Online", isGeneralHub: true,
     blurb: "Best Buy Outlet — clearance, open-box and refurbished items up to 95% off, discount varies item to item.",
     link: "https://www.bestbuy.com/site/outlet-refurbished-clearance/pcmcat142300050026.c?id=pcmcat142300050026", ctaText: "Browse Outlet" },
+  { name: "Regal Premiere Cinema Ticket or Snack Choice", store: "Regal", type: "Online", isGeneralHub: true, pctOverride: 40, badgeText: "UP TO 40% OFF",
+    blurb: "Via dealsFor.me — discounted Regal Premiere movie tickets or snack choices, valid at 436+ theaters nationwide. Redeem at the box office, kiosk, Regal app, or REGmovies.com. Limit 5 per person.",
+    link: "https://www.dealsfor.me/Deal/Regal-Cinemas/77666", ctaText: "Get This Deal" },
 
   // ---- Online: Target, real direct product links & current prices ----
   { name: "Dealworthy Outdoor Portable Camp Chair", store: "Target", type: "Online", origPrice: 10.00, salePrice: 7.00,
@@ -279,6 +282,7 @@ const deals = [
 ];
 
 function pctOff(d) {
+  if (d.pctOverride != null) return d.pctOverride;
   if (d.isHub || d.origPriceUnknown) return 100;
   if (d.isGeneralHub) return 0;
   return Math.round((1 - (d.salePrice / d.origPrice)) * 100);
@@ -403,7 +407,7 @@ function render() {
 
   grid.innerHTML = filtered.map(d => {
     const isPenny = !d.isHub && !d.isGeneralHub && d.salePrice <= 0.05;
-    const badge = d.isHub ? '50%+ OFF' : d.isGeneralHub ? 'CLEARANCE' : (isPenny ? 'PENNY DEAL' : pctOff(d) + '% OFF');
+    const badge = d.isHub ? '50%+ OFF' : d.isGeneralHub ? (d.badgeText || 'CLEARANCE') : (isPenny ? 'PENNY DEAL' : pctOff(d) + '% OFF');
     const distLine = d._dist != null ? `<div><strong style="color:#4ade80;">${d._dist.toFixed(1)} mi away</strong></div>` : '';
     const sourceLine = d.sourceUrl ? `<div style="margin-top:4px;"><a href="${d.sourceUrl}" target="_blank" rel="noopener noreferrer" style="color:#4ade80;">Source: ${d.source || 'link'} &rarr;</a></div>` : '';
     const action = d.type === "In-Store"
