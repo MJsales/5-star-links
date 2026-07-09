@@ -397,6 +397,7 @@ const maskColors = [
 const products = [
   {
     id: 'ai-picks', name: 'AI Sports Picks', price: 5, desc: 'AI-powered predictions for every sport',
+    archived: true,
     hasColors: false, svg: () => `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#a855f7" stroke-width="3"/>
       <circle cx="100" cy="100" r="60" fill="none" stroke="#a855f7" stroke-width="1.5" opacity="0.3"/>
@@ -410,6 +411,7 @@ const products = [
   },
   {
     id: 'ai-stocks', name: 'AI Stock Picks', price: 5, desc: 'AI-powered predictions for stocks & crypto',
+    archived: true,
     hasColors: false, svg: () => `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#22c55e" stroke-width="3"/>
       <circle cx="100" cy="100" r="60" fill="none" stroke="#22c55e" stroke-width="1.5" opacity="0.3"/>
@@ -609,7 +611,7 @@ function showToast(msg) {
 
 function render() {
   const grid = document.getElementById('productGrid');
-  grid.innerHTML = products.map(p => {
+  grid.innerHTML = products.filter(p => !p.archived).map(p => {
     const color = p.hasColors ? (selectedColors[p.id] || maskColors[0]) : null;
     const svg = p.hasColors ? p.svg(color) : p.svg();
     return `<div class="card">
