@@ -1,0 +1,20 @@
+name: Notify Discord of new deals
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - deals.html
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Post new deals to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_DEALS_WEBHOOK }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: node scripts/notify-new-deals.js
