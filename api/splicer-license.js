@@ -77,6 +77,7 @@ async function handleCheckout(req, res) {
     mode: config.mode,
     line_items: config.line_items,
     customer_email: email,
+    allow_promotion_codes: true,
     metadata: { product: 'splicer-pro', plan },
     subscription_data: config.mode === 'subscription' ? { metadata: { product: 'splicer-pro', plan } } : undefined,
     payment_intent_data: config.mode === 'payment' ? { metadata: { product: 'splicer-pro', plan } } : undefined,

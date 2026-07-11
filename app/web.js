@@ -447,13 +447,18 @@ function verifyLicense(){
 function buyPlan(plan){
   var email = document.getElementById("licenseEmail").value.trim();
   if(!email) return alert("Enter your email first so we know which account to activate.");
+  // Open the tab synchronously inside the click handler -- opening it later,
+  // after the fetch below resolves, loses the user-gesture context and gets
+  // silently blocked as a popup by Safari (the macOS default browser this
+  // app launches into) and some Chrome configurations.
+  var checkoutTab = window.open("", "_blank");
   fetch(LIVE_SITE + "/api/splicer-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan})})
     .then(function(r){return r.json();})
     .then(function(d){
-      if(d.url) window.open(d.url, "_blank");
-      else alert(d.error || "Could not start checkout.");
+      if(d.url) { if(checkoutTab) checkoutTab.location = d.url; else window.open(d.url, "_blank"); }
+      else { if(checkoutTab) checkoutTab.close(); alert(d.error || "Could not start checkout."); }
     })
-    .catch(function(){ alert("Couldn't reach 5starlinks.xyz -- check your internet connection."); });
+    .catch(function(){ if(checkoutTab) checkoutTab.close(); alert("Couldn't reach 5starlinks.xyz -- check your internet connection."); });
 }
 
 function startSplice(){
