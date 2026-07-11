@@ -6,7 +6,12 @@ const path = require('path');
 const os = require('os');
 const PImage = require('pureimage');
 
-const LIVE_SITE = 'https://5starlinks.xyz';
+// The bare domain 308-redirects to www, and that redirect response carries no
+// CORS headers -- breaks cross-origin fetch() from the packaged app (browser
+// navigation/curl -L mask this by following the redirect transparently, but
+// a real fetch() does not treat it as same-origin after the hop). Hitting
+// www directly avoids the redirect entirely.
+const LIVE_SITE = 'https://www.5starlinks.xyz';
 const FREE_CLIPS = 3;
 
 let clients = [];
