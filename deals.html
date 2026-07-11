@@ -234,6 +234,23 @@
 // as actual discounts, so made-up numbers would be false advertising. For anything not
 // personally verified (community penny lists, clearance sightings, etc.) always include
 // source/sourceUrl so shoppers can double check before making a trip.
+
+// Fill in affiliate IDs here once you're approved for each program -- every outbound
+// deal link runs through withAffiliate() below. Leave an ID blank to link out plain
+// (no tag). Each affiliate network has its own URL format, so this only auto-tags
+// Amazon (the simplest: just an appended query param) -- for Rakuten/CJ/Impact/Awin
+// programs, replace/wrap the specific store's branch with that network's link format
+// once you have it.
+const AFFILIATE_IDS = {
+  amazon: '5starlinks0c-20', // same Amazon Associates tag already used on guides.html
+};
+function withAffiliate(url, store) {
+  if (store === 'Amazon' && AFFILIATE_IDS.amazon && !url.includes('tag=')) {
+    const sep = url.includes('?') ? '&' : '?';
+    return url + sep + 'tag=' + encodeURIComponent(AFFILIATE_IDS.amazon);
+  }
+  return url;
+}
 const deals = [
   // ---- Online: free cashback on top of every deal on this page ----
   { name: "Get Cash Back on Everything You Buy", store: "Rakuten", type: "Online", isGeneralHub: true, featured: true, badgeText: "FREE CASHBACK",
@@ -485,7 +502,7 @@ function render() {
            ${d.location ? '<div><strong style="color:#a855f7;">Aisle:</strong> ' + d.location + '</div>' : ''}
            ${sourceLine}
          </div>`
-      : `<a href="${d.link}" target="_blank" rel="noopener noreferrer">${d.ctaText || 'Get Deal'}</a>`;
+      : `<a href="${withAffiliate(d.link, d.store)}" target="_blank" rel="noopener noreferrer">${d.ctaText || 'Get Deal'}</a>`;
     const priceRow = (d.isHub || d.isGeneralHub)
       ? `<div style="font-size:0.82rem;color:#aaa;margin-bottom:0.9rem;line-height:1.4;">${d.blurb || 'Live-updated by the store.'}</div>`
       : d.origPriceUnknown
