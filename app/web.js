@@ -384,8 +384,8 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
   <p style="color:#aaa;font-size:0.85rem;margin-bottom:1rem;">First 3 clips are always watermark-free. After that, clips get a small "5starlinks.xyz" watermark unless you go Pro.</p>
   <div class="input-group"><label>Your Email</label><input type="text" id="licenseEmail" placeholder="you@example.com"></div>
   <div class="plan-row">
-    <button class="btn secondary" onclick="buyPlan('monthly')">Subscribe $2/mo</button>
-    <button class="btn secondary" onclick="buyPlan('lifetime')">Lifetime $20</button>
+    <button class="btn secondary" onclick="buyPlan('monthly', this)">Subscribe $2/mo</button>
+    <button class="btn secondary" onclick="buyPlan('lifetime', this)">Lifetime $20</button>
   </div>
   <button class="btn" onclick="verifyLicense()" id="verifyBtn">Already Paid? Verify</button>
   <div class="watermark-status" id="proStatus"></div>
@@ -444,21 +444,21 @@ function verifyLicense(){
     });
 }
 
-function buyPlan(plan){
+function buyPlan(plan, btn){
   var email = document.getElementById("licenseEmail").value.trim();
   if(!email) return alert("Enter your email first so we know which account to activate.");
-  // Open the tab synchronously inside the click handler -- opening it later,
-  // after the fetch below resolves, loses the user-gesture context and gets
-  // silently blocked as a popup by Safari (the macOS default browser this
-  // app launches into) and some Chrome configurations.
-  var checkoutTab = window.open("", "_blank");
+  // Navigate the current tab instead of opening a new one -- window.open()
+  // (even called synchronously on click) can be silently blocked with zero
+  // visible indication depending on the browser's Pop-up Windows setting.
+  // A same-tab navigation isn't a popup, so no blocker setting can stop it.
+  if(btn){ btn.disabled = true; btn.textContent = "Redirecting..."; }
   fetch(LIVE_SITE + "/api/splicer-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan})})
     .then(function(r){return r.json();})
     .then(function(d){
-      if(d.url) { if(checkoutTab) checkoutTab.location = d.url; else window.open(d.url, "_blank"); }
-      else { if(checkoutTab) checkoutTab.close(); alert(d.error || "Could not start checkout."); }
+      if(d.url) { window.location.href = d.url; }
+      else { if(btn){ btn.disabled = false; btn.textContent = plan === "lifetime" ? "Lifetime $20" : "Subscribe $2/mo"; } alert(d.error || "Could not start checkout."); }
     })
-    .catch(function(){ if(checkoutTab) checkoutTab.close(); alert("Couldn't reach 5starlinks.xyz -- check your internet connection."); });
+    .catch(function(){ if(btn){ btn.disabled = false; btn.textContent = plan === "lifetime" ? "Lifetime $20" : "Subscribe $2/mo"; } alert("Couldn't reach 5starlinks.xyz -- check your internet connection."); });
 }
 
 function startSplice(){
