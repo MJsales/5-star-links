@@ -62,11 +62,20 @@
 
     .section { margin-bottom: 2rem; }
     .section h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 1rem; }
-    .day-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.5rem; font-size: 0.85rem; }
-    .day-row .date { width: 90px; color: #888; }
-    .day-row .bar-wrap { flex: 1; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; height: 20px; }
-    .day-row .bar { height: 100%; background: linear-gradient(90deg, #a855f7, #4ade80); }
-    .day-row .amt { width: 70px; text-align: right; color: #4ade80; font-weight: 700; }
+
+    .chart-wrap { position: relative; }
+    .revenue-chart { width: 100%; height: auto; overflow: visible; }
+    .rev-bar rect.mark { transition: opacity 0.15s; }
+    .rev-bar:hover rect.mark, .rev-bar:focus rect.mark { opacity: 1; }
+    .rev-bar { outline: none; cursor: pointer; }
+    .chart-tooltip {
+      position: absolute; pointer-events: none; z-index: 10;
+      background: #0d0815; border: 1px solid rgba(168,85,247,0.3); border-radius: 8px;
+      padding: 0.5rem 0.7rem; font-size: 0.78rem; white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .chart-tooltip .val { color: #4ade80; font-weight: 800; font-size: 0.95rem; }
+    .chart-tooltip .date { color: #888; margin-top: 2px; }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     th { text-align: left; padding: 0.6rem; color: #888; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; text-transform: uppercase; }
@@ -158,19 +167,104 @@ async function fetchIncome(key) {
   return res.json();
 }
 
+// Rounds up to a "clean" axis max: 1/2/5 x 10^n.
+function niceCeil(v) {
+  if (v <= 0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const norm = v / mag;
+  const step = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+  return step * mag;
+}
+function shortUsd(v) {
+  if (v >= 1000) return '$' + (v / 1000).toFixed(v % 1000 === 0 ? 0 : 1) + 'K';
+  return '$' + v.toFixed(0);
+}
+function shortDate(d) {
+  const [, m, day] = d.split('-');
+  return parseInt(m, 10) + '/' + parseInt(day, 10);
+}
+
+// Builds the revenue-by-day SVG bar chart (single series -> one hue, no legend
+// needed since the section title names it; hover/focus tooltip carries exact
+// values so only a couple of axis ticks are drawn, per dataviz label rules).
+function buildRevenueChart(byDay) {
+  const days = Object.keys(byDay).sort().slice(-14);
+  if (days.length === 0) return '<p class="sub">No charges yet.</p>';
+
+  const values = days.map(d => byDay[d] / 100);
+  const niceMax = niceCeil(Math.max(...values, 1));
+
+  const W = 900, H = 220, padL = 46, padR = 8, padT = 12, padB = 26;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const slot = plotW / days.length;
+  const barW = Math.min(24, slot - 4);
+
+  const yTicks = [0, niceMax / 2, niceMax];
+  const yLines = yTicks.map(t => {
+    const y = padT + plotH - (t / niceMax) * plotH;
+    return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <text x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="10" fill="#666">${shortUsd(t)}</text>`;
+  }).join('');
+
+  const bars = days.map((d, i) => {
+    const val = values[i];
+    const barH = Math.max((val / niceMax) * plotH, val > 0 ? 2 : 0);
+    const x = padL + i * slot + (slot - barW) / 2;
+    const y = padT + plotH - barH;
+    const squareH = Math.min(4, barH);
+    const dateLabel = (days.length <= 8 || i % 2 === 0) ? shortDate(d) : '';
+    return `
+      <g class="rev-bar" tabindex="0" role="img" aria-label="${d}: ${centsToUsd(byDay[d])}" data-date="${d}" data-val="${centsToUsd(byDay[d])}">
+        <rect x="${x.toFixed(1)}" y="${padT}" width="${barW.toFixed(1)}" height="${plotH}" fill="transparent"/>
+        <rect class="mark" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH, 1).toFixed(1)}" rx="4" ry="4" fill="#4ade80" opacity="0.85"/>
+        <rect class="mark" x="${x.toFixed(1)}" y="${(padT + plotH - squareH).toFixed(1)}" width="${barW.toFixed(1)}" height="${squareH}" fill="#4ade80" opacity="0.85"/>
+        ${dateLabel ? `<text x="${(x + barW / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#666">${dateLabel}</text>` : ''}
+      </g>`;
+  }).join('');
+
+  return `
+    <div class="chart-wrap">
+      <svg viewBox="0 0 ${W} ${H}" class="revenue-chart" id="revenueChartSvg">${yLines}${bars}</svg>
+      <div class="chart-tooltip" id="chartTooltip" style="display:none;"></div>
+    </div>`;
+}
+
+function wireChartTooltip() {
+  const svg = document.getElementById('revenueChartSvg');
+  const tip = document.getElementById('chartTooltip');
+  if (!svg || !tip) return;
+  const wrap = svg.parentElement;
+  svg.querySelectorAll('.rev-bar').forEach(bar => {
+    const show = () => {
+      const rect = bar.getBoundingClientRect();
+      const wrapRect = wrap.getBoundingClientRect();
+      const valEl = document.createElement('div');
+      valEl.className = 'val';
+      valEl.textContent = bar.dataset.val;
+      const dateEl = document.createElement('div');
+      dateEl.className = 'date';
+      dateEl.textContent = bar.dataset.date;
+      tip.innerHTML = '';
+      tip.appendChild(valEl);
+      tip.appendChild(dateEl);
+      tip.style.display = 'block';
+      tip.style.left = Math.max(0, rect.left - wrapRect.left - tip.offsetWidth / 2 + rect.width / 2) + 'px';
+      tip.style.top = (rect.top - wrapRect.top - 52) + 'px';
+    };
+    const hide = () => { tip.style.display = 'none'; };
+    bar.addEventListener('pointerenter', show);
+    bar.addEventListener('pointermove', show);
+    bar.addEventListener('pointerleave', hide);
+    bar.addEventListener('focus', show);
+    bar.addEventListener('blur', hide);
+  });
+}
+
 function render(data) {
   const available = data.availableBalance.map(b => centsToUsd(b.amountCents) + ' ' + b.currency.toUpperCase()).join(', ') || '$0.00';
   const pending = data.pendingBalance.map(b => centsToUsd(b.amountCents) + ' ' + b.currency.toUpperCase()).join(', ') || '$0.00';
 
-  const days = Object.keys(data.byDay).sort().reverse().slice(0, 14);
-  const maxDay = Math.max(1, ...days.map(d => data.byDay[d]));
-
-  const dayRows = days.map(d => `
-    <div class="day-row">
-      <div class="date">${d}</div>
-      <div class="bar-wrap"><div class="bar" style="width:${(data.byDay[d] / maxDay * 100).toFixed(1)}%"></div></div>
-      <div class="amt">${centsToUsd(data.byDay[d])}</div>
-    </div>`).join('') || '<p class="sub">No charges yet.</p>';
+  const revenueChart = buildRevenueChart(data.byDay);
 
   const chargeRows = data.recentCharges.map(c => `
     <tr>
@@ -191,7 +285,7 @@ function render(data) {
 
     <div class="section">
       <h2>Last 14 Days</h2>
-      ${dayRows}
+      ${revenueChart}
     </div>
 
     <div class="section">
@@ -202,6 +296,7 @@ function render(data) {
       </table>
     </div>
   `;
+  wireChartTooltip();
 }
 
 async function load(key) {
