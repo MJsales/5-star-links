@@ -78,8 +78,16 @@ function clipVideo(inputPath, outputDir, startSec, duration, index) {
     const outputPath = path.join(outputDir, 'clip_' + String(index).padStart(2, '0') + '.mp4');
     log('Creating clip ' + index + ' (' + startSec + 's, ' + duration + 's)...');
     // TikTok 9:16: blurred zoomed copy fills the frame behind a slightly cropped (4:3) foreground
-    const TIKTOK_VF = 'split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:3[bgb];[fg]crop=min(iw\\,ih*4/3):ih,scale=1080:-2[fgs];[bgb][fgs]overlay=(W-w)/2:(H-h)/2';
-    const proc = spawn('ffmpeg', ['-ss', String(startSec), '-i', inputPath, '-t', String(duration), '-vf', TIKTOK_VF, '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'fast', '-pix_fmt', 'yuv420p', '-y', outputPath]);
+    // Blur at 1/4 resolution then scale back up -- it's blurred either way so the
+    // downscale is invisible, but boxblur does ~16x less pixel work this way. This
+    // (not the encoder) was the actual bottleneck on weak CPUs.
+    const TIKTOK_VF = 'split=2[bg][fg];[bg]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=8:2,scale=1080:1920[bgb];[fg]crop=min(iw\\,ih*4/3):ih,scale=1080:-2[fgs];[bgb][fgs]overlay=(W-w)/2:(H-h)/2';
+    // On macOS, use the VideoToolbox hardware encoder instead of software libx264 --
+    // on weak/fanless CPUs (e.g. 2-core Intel), software x264 is the whole bottleneck.
+    const videoCodecArgs = process.platform === 'darwin'
+      ? ['-c:v', 'h264_videotoolbox', '-b:v', '6M', '-allow_sw', '1']
+      : ['-c:v', 'libx264', '-preset', 'fast'];
+    const proc = spawn('ffmpeg', ['-ss', String(startSec), '-i', inputPath, '-t', String(duration), '-vf', TIKTOK_VF, ...videoCodecArgs, '-c:a', 'aac', '-pix_fmt', 'yuv420p', '-y', outputPath]);
     let stderr = '';
     proc.stderr.on('data', d => { stderr += d.toString(); });
     proc.on('close', code => {
@@ -165,8 +173,13 @@ const server = http.createServer((req, res) => {
   res.end(HTML);
 });
 
-server.listen(0, '127.0.0.1', () => {
+const FIXED_PORT = process.env.SPLICER_PORT ? parseInt(process.env.SPLICER_PORT, 10) : 0;
+server.listen(FIXED_PORT, '127.0.0.1', () => {
   const actualPort = server.address().port;
+  if (process.env.NO_AUTO_OPEN) {
+    console.log('SPLICER_READY:' + actualPort);
+    return;
+  }
   const start = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
   try { exec(start + ' http://localhost:' + actualPort); } catch {}
 });
