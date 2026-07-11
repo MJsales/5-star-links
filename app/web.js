@@ -3,6 +3,7 @@ const http = require('http');
 const { execSync, spawn, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const PImage = require('pureimage');
 
 let clients = [];
 let status = 'idle';
@@ -73,24 +74,113 @@ function downloadVideo(url, outputDir) {
   });
 }
 
-function clipVideo(inputPath, outputDir, startSec, duration, index) {
+// ffmpeg's own text renderer (drawtext) needs libfreetype/fontconfig, which the
+// plain `brew install ffmpeg` this app tells users to run does NOT include on
+// current bottles -- so text is rendered to a transparent PNG in JS instead
+// (pureimage, pure-JS, no native deps) and composited with ffmpeg's `overlay`,
+// which works with any ffmpeg build.
+let titleFontPromise = null;
+function getTitleFont() {
+  if (!titleFontPromise) {
+    const fontPath = process.platform === 'win32'
+      ? path.join(process.env.WINDIR || 'C:\\Windows', 'Fonts', 'arialbd.ttf')
+      : process.platform === 'darwin'
+        ? '/System/Library/Fonts/Supplemental/Arial Bold.ttf'
+        : '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
+    const font = PImage.registerFont(fontPath, 'TitleFont');
+    titleFontPromise = font.load().then(() => font);
+  }
+  return titleFontPromise;
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (line && ctx.measureText(test).width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawOutlinedText(ctx, text, x, y, fillColor) {
+  ctx.fillStyle = '#000000';
+  [[-3, 0], [3, 0], [0, -3], [0, 3], [-2, -2], [2, 2], [-2, 2], [2, -2]]
+    .forEach(([dx, dy]) => ctx.fillText(text, x + dx, y + dy));
+  ctx.fillStyle = fillColor;
+  ctx.fillText(text, x, y);
+}
+
+// Renders "TITLE\nPART i/N" (TikTok-style) to a transparent 1080-wide PNG that
+// gets overlaid on the blurred band at the top of the clip.
+async function renderTitleOverlay(title, partIndex, totalParts, outPath) {
+  await getTitleFont();
+  const W = 1080, H = 320;
+  const img = PImage.make(W, H);
+  const ctx = img.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const maxWidth = W - 100;
+  ctx.font = '54px TitleFont';
+  let lines = wrapText(ctx, (title || 'Video').toUpperCase(), maxWidth);
+  if (lines.length > 2) {
+    lines = lines.slice(0, 2);
+    lines[1] = lines[1].replace(/\s*\S*$/, '') + '...';
+  }
+
+  let y = lines.length === 1 ? 110 : 90;
+  for (const line of lines) {
+    const w = ctx.measureText(line).width;
+    drawOutlinedText(ctx, line, (W - w) / 2, y, '#ffffff');
+    y += 64;
+  }
+
+  ctx.font = '38px TitleFont';
+  const partText = 'PART ' + partIndex + '/' + totalParts;
+  const pw = ctx.measureText(partText).width;
+  drawOutlinedText(ctx, partText, (W - pw) / 2, y + 20, '#a855f7');
+
+  await PImage.encodePNGToStream(img, fs.createWriteStream(outPath));
+}
+
+async function clipVideo(inputPath, outputDir, startSec, duration, index, title, totalClips) {
+  const outputPath = path.join(outputDir, 'clip_' + String(index).padStart(2, '0') + '.mp4');
+  log('Creating clip ' + index + ' (' + startSec + 's, ' + duration + 's)...');
+
+  const overlayPath = path.join(outputDir, '.overlay_' + index + '.png');
+  await renderTitleOverlay(title, index, totalClips, overlayPath);
+
+  // TikTok 9:16: blurred zoomed copy fills the frame behind a slightly cropped (4:3)
+  // foreground, with the title + part number overlaid on the blurred band at top.
+  // Blur at 1/4 resolution then scale back up -- it's blurred either way so the
+  // downscale is invisible, but boxblur does ~16x less pixel work this way. This
+  // (not the encoder) was the actual bottleneck on weak CPUs.
+  const FILTER = '[0:v]split=2[bg][fg];[bg]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=8:2,scale=1080:1920[bgb];[fg]crop=min(iw\\,ih*4/3):ih,scale=1080:-2[fgs];[bgb][fgs]overlay=(W-w)/2:(H-h)/2[base];[base][1:v]overlay=0:70:format=auto[outv]';
+  // On macOS, use the VideoToolbox hardware encoder instead of software libx264 --
+  // on weak/fanless CPUs (e.g. 2-core Intel), software x264 is the whole bottleneck.
+  const videoCodecArgs = process.platform === 'darwin'
+    ? ['-c:v', 'h264_videotoolbox', '-b:v', '6M', '-allow_sw', '1']
+    : ['-c:v', 'libx264', '-preset', 'fast'];
+
   return new Promise((resolve, reject) => {
-    const outputPath = path.join(outputDir, 'clip_' + String(index).padStart(2, '0') + '.mp4');
-    log('Creating clip ' + index + ' (' + startSec + 's, ' + duration + 's)...');
-    // TikTok 9:16: blurred zoomed copy fills the frame behind a slightly cropped (4:3) foreground
-    // Blur at 1/4 resolution then scale back up -- it's blurred either way so the
-    // downscale is invisible, but boxblur does ~16x less pixel work this way. This
-    // (not the encoder) was the actual bottleneck on weak CPUs.
-    const TIKTOK_VF = 'split=2[bg][fg];[bg]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=8:2,scale=1080:1920[bgb];[fg]crop=min(iw\\,ih*4/3):ih,scale=1080:-2[fgs];[bgb][fgs]overlay=(W-w)/2:(H-h)/2';
-    // On macOS, use the VideoToolbox hardware encoder instead of software libx264 --
-    // on weak/fanless CPUs (e.g. 2-core Intel), software x264 is the whole bottleneck.
-    const videoCodecArgs = process.platform === 'darwin'
-      ? ['-c:v', 'h264_videotoolbox', '-b:v', '6M', '-allow_sw', '1']
-      : ['-c:v', 'libx264', '-preset', 'fast'];
-    const proc = spawn('ffmpeg', ['-ss', String(startSec), '-i', inputPath, '-t', String(duration), '-vf', TIKTOK_VF, ...videoCodecArgs, '-c:a', 'aac', '-pix_fmt', 'yuv420p', '-y', outputPath]);
+    const proc = spawn('ffmpeg', [
+      '-ss', String(startSec), '-t', String(duration), '-i', inputPath,
+      '-i', overlayPath,
+      '-filter_complex', FILTER,
+      '-map', '[outv]', '-map', '0:a?',
+      ...videoCodecArgs, '-c:a', 'aac', '-pix_fmt', 'yuv420p', '-y', outputPath,
+    ]);
     let stderr = '';
     proc.stderr.on('data', d => { stderr += d.toString(); });
     proc.on('close', code => {
+      try { fs.unlinkSync(overlayPath); } catch {}
       if (code !== 0) return reject(new Error(stderr || 'Clip failed'));
       log('Clip ' + index + ' created');
       resolve(outputPath);
@@ -124,7 +214,7 @@ async function startSplice(url, clipDuration) {
       const start = i * clipDuration;
       const dur = Math.min(clipDuration, info.duration - start);
       if (dur <= 0) break;
-      await clipVideo(videoPath, outputDir, start, dur, i + 1);
+      await clipVideo(videoPath, outputDir, start, dur, i + 1, info.title, totalClips);
       broadcast('progress', { current: i + 1, total: totalClips });
     }
     try { fs.unlinkSync(videoPath); } catch {}
