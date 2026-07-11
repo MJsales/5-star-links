@@ -420,7 +420,7 @@ function verifyLicense(){
   if(!email) return alert("Enter the email you paid with first.");
   var btn = document.getElementById("verifyBtn");
   btn.disabled = true; btn.textContent = "Checking...";
-  fetch(LIVE_SITE + "/api/verify-splicer-license?email=" + encodeURIComponent(email))
+  fetch(LIVE_SITE + "/api/splicer-license?email=" + encodeURIComponent(email))
     .then(function(r){return r.json();})
     .then(function(d){
       return fetch("/api/save-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, licensed: d.licensed, plan: d.plan})})
@@ -442,7 +442,7 @@ function verifyLicense(){
 function buyPlan(plan){
   var email = document.getElementById("licenseEmail").value.trim();
   if(!email) return alert("Enter your email first so we know which account to activate.");
-  fetch(LIVE_SITE + "/api/create-splicer-checkout", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan})})
+  fetch(LIVE_SITE + "/api/splicer-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan})})
     .then(function(r){return r.json();})
     .then(function(d){
       if(d.url) window.open(d.url, "_blank");
