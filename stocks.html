@@ -248,6 +248,12 @@
     <div id="portfolioList" style="color:#555;font-size:0.9rem;">Sign in to track your portfolio</div>
   </div>
 
+  <div id="referralCard" style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.15);border-radius:16px;padding:1.2rem;margin-top:1.5rem;">
+    <h2 style="font-size:1.1rem;color:#22c55e;font-weight:700;margin-bottom:0.6rem;">Where to Buy</h2>
+    <p style="color:#888;font-size:0.85rem;margin-bottom:1rem;">Don't have a broker or exchange yet? These are the ones we recommend.</p>
+    <div id="referralLinks" style="display:flex;gap:0.6rem;flex-wrap:wrap;"></div>
+  </div>
+
   <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.15);border-radius:16px;padding:1.2rem;margin-top:1.5rem;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
       <h2 style="font-size:1.1rem;color:#f59e0b;font-weight:700;">My Wallets</h2>
@@ -338,6 +344,32 @@
 </div>
 
 <script>
+// Fill in real referral links here once you're approved for each program --
+// neither Coinbase nor Robinhood expose an earnings API, so unlike the Amazon
+// tag on deals.html/guides.html there's nothing to automate beyond the link
+// itself; check payouts in each program's own dashboard. Leave a value blank
+// ('') to hide that button until you have a real link.
+const REFERRAL_LINKS = {
+  coinbase: { label: 'Coinbase', color: '#0052ff', url: '' },
+  robinhood: { label: 'Robinhood', color: '#00c805', url: '' },
+};
+(function renderReferralLinks() {
+  const container = document.getElementById('referralLinks');
+  const card = document.getElementById('referralCard');
+  if (!container) return;
+  const entries = Object.values(REFERRAL_LINKS).filter(r => r.url);
+  if (entries.length === 0) { card.style.display = 'none'; return; }
+  entries.forEach(r => {
+    const a = document.createElement('a');
+    a.href = r.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = r.label;
+    a.style.cssText = 'flex:1;min-width:120px;text-align:center;padding:10px 16px;border-radius:10px;color:#fff;text-decoration:none;font-weight:700;font-size:0.9rem;background:' + r.color;
+    container.appendChild(a);
+  });
+})();
+
 function sendMsg() {
   var input = document.getElementById('chatInput');
   var text = input.textContent.trim();
