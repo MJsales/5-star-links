@@ -78,6 +78,31 @@
     @media (max-width: 700px) {
       .stat-grid { grid-template-columns: 1fr 1fr; }
     }
+
+    .wallet-form { display: flex; gap: 0.6rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+    .wallet-form select, .wallet-form input {
+      background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25);
+      border-radius: 10px; color: #fff; padding: 0.6rem 0.9rem; font-size: 0.85rem;
+      font-family: 'Inter', sans-serif; outline: none;
+    }
+    .wallet-form input { flex: 1; min-width: 200px; }
+    .wallet-form button {
+      padding: 0.6rem 1.2rem; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; font-weight: 700;
+      font-size: 0.85rem; cursor: pointer;
+    }
+    .wallet-card {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      background: linear-gradient(145deg, #0d0815 0%, #1a0a0a 100%);
+      border: 1px solid rgba(168,85,247,0.2); border-radius: 14px; padding: 1rem 1.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .wallet-card .chain { font-weight: 800; color: #a855f7; margin-right: 0.6rem; }
+    .wallet-card .addr { color: #888; font-size: 0.8rem; word-break: break-all; }
+    .wallet-card .bal { text-align: right; }
+    .wallet-card .bal .amt { font-weight: 800; color: #4ade80; }
+    .wallet-card .bal .usd { color: #888; font-size: 0.8rem; }
+    .wallet-card .remove { background: none; border: none; color: #ff5c5c; cursor: pointer; font-size: 1.1rem; padding: 0 0.4rem; }
   </style>
 </head>
 <body>
@@ -102,6 +127,18 @@
     <h1>Income Dashboard</h1>
     <p class="sub">Live from Stripe &bull; <button class="refresh" id="refreshBtn">Refresh</button></p>
     <div id="content"><div class="loading">Loading…</div></div>
+
+    <div class="section">
+      <h2>Crypto Wallets</h2>
+      <p class="sub" style="margin-bottom:1rem;">Balance tracking only &mdash; the site doesn't accept crypto for purchases, this just lets you watch wallets from here. Addresses are saved in this browser only.</p>
+      <div class="wallet-form">
+        <select id="walletChain"></select>
+        <input type="text" id="walletAddress" placeholder="Wallet address" autocomplete="off" />
+        <button id="addWalletBtn">Add Wallet</button>
+      </div>
+      <div id="walletTotal" class="sub"></div>
+      <div id="walletList"></div>
+    </div>
   </div>
 </div>
 
@@ -203,6 +240,104 @@ if (savedKey) {
   document.getElementById('dashboard').style.display = 'block';
   load(savedKey);
 }
+
+// ---- Crypto wallet balances (client-side only, reuses /api/get-balance) ----
+const WALLET_CHAINS = ['BTC','ETH','SOL','USDC','USDT','BNB','MATIC','ARB','OP','BASE','DOGE','XRP','TRX','LTC','NEAR','ADA','SUI','LINK','UNI','AAVE','SHIB','PEPE','FLOKI','WIF','BONK','JUP','GRT','RENDER','DAI','MKR','CRV','LDO','SUSHI','IMX'];
+const WALLET_COINGECKO_IDS = {
+  BTC:'bitcoin', ETH:'ethereum', SOL:'solana', USDC:'usd-coin', USDT:'tether', BNB:'binancecoin',
+  MATIC:'polygon-ecosystem-token', ARB:'arbitrum', OP:'optimism', BASE:'ethereum', DOGE:'dogecoin',
+  XRP:'ripple', TRX:'tron', LTC:'litecoin', NEAR:'near', ADA:'cardano', SUI:'sui', LINK:'chainlink',
+  UNI:'uniswap', AAVE:'aave', SHIB:'shiba-inu', PEPE:'pepe', FLOKI:'floki', WIF:'dogwifcoin',
+  BONK:'bonk', JUP:'jupiter-exchange-solana', GRT:'the-graph', RENDER:'render-token', DAI:'dai',
+  MKR:'maker', CRV:'curve-dao-token', LDO:'lido-dao', SUSHI:'sushi', IMX:'immutable-x',
+};
+const WALLETS_STORAGE = '5star_admin_wallets';
+
+const chainSelect = document.getElementById('walletChain');
+chainSelect.innerHTML = WALLET_CHAINS.map(c => `<option value="${c}">${c}</option>`).join('');
+
+function getWallets() {
+  try { return JSON.parse(localStorage.getItem(WALLETS_STORAGE)) || []; } catch { return []; }
+}
+function saveWallets(wallets) {
+  localStorage.setItem(WALLETS_STORAGE, JSON.stringify(wallets));
+}
+
+async function renderWallets() {
+  const wallets = getWallets();
+  const listEl = document.getElementById('walletList');
+  const totalEl = document.getElementById('walletTotal');
+  if (wallets.length === 0) {
+    listEl.innerHTML = '<p class="sub">No wallets added yet.</p>';
+    totalEl.textContent = '';
+    return;
+  }
+  listEl.innerHTML = wallets.map((w, i) => `
+    <div class="wallet-card" id="wallet-${i}">
+      <div><span class="chain">${w.chain}</span><span class="addr">${w.address}</span></div>
+      <div class="bal"><div class="amt">Loading…</div></div>
+      <button class="remove" onclick="removeWallet(${i})">&times;</button>
+    </div>`).join('');
+
+  const coinIds = [...new Set(wallets.map(w => WALLET_COINGECKO_IDS[w.chain]).filter(Boolean))];
+  let prices = {};
+  if (coinIds.length) {
+    try {
+      const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + coinIds.join(',') + '&vs_currencies=usd');
+      prices = await r.json();
+    } catch {}
+  }
+
+  let totalUsd = 0;
+  let anyUsd = false;
+  await Promise.all(wallets.map(async (w, i) => {
+    const card = document.getElementById('wallet-' + i);
+    if (!card) return;
+    const balEl = card.querySelector('.bal');
+    try {
+      const r = await fetch('/api/get-balance?chain=' + encodeURIComponent(w.chain) + '&address=' + encodeURIComponent(w.address));
+      const data = await r.json();
+      if (data.balance == null) {
+        balEl.innerHTML = '<div class="amt" style="color:#ff8a8a;">unavailable</div>';
+        return;
+      }
+      const coinId = WALLET_COINGECKO_IDS[w.chain];
+      const price = coinId && prices[coinId] ? prices[coinId].usd : null;
+      let usdLine = '';
+      if (price != null) {
+        const usd = data.balance * price;
+        totalUsd += usd;
+        anyUsd = true;
+        usdLine = `<div class="usd">$${usd.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>`;
+      }
+      balEl.innerHTML = `<div class="amt">${data.balance.toLocaleString('en-US', {maximumFractionDigits:6})} ${w.chain}</div>${usdLine}`;
+      if (anyUsd) totalEl.textContent = 'Total tracked: ~$' + totalUsd.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    } catch {
+      balEl.innerHTML = '<div class="amt" style="color:#ff8a8a;">error</div>';
+    }
+  }));
+}
+
+function removeWallet(i) {
+  const wallets = getWallets();
+  wallets.splice(i, 1);
+  saveWallets(wallets);
+  renderWallets();
+}
+
+document.getElementById('addWalletBtn').addEventListener('click', () => {
+  const chain = chainSelect.value;
+  const address = document.getElementById('walletAddress').value.trim();
+  if (!address) return;
+  const wallets = getWallets();
+  wallets.push({ chain, address });
+  saveWallets(wallets);
+  document.getElementById('walletAddress').value = '';
+  renderWallets();
+});
+document.getElementById('walletAddress').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('addWalletBtn').click(); });
+
+renderWallets();
 </script>
 
 </body>
