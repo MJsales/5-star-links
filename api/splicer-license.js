@@ -7,31 +7,7 @@ const Stripe = require('stripe');
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-const PLANS = {
-  monthly: {
-    mode: 'subscription',
-    line_items: [{
-      price_data: {
-        currency: 'usd',
-        product_data: { name: '5 Star Splicer Pro (Monthly)' },
-        unit_amount: 200,
-        recurring: { interval: 'month' },
-      },
-      quantity: 1,
-    }],
-  },
-  lifetime: {
-    mode: 'payment',
-    line_items: [{
-      price_data: {
-        currency: 'usd',
-        product_data: { name: '5 Star Splicer Pro (Lifetime)' },
-        unit_amount: 2000,
-      },
-      quantity: 1,
-    }],
-  },
-};
+const VALID_PLANS = ['monthly', 'lifetime'];
 
 async function handleVerify(req, res) {
   const email = req.query.email;
@@ -43,10 +19,10 @@ async function handleVerify(req, res) {
   }
 
   for (const customer of customers.data) {
-    const sessions = await stripe.checkout.sessions.list({ customer: customer.id, limit: 50 });
-    const lifetimePaid = sessions.data.some(s =>
-      s.metadata && s.metadata.product === 'splicer-pro' && s.metadata.plan === 'lifetime' &&
-      s.payment_status === 'paid'
+    const intents = await stripe.paymentIntents.list({ customer: customer.id, limit: 50 });
+    const lifetimePaid = intents.data.some(pi =>
+      pi.metadata && pi.metadata.product === 'splicer-pro' && pi.metadata.plan === 'lifetime' &&
+      pi.status === 'succeeded'
     );
     if (lifetimePaid) {
       return res.status(200).json({ licensed: true, plan: 'lifetime' });
@@ -65,27 +41,69 @@ async function handleVerify(req, res) {
   res.status(200).json({ licensed: false, plan: null });
 }
 
+async function resolvePromo(promoCode) {
+  if (!promoCode) return null;
+  const codes = await stripe.promotionCodes.list({ code: promoCode, active: true, limit: 1 });
+  return codes.data[0] || null;
+}
+
+// Embedded-payment flow (card form inside the app itself, via Stripe Elements)
+// instead of redirecting out to a hosted Checkout page. Lifetime is a plain
+// PaymentIntent; monthly is a Customer + Subscription with the first invoice's
+// PaymentIntent handed back for confirmCardPayment().
 async function handleCheckout(req, res) {
-  const { email, plan } = req.body;
-  const config = PLANS[plan];
-  if (!config) return res.status(400).json({ error: 'Invalid plan' });
+  const { email, plan, promoCode } = req.body;
+  if (!VALID_PLANS.includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Valid email required' });
   }
 
-  const session = await stripe.checkout.sessions.create({
-    mode: config.mode,
-    line_items: config.line_items,
-    customer_email: email,
-    allow_promotion_codes: true,
-    metadata: { product: 'splicer-pro', plan },
-    subscription_data: config.mode === 'subscription' ? { metadata: { product: 'splicer-pro', plan } } : undefined,
-    payment_intent_data: config.mode === 'payment' ? { metadata: { product: 'splicer-pro', plan } } : undefined,
-    success_url: 'https://5starlinks.xyz/splicer-license.html?status=success',
-    cancel_url: 'https://5starlinks.xyz/download.html',
+  const promo = await resolvePromo(promoCode);
+  if (promoCode && !promo) return res.status(400).json({ error: 'Invalid or expired promo code' });
+
+  const customers = await stripe.customers.list({ email, limit: 1 });
+  const customer = customers.data[0] || await stripe.customers.create({ email });
+
+  if (plan === 'lifetime') {
+    let amount = 2000;
+    if (promo) {
+      const c = promo.coupon;
+      amount = c.percent_off ? Math.round(amount * (1 - c.percent_off / 100)) : Math.max(0, amount - (c.amount_off || 0));
+    }
+    if (amount === 0) return res.status(200).json({ free: true });
+
+    const intent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'usd',
+      customer: customer.id,
+      receipt_email: email,
+      metadata: { product: 'splicer-pro', plan: 'lifetime' },
+    });
+    return res.status(200).json({ clientSecret: intent.client_secret, mode: 'payment' });
+  }
+
+  // monthly
+  const subscription = await stripe.subscriptions.create({
+    customer: customer.id,
+    items: [{ price_data: { currency: 'usd', product_data: { name: '5 Star Splicer Pro (Monthly)' }, unit_amount: 200, recurring: { interval: 'month' } } }],
+    discounts: promo ? [{ promotion_code: promo.id }] : undefined,
+    payment_behavior: 'default_incomplete',
+    payment_settings: { save_default_payment_method: 'on_subscription' },
+    expand: ['latest_invoice.payment_intent'],
+    metadata: { product: 'splicer-pro', plan: 'monthly' },
   });
 
-  res.status(200).json({ url: session.url });
+  if (subscription.status === 'active') {
+    // $0 first invoice (100%-off promo) -- Stripe skips creating a PaymentIntent entirely.
+    return res.status(200).json({ free: true });
+  }
+
+  const clientSecret = subscription.latest_invoice && subscription.latest_invoice.payment_intent
+    ? subscription.latest_invoice.payment_intent.client_secret
+    : null;
+  if (!clientSecret) return res.status(500).json({ error: 'Could not start subscription payment' });
+
+  res.status(200).json({ clientSecret, mode: 'subscription' });
 }
 
 module.exports = async (req, res) => {
