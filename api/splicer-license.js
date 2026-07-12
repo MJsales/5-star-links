@@ -70,6 +70,11 @@ async function handleCheckout(req, res) {
     let amount = 2000;
     if (promo) {
       const c = promo.coupon;
+      if (!c) {
+        // Narrow, structure-only diagnostic -- reveals key names/types of the
+        // already-matched promo object, not any code text or other values.
+        return res.status(500).json({ error: 'promo.coupon missing', promoKeys: Object.keys(promo), couponType: typeof promo.coupon });
+      }
       amount = c.percent_off ? Math.round(amount * (1 - c.percent_off / 100)) : Math.max(0, amount - (c.amount_off || 0));
     }
     if (amount === 0) return res.status(200).json({ free: true, amount: 0 });
