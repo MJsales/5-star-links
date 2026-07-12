@@ -12,6 +12,12 @@ const PImage = require('pureimage');
 // a real fetch() does not treat it as same-origin after the hop). Hitting
 // www directly avoids the redirect entirely.
 const LIVE_SITE = 'https://www.5starlinks.xyz';
+// Some networks (seen: an ISP's router-level security feature) block outbound
+// TLS connections to 5starlinks.xyz specifically by hostname, even though the
+// site is reachable from everywhere else. This Vercel deployment alias serves
+// the exact same API routes under a different hostname, so it's a working
+// fallback when the primary domain's connection is refused.
+const FALLBACK_SITE = 'https://0ne-8am4n4sro-mjsales-projects.vercel.app';
 const FREE_CLIPS = 3;
 
 let clients = [];
@@ -562,30 +568,40 @@ const server = http.createServer((req, res) => {
   // Node's own network stack (proven reliable -- it already downloads videos
   // via yt-dlp) doesn't have that problem, so do the external call here and
   // hand the webview only a same-machine loopback request.
+  //
+  // curlSplicerAPI tries the primary domain first, then falls back to the
+  // Vercel alias -- some networks block 5starlinks.xyz by hostname alone
+  // (confirmed: an ISP's router-level security feature, unrelated to the site
+  // or app), and the fallback domain serves the identical API routes.
+  function curlSplicerAPI(pathAndQuery, body) {
+    for (const base of [LIVE_SITE, FALLBACK_SITE]) {
+      try {
+        const cmd = body
+          ? `curl -s -X POST "${base}${pathAndQuery}" -H "Content-Type: application/json" -d @-`
+          : `curl -s "${base}${pathAndQuery}"`;
+        const out = execSync(cmd, { input: body, encoding: 'utf8', timeout: 15000 });
+        if (out && out.trim()) return out;
+      } catch (err) {
+        // try the next base
+      }
+    }
+    return null;
+  }
+
   if (req.url.startsWith('/api/remote-verify') && req.method === 'GET') {
     const email = new URL(req.url, 'http://x').searchParams.get('email') || '';
-    try {
-      const out = execSync(`curl -s "${LIVE_SITE}/api/splicer-license?email=${encodeURIComponent(email)}"`, { encoding: 'utf8', timeout: 15000 });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(out);
-    } catch (err) {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Could not reach 5starlinks.xyz' }));
-    }
+    const out = curlSplicerAPI(`/api/splicer-license?email=${encodeURIComponent(email)}`);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(out || JSON.stringify({ error: 'Could not reach 5starlinks.xyz' }));
     return;
   }
   if (req.url === '/api/remote-checkout' && req.method === 'POST') {
     let body = '';
     req.on('data', c => body += c);
     req.on('end', () => {
-      try {
-        const out = execSync(`curl -s -X POST "${LIVE_SITE}/api/splicer-license" -H "Content-Type: application/json" -d @-`, { input: body, encoding: 'utf8', timeout: 15000 });
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(out);
-      } catch (err) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Could not reach 5starlinks.xyz' }));
-      }
+      const out = curlSplicerAPI('/api/splicer-license', body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(out || JSON.stringify({ error: 'Could not reach 5starlinks.xyz' }));
     });
     return;
   }
