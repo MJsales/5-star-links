@@ -1,0 +1,16 @@
+name: Post daily sports pick to Discord
+
+on:
+  schedule:
+    - cron: '0 14 * * *' # 10am ET (9am during EDT) -- adjust if you want a different time
+  workflow_dispatch: {}
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Post tomorrow's best pick to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_DEALS_WEBHOOK }}
+        run: node scripts/post-daily-pick.js
