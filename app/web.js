@@ -447,16 +447,19 @@ function verifyLicense(){
 function buyPlan(plan, btn){
   var email = document.getElementById("licenseEmail").value.trim();
   if(!email) return alert("Enter your email first so we know which account to activate.");
-  // Navigate the current tab instead of opening a new one -- window.open()
-  // (even called synchronously on click) can be silently blocked with zero
-  // visible indication depending on the browser's Pop-up Windows setting.
-  // A same-tab navigation isn't a popup, so no blocker setting can stop it.
   if(btn){ btn.disabled = true; btn.textContent = "Redirecting..."; }
   fetch(LIVE_SITE + "/api/splicer-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan})})
     .then(function(r){return r.json();})
     .then(function(d){
-      if(d.url) { window.location.href = d.url; }
-      else { if(btn){ btn.disabled = false; btn.textContent = plan === "lifetime" ? "Lifetime $20" : "Subscribe $2/mo"; } alert(d.error || "Could not start checkout."); }
+      if(d.url) {
+        // This app runs inside a Wails-embedded webview, which does not allow
+        // window.open()/location changes to navigate to an external origin --
+        // both fail completely silently. Wails injects window.runtime.BrowserOpenURL
+        // specifically to hand a URL off to the OS's real default browser instead.
+        if(window.runtime && window.runtime.BrowserOpenURL) { window.runtime.BrowserOpenURL(d.url); }
+        else { window.location.href = d.url; }
+        if(btn){ btn.disabled = false; btn.textContent = plan === "lifetime" ? "Lifetime $20" : "Subscribe $2/mo"; }
+      } else { if(btn){ btn.disabled = false; btn.textContent = plan === "lifetime" ? "Lifetime $20" : "Subscribe $2/mo"; } alert(d.error || "Could not start checkout."); }
     })
     .catch(function(){ if(btn){ btn.disabled = false; btn.textContent = plan === "lifetime" ? "Lifetime $20" : "Subscribe $2/mo"; } alert("Couldn't reach 5starlinks.xyz -- check your internet connection."); });
 }
