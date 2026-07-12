@@ -82,10 +82,20 @@ async function handleCheckout(req, res) {
     return res.status(200).json({ clientSecret: intent.client_secret, mode: 'payment' });
   }
 
-  // monthly
+  // monthly -- unlike Checkout line_items, Subscription items don't accept
+  // inline product_data; they need a real Price object, so find-or-create
+  // one once and reuse it on every call.
+  const existingPrices = await stripe.prices.list({ lookup_keys: ['splicer-pro-monthly'], limit: 1 });
+  let priceId = existingPrices.data[0] && existingPrices.data[0].id;
+  if (!priceId) {
+    const product = await stripe.products.create({ name: '5 Star Splicer Pro (Monthly)' });
+    const price = await stripe.prices.create({ product: product.id, currency: 'usd', unit_amount: 200, recurring: { interval: 'month' }, lookup_key: 'splicer-pro-monthly' });
+    priceId = price.id;
+  }
+
   const subscription = await stripe.subscriptions.create({
     customer: customer.id,
-    items: [{ price_data: { currency: 'usd', product_data: { name: '5 Star Splicer Pro (Monthly)' }, unit_amount: 200, recurring: { interval: 'month' } } }],
+    items: [{ price: priceId }],
     discounts: promo ? [{ promotion_code: promo.id }] : undefined,
     payment_behavior: 'default_incomplete',
     payment_settings: { save_default_payment_method: 'on_subscription' },
