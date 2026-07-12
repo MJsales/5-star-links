@@ -112,11 +112,11 @@ async function handleCheckout(req, res) {
     ? subscription.latest_invoice.payment_intent.client_secret
     : null;
   if (!clientSecret) {
+    const invoiceId = subscription.latest_invoice.id;
+    const payments = await stripe.invoices.listPayments(invoiceId, { expand: ['data.payment.payment_intent'] }).catch(e => ({ error: e.message }));
     return res.status(500).json({
       error: 'Could not start subscription payment',
-      debugStatus: subscription.status,
-      debugInvoice: subscription.latest_invoice ? Object.keys(subscription.latest_invoice) : null,
-      debugInvoiceStatus: subscription.latest_invoice ? subscription.latest_invoice.status : null,
+      debugPayments: payments,
     });
   }
 
