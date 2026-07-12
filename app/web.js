@@ -366,7 +366,7 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
 .pay-form input[type="text"]{flex:1;min-width:0;padding:0.6rem 0.75rem;border-radius:8px;border:1px solid rgba(168,85,247,0.3);background:#150c22;color:#fff;font-size:0.9rem}
 .card-errors{color:#ff8a8a;font-size:0.8rem;margin-bottom:0.6rem;min-height:1em}
 .pay-row{display:flex;gap:0.6rem;margin-bottom:0.6rem}
-.pay-row .btn{margin-top:0;flex-shrink:0}
+.pay-row .btn{width:auto;margin-top:0;flex-shrink:0;padding:0.6rem 1rem}
 .btn.cancel{background:transparent;border:1px solid rgba(255,255,255,0.15);color:#aaa}
 .price-display{font-size:1.3rem;font-weight:700;color:#4ade80;text-align:center;margin-bottom:0.8rem;min-height:1.6rem}
 .price-display .was{font-size:0.9rem;color:#888;text-decoration:line-through;font-weight:400;margin-right:0.4rem}
