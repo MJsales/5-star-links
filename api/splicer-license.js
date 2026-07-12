@@ -111,7 +111,14 @@ async function handleCheckout(req, res) {
   const clientSecret = subscription.latest_invoice && subscription.latest_invoice.payment_intent
     ? subscription.latest_invoice.payment_intent.client_secret
     : null;
-  if (!clientSecret) return res.status(500).json({ error: 'Could not start subscription payment' });
+  if (!clientSecret) {
+    return res.status(500).json({
+      error: 'Could not start subscription payment',
+      debugStatus: subscription.status,
+      debugInvoice: subscription.latest_invoice ? Object.keys(subscription.latest_invoice) : null,
+      debugInvoiceStatus: subscription.latest_invoice ? subscription.latest_invoice.status : null,
+    });
+  }
 
   res.status(200).json({ clientSecret, mode: 'subscription' });
 }
