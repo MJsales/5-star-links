@@ -108,17 +108,18 @@ async function handleCheckout(req, res) {
     return res.status(200).json({ free: true });
   }
 
-  const clientSecret = subscription.latest_invoice && subscription.latest_invoice.payment_intent
+  // Newer Stripe API versions don't expose latest_invoice.payment_intent
+  // directly -- the PaymentIntent is still created for the invoice, just not
+  // linked on that field in this account's API version. Look it up directly
+  // by customer instead of depending on the exact invoice-to-intent field.
+  let clientSecret = subscription.latest_invoice && subscription.latest_invoice.payment_intent
     ? subscription.latest_invoice.payment_intent.client_secret
     : null;
   if (!clientSecret) {
-    const invoiceId = subscription.latest_invoice.id;
-    const payments = await stripe.invoices.listPayments(invoiceId, { expand: ['data.payment.payment_intent'] }).catch(e => ({ error: e.message }));
-    return res.status(500).json({
-      error: 'Could not start subscription payment',
-      debugPayments: payments,
-    });
+    const intents = await stripe.paymentIntents.list({ customer: customer.id, limit: 1 });
+    clientSecret = intents.data[0] ? intents.data[0].client_secret : null;
   }
+  if (!clientSecret) return res.status(500).json({ error: 'Could not start subscription payment' });
 
   res.status(200).json({ clientSecret, mode: 'subscription' });
 }
