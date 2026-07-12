@@ -43,7 +43,9 @@ async function handleVerify(req, res) {
 
 async function resolvePromo(promoCode) {
   if (!promoCode) return null;
-  const codes = await stripe.promotionCodes.list({ code: promoCode, active: true, limit: 1 });
+  // This account's API version doesn't auto-expand nested objects -- without
+  // this, promo.coupon comes back as undefined instead of the coupon object.
+  const codes = await stripe.promotionCodes.list({ code: promoCode, active: true, limit: 1, expand: ['data.coupon'] });
   return codes.data[0] || null;
 }
 
