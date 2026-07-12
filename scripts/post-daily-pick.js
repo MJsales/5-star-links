@@ -36,7 +36,7 @@ function etTime(isoTimestamp) {
   return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }).format(new Date(isoTimestamp)) + ' ET';
 }
 
-const date = tomorrowET();
+const date = process.env.TARGET_DATE || tomorrowET();
 console.log(`Checking schedule for ${date}...`);
 
 let schedule;
