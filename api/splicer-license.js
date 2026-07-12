@@ -70,7 +70,7 @@ async function handleCheckout(req, res) {
       const c = promo.coupon;
       amount = c.percent_off ? Math.round(amount * (1 - c.percent_off / 100)) : Math.max(0, amount - (c.amount_off || 0));
     }
-    if (amount === 0) return res.status(200).json({ free: true });
+    if (amount === 0) return res.status(200).json({ free: true, amount: 0 });
 
     const intent = await stripe.paymentIntents.create({
       amount,
@@ -79,7 +79,7 @@ async function handleCheckout(req, res) {
       receipt_email: email,
       metadata: { product: 'splicer-pro', plan: 'lifetime' },
     });
-    return res.status(200).json({ clientSecret: intent.client_secret, mode: 'payment' });
+    return res.status(200).json({ clientSecret: intent.client_secret, mode: 'payment', amount });
   }
 
   // monthly -- unlike Checkout line_items, Subscription items don't accept
@@ -105,7 +105,7 @@ async function handleCheckout(req, res) {
 
   if (subscription.status === 'active') {
     // $0 first invoice (100%-off promo) -- Stripe skips creating a PaymentIntent entirely.
-    return res.status(200).json({ free: true });
+    return res.status(200).json({ free: true, amount: 0 });
   }
 
   // Newer Stripe API versions don't expose latest_invoice.payment_intent
@@ -121,7 +121,7 @@ async function handleCheckout(req, res) {
   }
   if (!clientSecret) return res.status(500).json({ error: 'Could not start subscription payment' });
 
-  res.status(200).json({ clientSecret, mode: 'subscription' });
+  res.status(200).json({ clientSecret, mode: 'subscription', amount: subscription.latest_invoice.total });
 }
 
 module.exports = async (req, res) => {
