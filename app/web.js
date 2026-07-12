@@ -363,11 +363,16 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
 .pay-form.active{display:block}
 .pay-form label{display:block;font-size:0.8rem;color:#aaa;margin-bottom:0.3rem}
 .card-element{background:#150c22;border:1px solid rgba(168,85,247,0.3);border-radius:8px;padding:0.75rem;margin-bottom:0.6rem}
-.pay-form input[type="text"]{width:100%;padding:0.6rem 0.75rem;border-radius:8px;border:1px solid rgba(168,85,247,0.3);background:#150c22;color:#fff;font-size:0.9rem;margin-bottom:0.6rem}
+.pay-form input[type="text"]{flex:1;min-width:0;padding:0.6rem 0.75rem;border-radius:8px;border:1px solid rgba(168,85,247,0.3);background:#150c22;color:#fff;font-size:0.9rem}
 .card-errors{color:#ff8a8a;font-size:0.8rem;margin-bottom:0.6rem;min-height:1em}
-.pay-row{display:flex;gap:0.6rem}
-.pay-row .btn{margin-top:0}
+.pay-row{display:flex;gap:0.6rem;margin-bottom:0.6rem}
+.pay-row .btn{margin-top:0;flex-shrink:0}
 .btn.cancel{background:transparent;border:1px solid rgba(255,255,255,0.15);color:#aaa}
+.price-display{font-size:1.3rem;font-weight:700;color:#4ade80;text-align:center;margin-bottom:0.8rem;min-height:1.6rem}
+.price-display .was{font-size:0.9rem;color:#888;text-decoration:line-through;font-weight:400;margin-right:0.4rem}
+.promo-msg{font-size:0.8rem;margin-bottom:0.6rem;min-height:1em}
+.promo-msg.error{color:#ff8a8a}
+.promo-msg.success{color:#4ade80}
 </style>
 </head>
 <body>
@@ -407,7 +412,12 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
   <div class="watermark-status" id="proStatus"></div>
   <div class="pay-form" id="payForm">
     <label>Promo Code (optional)</label>
-    <input type="text" id="promoCode" placeholder="Have a code?">
+    <div class="pay-row">
+      <input type="text" id="promoCode" placeholder="Have a code?">
+      <button class="btn cancel" id="applyPromoBtn" onclick="applyPromo()">Apply</button>
+    </div>
+    <div class="promo-msg" id="promoMsg"></div>
+    <div class="price-display" id="priceDisplay"></div>
     <label>Card</label>
     <div class="card-element" id="cardElement"></div>
     <div class="card-errors" id="cardErrors"></div>
@@ -472,6 +482,7 @@ function verifyLicense(){
 
 var stripeInstance, cardElement, currentPlan, stripeClientSecret;
 var STRIPE_PK = "pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3";
+var PLAN_BASE = { monthly: 200, lifetime: 2000 };
 
 function resetPlanButtons(){
   var monthlyBtn = document.getElementById("monthlyBtn");
@@ -480,36 +491,93 @@ function resetPlanButtons(){
   if(lifetimeBtn){ lifetimeBtn.disabled = false; lifetimeBtn.textContent = "Lifetime $20"; }
 }
 
+function formatPrice(cents, plan){
+  return "$" + (cents/100).toFixed(2) + (plan === "monthly" ? "/mo" : "");
+}
+
+function updatePriceDisplay(amount, plan){
+  var el = document.getElementById("priceDisplay");
+  var base = PLAN_BASE[plan];
+  if(amount < base){
+    el.innerHTML = '<span class="was">' + formatPrice(base, plan) + '</span>' + formatPrice(amount, plan);
+  } else {
+    el.textContent = formatPrice(amount, plan);
+  }
+}
+
+function fetchCheckout(plan, promoCode){
+  var email = document.getElementById("licenseEmail").value.trim();
+  return fetch("/api/remote-checkout", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan, promoCode: promoCode || undefined})})
+    .then(function(r){return r.json();});
+}
+
+function handleCheckoutResponse(d, plan, isPromoAttempt){
+  var email = document.getElementById("licenseEmail").value.trim();
+  if(d.free){
+    return fetch("/api/save-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, licensed: true, plan: plan})})
+      .then(function(){
+        licenseState.licensed = true; licenseState.plan = plan;
+        renderLicenseBanner();
+        document.getElementById("payForm").classList.remove("active");
+        document.getElementById("proStatus").textContent = "Activated with promo code -- no charge.";
+      });
+  }
+  if(d.clientSecret){
+    showPayForm(d.clientSecret, d.amount, plan);
+    if(isPromoAttempt){
+      var msg = document.getElementById("promoMsg");
+      msg.textContent = "Promo applied!";
+      msg.className = "promo-msg success";
+    }
+  } else if(isPromoAttempt){
+    var msg2 = document.getElementById("promoMsg");
+    msg2.textContent = d.error || "Invalid promo code";
+    msg2.className = "promo-msg error";
+  } else {
+    alert(d.error || "Could not start checkout.");
+  }
+}
+
 function buyPlan(plan, btn){
   var email = document.getElementById("licenseEmail").value.trim();
   if(!email) return alert("Enter your email first so we know which account to activate.");
   currentPlan = plan;
   if(btn){ btn.disabled = true; btn.textContent = "Loading..."; }
+  document.getElementById("promoMsg").textContent = "";
+  document.getElementById("promoMsg").className = "promo-msg";
   var promoCode = document.getElementById("promoCode").value.trim();
-  fetch("/api/remote-checkout", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan, promoCode: promoCode || undefined})})
-    .then(function(r){return r.json();})
+  fetchCheckout(plan, promoCode)
     .then(function(d){
       resetPlanButtons();
-      if(d.free){
-        return fetch("/api/save-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, licensed: true, plan: plan})})
-          .then(function(){
-            licenseState.licensed = true; licenseState.plan = plan;
-            renderLicenseBanner();
-            document.getElementById("proStatus").textContent = "Activated with promo code -- no charge.";
-          });
-      }
-      if(d.clientSecret){
-        showPayForm(d.clientSecret);
-      } else {
-        alert(d.error || "Could not start checkout.");
-      }
+      handleCheckoutResponse(d, plan, !!promoCode);
     })
     .catch(function(){ resetPlanButtons(); alert("Couldn't reach 5starlinks.xyz -- check your internet connection."); });
 }
 
-function showPayForm(clientSecret){
+function applyPromo(){
+  if(!currentPlan) return;
+  var promoCode = document.getElementById("promoCode").value.trim();
+  var btn = document.getElementById("applyPromoBtn");
+  btn.disabled = true; btn.textContent = "Applying...";
+  document.getElementById("promoMsg").textContent = "";
+  document.getElementById("promoMsg").className = "promo-msg";
+  fetchCheckout(currentPlan, promoCode)
+    .then(function(d){
+      btn.disabled = false; btn.textContent = "Apply";
+      handleCheckoutResponse(d, currentPlan, !!promoCode);
+    })
+    .catch(function(){
+      btn.disabled = false; btn.textContent = "Apply";
+      var msg = document.getElementById("promoMsg");
+      msg.textContent = "Couldn't reach 5starlinks.xyz -- check your internet connection.";
+      msg.className = "promo-msg error";
+    });
+}
+
+function showPayForm(clientSecret, amount, plan){
   stripeClientSecret = clientSecret;
   document.getElementById("payForm").classList.add("active");
+  updatePriceDisplay(amount, plan);
   if(!stripeInstance){ stripeInstance = Stripe(STRIPE_PK); }
   if(!cardElement){
     var elements = stripeInstance.elements();
@@ -526,6 +594,8 @@ function showPayForm(clientSecret){
 function cancelPayForm(){
   document.getElementById("payForm").classList.remove("active");
   stripeClientSecret = null;
+  document.getElementById("promoCode").value = "";
+  document.getElementById("promoMsg").textContent = "";
 }
 
 function submitPayment(){
