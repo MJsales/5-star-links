@@ -393,7 +393,6 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
 <div class="footer">5 Star Links &copy; 2026. Runs 100% locally on your device.</div>
 <script>
 var evtSource;
-var LIVE_SITE = "${LIVE_SITE}";
 var licenseState = { licensed: false, freeRemaining: ${FREE_CLIPS}, email: null };
 
 function renderLicenseBanner(){
@@ -425,7 +424,7 @@ function verifyLicense(){
   if(!email) return alert("Enter the email you paid with first.");
   var btn = document.getElementById("verifyBtn");
   btn.disabled = true; btn.textContent = "Checking...";
-  fetch(LIVE_SITE + "/api/splicer-license?email=" + encodeURIComponent(email))
+  fetch("/api/remote-verify?email=" + encodeURIComponent(email))
     .then(function(r){return r.json();})
     .then(function(d){
       return fetch("/api/save-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, licensed: d.licensed, plan: d.plan})})
@@ -448,7 +447,7 @@ function buyPlan(plan, btn){
   var email = document.getElementById("licenseEmail").value.trim();
   if(!email) return alert("Enter your email first so we know which account to activate.");
   if(btn){ btn.disabled = true; btn.textContent = "Redirecting..."; }
-  fetch(LIVE_SITE + "/api/splicer-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan})})
+  fetch("/api/remote-checkout", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan})})
     .then(function(r){return r.json();})
     .then(function(d){
       if(d.url) {
@@ -551,6 +550,41 @@ const server = http.createServer((req, res) => {
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+  // The two routes below proxy through this local Node process instead of
+  // letting the embedded webview's own network stack reach LIVE_SITE directly.
+  // On some networks WebKit's networking process tries HTTP/3 (QUIC) to
+  // Cloudflare and the QUIC connection hangs for a full 30s before timing
+  // out and failing, even though plain curl/TCP to the same URL is instant.
+  // Node's own network stack (proven reliable -- it already downloads videos
+  // via yt-dlp) doesn't have that problem, so do the external call here and
+  // hand the webview only a same-machine loopback request.
+  if (req.url.startsWith('/api/remote-verify') && req.method === 'GET') {
+    const email = new URL(req.url, 'http://x').searchParams.get('email') || '';
+    try {
+      const out = execSync(`curl -s "${LIVE_SITE}/api/splicer-license?email=${encodeURIComponent(email)}"`, { encoding: 'utf8', timeout: 15000 });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(out);
+    } catch (err) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Could not reach 5starlinks.xyz' }));
+    }
+    return;
+  }
+  if (req.url === '/api/remote-checkout' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const out = execSync(`curl -s -X POST "${LIVE_SITE}/api/splicer-license" -H "Content-Type: application/json" -d @-`, { input: body, encoding: 'utf8', timeout: 15000 });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(out);
+      } catch (err) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Could not reach 5starlinks.xyz' }));
       }
     });
     return;
