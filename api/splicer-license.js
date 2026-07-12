@@ -43,9 +43,9 @@ async function handleVerify(req, res) {
 
 async function resolvePromo(promoCode) {
   if (!promoCode) return null;
-  // This account's API version doesn't auto-expand nested objects -- without
-  // this, promo.coupon comes back as undefined instead of the coupon object.
-  const codes = await stripe.promotionCodes.list({ code: promoCode, active: true, limit: 1, expand: ['data.coupon'] });
+  // This account's API version doesn't have promo.coupon at all -- it uses
+  // promo.promotion instead. Expand it so the discount fields are populated.
+  const codes = await stripe.promotionCodes.list({ code: promoCode, active: true, limit: 1, expand: ['data.promotion'] });
   return codes.data[0] || null;
 }
 
@@ -69,11 +69,15 @@ async function handleCheckout(req, res) {
   if (plan === 'lifetime') {
     let amount = 2000;
     if (promo) {
-      const c = promo.coupon;
-      if (!c) {
-        // Narrow, structure-only diagnostic -- reveals key names/types of the
-        // already-matched promo object, not any code text or other values.
-        return res.status(500).json({ error: 'promo.coupon missing', promoKeys: Object.keys(promo), couponType: typeof promo.coupon });
+      const c = promo.promotion;
+      if (!c || (c.percent_off == null && c.amount_off == null)) {
+        // Narrow, structure-only diagnostic -- reveals key names of the
+        // already-matched promo/promotion objects, not any code text or values.
+        return res.status(500).json({
+          error: 'promotion discount fields missing',
+          promotionKeys: c ? Object.keys(c) : null,
+          promotionType: typeof c,
+        });
       }
       amount = c.percent_off ? Math.round(amount * (1 - c.percent_off / 100)) : Math.max(0, amount - (c.amount_off || 0));
     }
