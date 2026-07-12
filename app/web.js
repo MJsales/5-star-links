@@ -313,6 +313,7 @@ const HTML = `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>5 Star Links - AI Video Splicer</title>
+<script src="https://js.stripe.com/v3/"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center}
@@ -358,6 +359,15 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
 .plan-row{display:flex;gap:0.6rem;margin-top:0.5rem}
 .plan-row .btn{margin-top:0}
 .watermark-status{font-size:0.8rem;color:#888;margin-top:0.6rem;text-align:center}
+.pay-form{display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(168,85,247,0.2)}
+.pay-form.active{display:block}
+.pay-form label{display:block;font-size:0.8rem;color:#aaa;margin-bottom:0.3rem}
+.card-element{background:#150c22;border:1px solid rgba(168,85,247,0.3);border-radius:8px;padding:0.75rem;margin-bottom:0.6rem}
+.pay-form input[type="text"]{width:100%;padding:0.6rem 0.75rem;border-radius:8px;border:1px solid rgba(168,85,247,0.3);background:#150c22;color:#fff;font-size:0.9rem;margin-bottom:0.6rem}
+.card-errors{color:#ff8a8a;font-size:0.8rem;margin-bottom:0.6rem;min-height:1em}
+.pay-row{display:flex;gap:0.6rem}
+.pay-row .btn{margin-top:0}
+.btn.cancel{background:transparent;border:1px solid rgba(255,255,255,0.15);color:#aaa}
 </style>
 </head>
 <body>
@@ -390,11 +400,22 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
   <p style="color:#aaa;font-size:0.85rem;margin-bottom:1rem;">First 3 clips are always watermark-free. After that, clips get a small "5starlinks.xyz" watermark unless you go Pro.</p>
   <div class="input-group"><label>Your Email</label><input type="text" id="licenseEmail" placeholder="you@example.com"></div>
   <div class="plan-row">
-    <button class="btn secondary" onclick="buyPlan('monthly', this)">Subscribe $2/mo</button>
-    <button class="btn secondary" onclick="buyPlan('lifetime', this)">Lifetime $20</button>
+    <button class="btn secondary" id="monthlyBtn" onclick="buyPlan('monthly', this)">Subscribe $2/mo</button>
+    <button class="btn secondary" id="lifetimeBtn" onclick="buyPlan('lifetime', this)">Lifetime $20</button>
   </div>
   <button class="btn" onclick="verifyLicense()" id="verifyBtn">Already Paid? Verify</button>
   <div class="watermark-status" id="proStatus"></div>
+  <div class="pay-form" id="payForm">
+    <label>Promo Code (optional)</label>
+    <input type="text" id="promoCode" placeholder="Have a code?">
+    <label>Card</label>
+    <div class="card-element" id="cardElement"></div>
+    <div class="card-errors" id="cardErrors"></div>
+    <div class="pay-row">
+      <button class="btn" id="payBtn" onclick="submitPayment()">Pay</button>
+      <button class="btn cancel" onclick="cancelPayForm()">Cancel</button>
+    </div>
+  </div>
 </div>
 <div class="footer">5 Star Links &copy; 2026. Runs 100% locally on your device.</div>
 <script>
@@ -449,24 +470,89 @@ function verifyLicense(){
     });
 }
 
+var stripeInstance, cardElement, currentPlan, stripeClientSecret;
+var STRIPE_PK = "pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3";
+
+function resetPlanButtons(){
+  var monthlyBtn = document.getElementById("monthlyBtn");
+  var lifetimeBtn = document.getElementById("lifetimeBtn");
+  if(monthlyBtn){ monthlyBtn.disabled = false; monthlyBtn.textContent = "Subscribe $2/mo"; }
+  if(lifetimeBtn){ lifetimeBtn.disabled = false; lifetimeBtn.textContent = "Lifetime $20"; }
+}
+
 function buyPlan(plan, btn){
   var email = document.getElementById("licenseEmail").value.trim();
   if(!email) return alert("Enter your email first so we know which account to activate.");
-  if(btn){ btn.disabled = true; btn.textContent = "Redirecting..."; }
-  fetch("/api/remote-checkout", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan})})
+  currentPlan = plan;
+  if(btn){ btn.disabled = true; btn.textContent = "Loading..."; }
+  var promoCode = document.getElementById("promoCode").value.trim();
+  fetch("/api/remote-checkout", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, plan: plan, promoCode: promoCode || undefined})})
     .then(function(r){return r.json();})
     .then(function(d){
-      if(d.url) {
-        // This app runs inside a Wails-embedded webview, which does not allow
-        // window.open()/location changes to navigate to an external origin --
-        // both fail completely silently. Wails injects window.runtime.BrowserOpenURL
-        // specifically to hand a URL off to the OS's real default browser instead.
-        if(window.runtime && window.runtime.BrowserOpenURL) { window.runtime.BrowserOpenURL(d.url); }
-        else { window.location.href = d.url; }
-        if(btn){ btn.disabled = false; btn.textContent = plan === "lifetime" ? "Lifetime $20" : "Subscribe $2/mo"; }
-      } else { if(btn){ btn.disabled = false; btn.textContent = plan === "lifetime" ? "Lifetime $20" : "Subscribe $2/mo"; } alert(d.error || "Could not start checkout."); }
+      resetPlanButtons();
+      if(d.free){
+        return fetch("/api/save-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, licensed: true, plan: plan})})
+          .then(function(){
+            licenseState.licensed = true; licenseState.plan = plan;
+            renderLicenseBanner();
+            document.getElementById("proStatus").textContent = "Activated with promo code -- no charge.";
+          });
+      }
+      if(d.clientSecret){
+        showPayForm(d.clientSecret);
+      } else {
+        alert(d.error || "Could not start checkout.");
+      }
     })
-    .catch(function(){ if(btn){ btn.disabled = false; btn.textContent = plan === "lifetime" ? "Lifetime $20" : "Subscribe $2/mo"; } alert("Couldn't reach 5starlinks.xyz -- check your internet connection."); });
+    .catch(function(){ resetPlanButtons(); alert("Couldn't reach 5starlinks.xyz -- check your internet connection."); });
+}
+
+function showPayForm(clientSecret){
+  stripeClientSecret = clientSecret;
+  document.getElementById("payForm").classList.add("active");
+  if(!stripeInstance){ stripeInstance = Stripe(STRIPE_PK); }
+  if(!cardElement){
+    var elements = stripeInstance.elements();
+    cardElement = elements.create('card', {
+      style: { base: { color: '#fff', fontSize: '16px', '::placeholder': { color: '#666' } }, invalid: { color: '#ff8a8a' } }
+    });
+    cardElement.mount('#cardElement');
+    cardElement.on('change', function(event){
+      document.getElementById('cardErrors').textContent = event.error ? event.error.message : '';
+    });
+  }
+}
+
+function cancelPayForm(){
+  document.getElementById("payForm").classList.remove("active");
+  stripeClientSecret = null;
+}
+
+function submitPayment(){
+  var email = document.getElementById("licenseEmail").value.trim();
+  var btn = document.getElementById("payBtn");
+  btn.disabled = true; btn.textContent = "Processing...";
+  stripeInstance.confirmCardPayment(stripeClientSecret, { payment_method: { card: cardElement, billing_details: { email: email } } })
+    .then(function(result){
+      btn.disabled = false; btn.textContent = "Pay";
+      if(result.error){
+        document.getElementById("cardErrors").textContent = result.error.message;
+        return;
+      }
+      if(result.paymentIntent && result.paymentIntent.status === "succeeded"){
+        document.getElementById("payForm").classList.remove("active");
+        return fetch("/api/save-license", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email: email, licensed: true, plan: currentPlan})})
+          .then(function(){
+            licenseState.licensed = true; licenseState.plan = currentPlan;
+            renderLicenseBanner();
+            document.getElementById("proStatus").textContent = "Payment successful -- watermark removed!";
+          });
+      }
+    })
+    .catch(function(){
+      btn.disabled = false; btn.textContent = "Pay";
+      document.getElementById("cardErrors").textContent = "Payment failed. Try again.";
+    });
 }
 
 function startSplice(){
