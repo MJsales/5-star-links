@@ -376,6 +376,26 @@
   function getCart() { return JSON.parse(localStorage.getItem('cart') || '[]'); }
   function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); }
 
+  // Per-item prices in dollars; everything not listed is the flat $5.
+  const itemPrices = { 'picks-bundle': 8 };
+  function itemPrice(item) { return itemPrices[item.id] || 5; }
+  function cartTotal(cart) { return cart.reduce((s, i) => s + itemPrice(i) * (i.quantity || 1), 0); }
+
+  // A bundle purchase unlocks both picks tools, so store it as its two
+  // component items in purchasedItems (orders.html lists these directly).
+  function expandForPurchase(cart) {
+    const out = [];
+    cart.forEach(item => {
+      if (item.id === 'picks-bundle') {
+        out.push({ id: 'ai-picks', name: 'AI Sports Picks (Bundle)', color: null, quantity: item.quantity || 1 });
+        out.push({ id: 'ai-stocks', name: 'AI Stock Picks (Bundle)', color: null, quantity: item.quantity || 1 });
+      } else {
+        out.push(item);
+      }
+    });
+    return out;
+  }
+
   function balaclavaSVG(fill, stroke) {
     return `<svg viewBox="0 0 160 220" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M30 100 Q30 30 80 20 Q130 30 130 100" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
@@ -464,6 +484,14 @@
         <text x="100" y="115" text-anchor="middle" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">SPORTS</text>
         <text x="100" y="135" text-anchor="middle" fill="#fff" font-size="14" font-weight="700" font-family="Inter,sans-serif">PICKS</text>
       </svg>`;
+    } else if (item.id === 'picks-bundle') {
+      return `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#a855f7" stroke-width="3"/>
+        <text x="100" y="72" text-anchor="middle" fill="#a855f7" font-size="20" font-weight="900" font-family="Inter,sans-serif">SPORTS</text>
+        <text x="100" y="98" text-anchor="middle" fill="#fff" font-size="20" font-weight="900" font-family="Inter,sans-serif">+</text>
+        <text x="100" y="124" text-anchor="middle" fill="#22c55e" font-size="20" font-weight="900" font-family="Inter,sans-serif">STOCKS</text>
+        <text x="100" y="150" text-anchor="middle" fill="#f59e0b" font-size="14" font-weight="800" font-family="Inter,sans-serif">BUNDLE</text>
+      </svg>`;
     } else if (item.id === 'ai-stocks') {
       return `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#22c55e" stroke-width="3"/>
@@ -490,27 +518,55 @@
       return;
     }
 
-    const total = cart.length * 5;
+    const total = cartTotal(cart);
     let itemsHTML = '';
 
-    const nameMap = { 'ski-mask': 'Ski Mask', 'spider-hoodie': 'Spider Hoodie', 'bape-hoodie': 'Bape Hoodie' };
+    const nameMap = { 'ski-mask': 'Ski Mask', 'spider-hoodie': 'Spider Hoodie', 'bape-hoodie': 'Bape Hoodie', 'picks-bundle': 'AI Picks Bundle' };
     cart.forEach((item, i) => {
       const colorLabel = item.color ? ` &mdash; ${item.color}` : '';
       const itemName = item.name || nameMap[item.id] || item.id;
+      const qty = item.quantity || 1;
       itemsHTML += `
         <div class="cart-item">
           <div>${getItemSVG(item)}</div>
           <div class="details">
             <h3>${itemName}${colorLabel}</h3>
-            <div class="color-tag">${item.id}</div>
+            <div class="color-tag">${item.id}${qty > 1 ? ' &times; ' + qty : ''}</div>
           </div>
-          <div class="item-price">$${item.price || 5}</div>
+          <div class="item-price">$${itemPrice(item) * qty}</div>
           <button class="remove-btn" onclick="removeItem(${i})" title="Remove">&times;</button>
         </div>`;
     });
 
+    // Upsell: has one of the two picks tools (but not both, and no bundle yet)
+    const hasSports = cart.some(i => i.id === 'ai-picks');
+    const hasStocks = cart.some(i => i.id === 'ai-stocks');
+    const hasBundle = cart.some(i => i.id === 'picks-bundle');
+    let upsellHTML = '';
+    if (!hasBundle && (hasSports !== hasStocks)) {
+      const missing = hasSports ? 'AI Stock Picks' : 'AI Sports Picks';
+      upsellHTML = `
+        <div style="margin-top:1rem;padding:1rem 1.2rem;background:linear-gradient(120deg,rgba(34,197,94,0.1),rgba(168,85,247,0.1));border:1px solid rgba(34,197,94,0.35);border-radius:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:800;font-size:0.95rem;">💎 Upgrade to the AI Picks Bundle</div>
+            <div style="color:#9ca3af;font-size:0.85rem;margin-top:2px;">Add ${missing} and pay $8 total instead of $10 — save $2.</div>
+          </div>
+          <button onclick="upgradeToBundle()" style="padding:10px 18px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.85rem;cursor:pointer;white-space:nowrap;">Upgrade — Save $2</button>
+        </div>`;
+    } else if (hasSports && hasStocks && !hasBundle) {
+      upsellHTML = `
+        <div style="margin-top:1rem;padding:1rem 1.2rem;background:linear-gradient(120deg,rgba(34,197,94,0.1),rgba(168,85,247,0.1));border:1px solid rgba(34,197,94,0.35);border-radius:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:800;font-size:0.95rem;">💎 You qualify for the Bundle price</div>
+            <div style="color:#9ca3af;font-size:0.85rem;margin-top:2px;">Combine both picks tools into the bundle and pay $8 instead of $10.</div>
+          </div>
+          <button onclick="upgradeToBundle()" style="padding:10px 18px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.85rem;cursor:pointer;white-space:nowrap;">Combine — Save $2</button>
+        </div>`;
+    }
+
     el.innerHTML = `
       ${itemsHTML}
+      ${upsellHTML}
       <div class="summary">
         <div class="row"><span>Subtotal (${cart.length} item${cart.length > 1 ? 's' : ''})</span><span>$${total}</span></div>
         <div class="promo-section">
@@ -525,6 +581,15 @@
       <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">
         Checkout &mdash; $<span id="checkoutTotal">${total}</span>
       </button>`;
+  }
+
+  function upgradeToBundle() {
+    let cart = getCart().filter(i => i.id !== 'ai-picks' && i.id !== 'ai-stocks');
+    cart.push({ id: 'picks-bundle', name: 'AI Picks Bundle', color: null, quantity: 1 });
+    saveCart(cart);
+    if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
+    render();
+    showToast('Upgraded to the AI Picks Bundle — you saved $2!');
   }
 
   function removeItem(index) {
@@ -550,7 +615,7 @@
     const code = document.getElementById('promoInput').value.trim().toUpperCase();
     const msg = document.getElementById('promoMsg');
     const cart = getCart();
-    const total = cart.length * 5;
+    const total = cartTotal(cart);
 
     if (code === 'JOHNABBY' || code === 'DAY1') {
       promoApplied = true;
@@ -583,7 +648,7 @@
 
     if (promoApplied && promoDiscount > 0) {
       var existing = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
-      localStorage.setItem('purchasedItems', JSON.stringify(existing.concat(cart)));
+      localStorage.setItem('purchasedItems', JSON.stringify(existing.concat(expandForPurchase(cart))));
       localStorage.removeItem('cart');
       if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
       window.location.href = 'success.html?free=1';
@@ -594,7 +659,7 @@
     if (referralCredits > 0) {
       localStorage.setItem('referralCredits', '0');
       var existing2 = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
-      localStorage.setItem('purchasedItems', JSON.stringify(existing2.concat(cart)));
+      localStorage.setItem('purchasedItems', JSON.stringify(existing2.concat(expandForPurchase(cart))));
       localStorage.removeItem('cart');
       if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
       window.location.href = 'success.html?free=1';
@@ -607,7 +672,7 @@
       quantity: item.quantity || 1
     }));
 
-    const total = cart.reduce((sum, item) => sum + 5 * (item.quantity || 1), 0);
+    const total = cartTotal(cart);
     document.getElementById('payAmount').textContent = total;
 
     try {
@@ -672,7 +737,7 @@
       } else {
         e.complete('success');
         var existing3 = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
-        localStorage.setItem('purchasedItems', JSON.stringify(existing3.concat(getCart())));
+        localStorage.setItem('purchasedItems', JSON.stringify(existing3.concat(expandForPurchase(getCart()))));
         localStorage.removeItem('cart');
         window.location.href = 'success.html';
       }
@@ -694,7 +759,7 @@
       btn.textContent = 'Pay Now';
     } else if (paymentIntent.status === 'succeeded') {
       var existing4 = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
-      localStorage.setItem('purchasedItems', JSON.stringify(existing4.concat(getCart())));
+      localStorage.setItem('purchasedItems', JSON.stringify(existing4.concat(expandForPurchase(getCart()))));
       localStorage.removeItem('cart');
       window.location.href = 'success.html';
     }

@@ -34,6 +34,7 @@ const products = {
   'ai-picks': { name: 'AI Sports Picks', price: 500 },
   'ai-stocks': { name: 'AI Stock Picks', price: 500 },
   'ai-video': { name: 'AI Video Splicer', price: 500 },
+  'picks-bundle': { name: 'AI Picks Bundle (Sports + Stocks)', price: 800 },
 };
 
 app.post('/create-payment-intent', async (req, res) => {
