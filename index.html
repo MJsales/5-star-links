@@ -467,16 +467,6 @@
 
 <div class="toast" id="toast"></div>
 
-<div id="reviewOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;align-items:center;justify-content:center;">
-  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.25);border-radius:18px;padding:2rem;width:90%;max-width:400px;position:relative;">
-    <button onclick="closeReviewModal()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:1.5rem;cursor:pointer;">&times;</button>
-    <h2 style="margin-bottom:1rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Write a Review</h2>
-    <div id="reviewModalStars" class="stars" style="text-align:center;font-size:2rem;margin-bottom:1rem;"></div>
-    <textarea id="reviewModalText" placeholder="Tell us what you think..." style="width:100%;padding:12px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;height:80px;resize:none;font-family:'Inter',sans-serif;margin-bottom:12px;"></textarea>
-    <button onclick="submitReview()" style="width:100%;padding:12px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Submit Review</button>
-  </div>
-</div>
-
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-modal">
     <button class="auth-close" onclick="authModule.hideAuth()">&times;</button>
@@ -621,81 +611,6 @@ function updateCount() {
   document.getElementById('cartCount').textContent = count;
 }
 
-function getReviews() { return JSON.parse(localStorage.getItem('reviews') || '{}'); }
-function saveReviews(r) { localStorage.setItem('reviews', JSON.stringify(r)); }
-
-let reviewProductId = null;
-let reviewRating = 0;
-
-function openReviewModal(productId) {
-  reviewProductId = productId;
-  reviewRating = 0;
-  document.getElementById('reviewModalText').value = '';
-  renderReviewStars(0);
-  document.getElementById('reviewOverlay').style.display = 'flex';
-}
-
-function closeReviewModal() {
-  document.getElementById('reviewOverlay').style.display = 'none';
-}
-
-function renderReviewStars(rating) {
-  const container = document.getElementById('reviewModalStars');
-  container.innerHTML = '';
-  for (let i = 1; i <= 5; i++) {
-    const star = document.createElement('span');
-    star.textContent = i <= rating ? '★' : '☆';
-    star.style.color = i <= rating ? '#c084fc' : '#555';
-    star.style.cursor = 'pointer';
-    star.onclick = function() { reviewRating = i; renderReviewStars(i); };
-    container.appendChild(star);
-  }
-}
-
-function submitReview() {
-  if (!reviewProductId || reviewRating === 0) return;
-  const text = document.getElementById('reviewModalText').value.trim();
-  if (!text) return;
-  const reviews = getReviews();
-  if (!reviews[reviewProductId]) reviews[reviewProductId] = [];
-  const name = (window.authModule && window.authModule.getCurrentUser())
-    ? (window.authModule.getCurrentUser().displayName || 'User')
-    : 'Anonymous';
-  reviews[reviewProductId].push({ stars: reviewRating, text: text, name: name, date: new Date().toLocaleDateString() });
-  saveReviews(reviews);
-  closeReviewModal();
-  render();
-  showToast('Review submitted!');
-}
-
-function getAvgRating(productId) {
-  const reviews = getReviews();
-  const list = reviews[productId] || [];
-  if (list.length === 0) return { avg: 0, count: 0 };
-  const sum = list.reduce((s, r) => s + r.stars, 0);
-  return { avg: (sum / list.length).toFixed(1), count: list.length };
-}
-
-function renderStarsHTML(productId) {
-  const { avg } = getAvgRating(productId);
-  let html = '<div class="rating-summary"><span class="avg">' + avg + '</span>';
-  for (let i = 1; i <= 5; i++) {
-    html += '<span style="color:' + (i <= Math.round(avg) ? '#a855f7' : '#333') + ';">★</span>';
-  }
-  html += '</div>';
-  return html;
-}
-
-function renderReviewsHTML(productId) {
-  const reviews = (getReviews()[productId] || []).slice(-3).reverse();
-  if (reviews.length === 0) return '<div style="color:#555;font-size:0.8rem;margin-top:0.5rem;">No reviews yet. Be the first!</div>';
-  return '<div class="review-list">' + reviews.map(function(r) {
-    let stars = '';
-    for (let i = 1; i <= 5; i++) stars += i <= r.stars ? '★' : '☆';
-    return '<div class="review-item"><div class="review-stars">' + stars + '</div><div class="review-text">' + r.text + '</div><div class="review-name">' + r.name + ' &bull; ' + r.date + '</div></div>';
-  }).join('') + '</div>';
-}
-
 function getReferralCode() {
   let code = localStorage.getItem('myReferralCode');
   if (!code) {
@@ -730,28 +645,10 @@ function applyReferral() {
 
 document.getElementById('myReferralCode').value = getReferralCode();
 
-// Always force fresh reviews - clear old cached data
+// Clean up any review data cached by older versions of the site.
 localStorage.removeItem('reviews');
 localStorage.removeItem('reviewsSeeded');
 localStorage.removeItem('reviewsSeededV2');
-const seeded = {
-  'ai-picks': [
-    { stars: 5, text: 'AI called 3 out of 5 games correctly. Impressive.', name: 'Kevin B.', date: '5/29/2026' },
-    { stars: 4, text: 'Fun to use. Predictions are pretty solid.', name: 'Brandon J.', date: '5/24/2026' },
-    { stars: 5, text: 'Worth it for the sports insights alone.', name: 'Terrence D.', date: '5/19/2026' }
-  ],
-  'ai-stocks': [
-    { stars: 5, text: 'Called the NVDA rally perfectly. Made profits.', name: 'Jason W.', date: '5/30/2026' },
-    { stars: 5, text: 'Crypto predictions are on point. BTC call was spot on.', name: 'Ryan M.', date: '5/28/2026' },
-    { stars: 4, text: 'Good for quick market insights. RSI signals are useful.', name: 'Alex K.', date: '5/25/2026' }
-  ],
-  'ai-video': [
-    { stars: 5, text: 'Split a 2hr podcast into 6 TikToks. One got 200K views.', name: 'Marcus T.', date: '6/1/2026' },
-    { stars: 5, text: 'The viral scores it gives are accurate. My Part 3 went crazy.', name: 'Sasha L.', date: '5/30/2026' },
-    { stars: 4, text: 'Great for content creators. Saves hours of editing time.', name: 'Jordan P.', date: '5/27/2026' }
-  ]
-};
-localStorage.setItem('reviews', JSON.stringify(seeded));
 
 function addToCart(id) {
   const cart = getCart();
@@ -782,19 +679,14 @@ function cardHTML(p) {
   const actionHTML = p.linkOnly
     ? `<a href="${p.url}" style="display:block;text-align:center;padding:10px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;margin-top:14px;">Explore Free &rarr;</a>`
     : `<button class="add-btn" onclick="addToCart('${p.id}')">Add to Cart</button>`;
-  const reviewsHTML = (p.linkOnly || p.noReviews) ? '' : `
-      <button onclick="openReviewModal('${p.id}')" style="margin-top:6px;width:100%;padding:8px;background:rgba(168,85,247,0.1);color:#a855f7;border:1px solid rgba(168,85,247,0.2);border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;">Write a Review</button>
-      ${renderReviewsHTML(p.id)}`;
   return `<div class="card${p.featured ? ' featured' : ''}">
       ${badge}
       <div class="card-icon">${p.svg()}</div>
       <h3>${p.name}</h3>
       ${priceHTML}
       <div class="desc">${p.desc}</div>
-      ${(p.linkOnly || p.noReviews) ? '' : renderStarsHTML(p.id)}
       <div class="spacer"></div>
       ${actionHTML}
-      ${reviewsHTML}
     </div>`;
 }
 

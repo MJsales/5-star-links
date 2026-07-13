@@ -167,24 +167,6 @@
   <div id="creditDisplay" style="text-align:center;font-size:0.8rem;color:#666;padding:4px 0;"></div>
 </div>
 
-<div style="max-width:700px;margin:0 auto;width:100%;padding:1rem;">
-  <h2 style="font-size:1.1rem;color:#a855f7;margin-bottom:1rem;font-weight:700;">Customer Reviews</h2>
-  <div id="reviewsContainer"></div>
-  <div style="margin-top:1rem;">
-    <button onclick="openReviewModal()" style="padding:10px 20px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;">Write a Review</button>
-  </div>
-</div>
-
-<div id="reviewOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;align-items:center;justify-content:center;">
-  <div style="background:linear-gradient(145deg,#0d0815,#110a1a);border:1px solid rgba(168,85,247,0.25);border-radius:18px;padding:2rem;width:90%;max-width:400px;position:relative;">
-    <button onclick="closeReviewModal()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#555;font-size:1.5rem;cursor:pointer;">&times;</button>
-    <h2 style="margin-bottom:1rem;font-size:1.2rem;text-align:center;background:linear-gradient(135deg,#fff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Write a Review</h2>
-    <div id="reviewModalStars" style="text-align:center;font-size:2rem;margin-bottom:1rem;"></div>
-    <textarea id="reviewModalText" placeholder="Tell us what you think..." style="width:100%;padding:12px;background:#050208;border:1px solid rgba(168,85,247,0.2);border-radius:10px;color:#fff;font-size:0.95rem;outline:none;height:80px;resize:none;font-family:'Inter',sans-serif;margin-bottom:12px;"></textarea>
-    <button onclick="submitReview()" style="width:100%;padding:12px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Submit Review</button>
-  </div>
-</div>
-
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-modal">
     <button class="auth-close" onclick="authModule.hideAuth()">&times;</button>
@@ -673,67 +655,6 @@ function generatePrediction(input) {
     scheduledGames.slice(0, 6).map(function(g) { return '&#8226; ' + g.date + ' ' + g.time + ': ' + g.away + ' @ ' + g.home + ' (' + g.sport.toUpperCase() + ')'; }).join('<br>') +
     '<br><br>Ask me about any of these matchups!';
 }
-
-var reviewRating = 0;
-
-function getReviews() { return JSON.parse(localStorage.getItem('sportsReviews') || '[]'); }
-function saveReviews(r) { localStorage.setItem('sportsReviews', JSON.stringify(r)); }
-
-function renderReviews() {
-  var reviews = getReviews();
-  var container = document.getElementById('reviewsContainer');
-  if (reviews.length === 0) {
-    container.innerHTML = '<div style="color:#555;font-size:0.9rem;">No reviews yet. Be the first!</div>';
-    return;
-  }
-  container.innerHTML = reviews.slice().reverse().map(function(r) {
-    var stars = '';
-    for (var i = 1; i <= 5; i++) stars += i <= r.stars ? '★' : '☆';
-    return '<div style="background:#110a1a;border:1px solid rgba(168,85,247,0.15);border-radius:12px;padding:1rem;margin-bottom:0.75rem;">' +
-      '<div style="color:#a855f7;font-size:1.1rem;margin-bottom:4px;">' + stars + '</div>' +
-      '<div style="color:#ccc;font-size:0.95rem;margin-bottom:6px;">' + r.text + '</div>' +
-      '<div style="color:#555;font-size:0.8rem;">' + r.name + ' &bull; ' + r.date + '</div>' +
-    '</div>';
-  }).join('');
-}
-
-function openReviewModal() {
-  reviewRating = 0;
-  document.getElementById('reviewModalText').value = '';
-  renderStars(0);
-  document.getElementById('reviewOverlay').style.display = 'flex';
-}
-
-function closeReviewModal() {
-  document.getElementById('reviewOverlay').style.display = 'none';
-}
-
-function renderStars(rating) {
-  var container = document.getElementById('reviewModalStars');
-  container.innerHTML = '';
-  for (var i = 1; i <= 5; i++) {
-    var star = document.createElement('span');
-    star.textContent = i <= rating ? '★' : '☆';
-    star.style.color = i <= rating ? '#c084fc' : '#555';
-    star.style.cursor = 'pointer';
-    star.onclick = (function(val) { return function() { reviewRating = val; renderStars(val); }; })(i);
-    container.appendChild(star);
-  }
-}
-
-function submitReview() {
-  if (reviewRating === 0) return;
-  var text = document.getElementById('reviewModalText').value.trim();
-  if (!text) return;
-  var reviews = getReviews();
-  reviews.push({ stars: reviewRating, text: text, name: 'Customer', date: new Date().toLocaleDateString() });
-  saveReviews(reviews);
-  closeReviewModal();
-renderReviews();
-updateCreditDisplay();
-}
-
-renderReviews();
 
 var authMode = 'signin';
 function toggleAuthMode(e) {

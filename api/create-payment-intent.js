@@ -4,8 +4,8 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 const products = {
   'ski-mask': { name: 'Ski Mask', price: 500 },
-  'spider-hoodie': { name: 'Spider Hoodie', price: 500 },
-  'bape-hoodie': { name: 'Bape Hoodie', price: 500 },
+  'spider-hoodie': { name: 'S Hoodie', price: 500 },
+  'bape-hoodie': { name: 'B Hoodie', price: 500 },
   'ai-picks': { name: 'AI Sports Picks', price: 500 },
   'ai-stocks': { name: 'AI Stock Picks', price: 500 },
   'ai-video': { name: 'AI Video Splicer', price: 500 },

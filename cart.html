@@ -510,7 +510,7 @@
     const total = cartTotal(cart);
     let itemsHTML = '';
 
-    const nameMap = { 'ski-mask': 'Ski Mask', 'spider-hoodie': 'Spider Hoodie', 'bape-hoodie': 'Bape Hoodie', 'picks-bundle': 'AI Picks Bundle' };
+    const nameMap = { 'ski-mask': 'Ski Mask', 'spider-hoodie': 'S Hoodie', 'bape-hoodie': 'B Hoodie', 'picks-bundle': 'AI Picks Bundle' };
     cart.forEach((item, i) => {
       const colorLabel = item.color ? ` &mdash; ${item.color}` : '';
       const itemName = item.name || nameMap[item.id] || item.id;
