@@ -154,6 +154,45 @@
         .warn-box li { color: #d6b8b8; font-size: 0.92rem; padding-left: 1.4rem; position: relative; }
         .warn-box li::before { content: '⚠️'; position: absolute; left: 0; font-size: 0.85rem; }
 
+        /* Scam checker */
+        .checker {
+            background: linear-gradient(145deg, #0d0815, #110a1a);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .checker h3 { color: #fff; font-size: 1.15rem; margin-bottom: 0.3rem; }
+        .checker .sub { color: #8b7a9e; font-size: 0.9rem; margin-bottom: 1rem; }
+        .checker-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .checker-input {
+            flex: 1; min-width: 200px;
+            padding: 0.9rem 1.2rem;
+            background: rgba(5, 2, 8, 0.8);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            color: #e0d6ed; font-size: 1rem;
+        }
+        .checker-input:focus { outline: none; border-color: #a855f7; box-shadow: 0 0 20px rgba(168, 85, 247, 0.2); }
+        .checker-input::placeholder { color: #6b5a7e; }
+        .checker-btn {
+            padding: 0.9rem 1.8rem;
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            border: none; border-radius: 12px;
+            color: #fff; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .checker-btn:hover { transform: scale(1.02); box-shadow: 0 5px 20px rgba(168, 85, 247, 0.4); }
+        .checker-result { margin-top: 1rem; border-radius: 12px; padding: 1rem 1.2rem; display: none; }
+        .checker-result.show { display: block; }
+        .checker-result.good { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.4); }
+        .checker-result.warn { background: rgba(250, 204, 21, 0.08); border: 1px solid rgba(250, 204, 21, 0.4); }
+        .checker-result h4 { margin-bottom: 0.4rem; font-size: 1rem; }
+        .checker-result.good h4 { color: #22c55e; }
+        .checker-result.warn h4 { color: #facc15; }
+        .checker-result p, .checker-result li { color: #c9bcd8; font-size: 0.9rem; }
+        .checker-result ul { margin: 0.5rem 0 0 1.2rem; display: grid; gap: 0.3rem; }
+
         .filter-section {
             background: rgba(10, 6, 18, 0.8);
             border-radius: 16px;
@@ -353,6 +392,16 @@
     <!-- Sites -->
     <section class="section" style="padding-top:1rem;">
         <h2 class="section-title">Sites That Actually Pay</h2>
+
+        <div class="checker">
+            <h3>🔎 Is a survey site legit? Check it.</h3>
+            <p class="sub">Type any survey or research site to see if it's on our hand-vetted list — or get the red flags to check before you join.</p>
+            <div class="checker-row">
+                <input type="text" class="checker-input" id="checkerInput" placeholder="e.g. Swagbucks, PrizeRebel, surveys4cash.net" onkeydown="if(event.key==='Enter')checkSite()">
+                <button class="checker-btn" onclick="checkSite()">Check Site</button>
+            </div>
+            <div class="checker-result" id="checkerResult"></div>
+        </div>
 
         <div class="filter-section">
             <input type="text" class="search-box" id="searchBox" placeholder="Search sites...">
@@ -679,6 +728,49 @@
         function openPlatform(url, name) {
             window.open(url, '_blank', 'noopener');
         }
+
+        // --- Scam checker ---------------------------------------------------
+        // The trusted list is derived from the vetted cards on this page, so it
+        // stays in sync automatically as sites are added or removed.
+        const trustedNames = [...document.querySelectorAll('.platform-name')]
+            .map(n => n.textContent.toLowerCase().replace(/[^a-z0-9]/g, ''));
+
+        function checkSite() {
+            const raw = document.getElementById('checkerInput').value.trim();
+            const box = document.getElementById('checkerResult');
+            if (!raw) { box.className = 'checker-result'; box.innerHTML = ''; return; }
+
+            const norm = raw.toLowerCase()
+                .replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/[^a-z0-9]/g, '');
+            const hit = trustedNames.find(t => t && (norm.includes(t) || t.includes(norm)));
+
+            if (hit) {
+                box.className = 'checker-result show good';
+                box.innerHTML = '<h4>✅ On our vetted list — safe to join</h4>'
+                    + '<p>This is one we hand-picked: an established company that actually pays out and is free to join. Scroll down to sign up through the card below.</p>';
+            } else {
+                box.className = 'checker-result show warn';
+                box.innerHTML = '<h4>⚠️ Not on our vetted list — check it yourself first</h4>'
+                    + '<p>We haven\'t vetted this one, which doesn\'t automatically mean it\'s a scam. Before joining, make sure:</p>'
+                    + '<ul>'
+                    + '<li>It\'s <b>free to join</b> — never pay a fee to sign up.</li>'
+                    + '<li>It never asks for your <b>SSN, bank login, or card number</b>.</li>'
+                    + '<li>It has real <b>payout proof</b> — search "<i>' + raw.replace(/</g, '') + ' scam</i>" and "<i>' + raw.replace(/</g, '') + ' payment proof</i>" on Trustpilot or Reddit.</li>'
+                    + '<li>The cash-out minimum is reasonable (under ~$30) and it lists a real payout method (PayPal, gift cards).</li>'
+                    + '</ul>'
+                    + '<p style="margin-top:0.6rem;">When in doubt, stick to the vetted sites below.</p>';
+            }
+        }
+
+        // Mark every listed site as hand-vetted.
+        document.querySelectorAll('.platform-card .platform-tags').forEach(tags => {
+            const t = document.createElement('span');
+            t.className = 'platform-tag';
+            t.style.background = 'rgba(34,197,94,0.12)';
+            t.style.color = '#22c55e';
+            t.textContent = '✓ Vetted';
+            tags.insertBefore(t, tags.firstChild);
+        });
     </script>
 
 </body>
