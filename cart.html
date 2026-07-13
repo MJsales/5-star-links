@@ -251,12 +251,7 @@
       background: none; border: none; color: #555; font-size: 1.5rem; cursor: pointer;
     }
     .payment-close:hover { color: #fff; }
-    #apple-pay-button {
-      width: 100%; padding: 14px; background: #000; color: #fff;
-      border: 1px solid #333; border-radius: 10px; font-size: 1rem;
-      font-weight: 600; cursor: pointer; margin-bottom: 1rem; display: none;
-    }
-    #apple-pay-button:hover { background: #222; }
+    #payment-request-button { margin-bottom: 1rem; }
     .divider {
       text-align: center; color: #444; margin: 1rem 0; font-size: 0.85rem;
     }
@@ -352,8 +347,8 @@
   <div class="payment-modal">
     <button class="payment-close" onclick="closePayment()">&times;</button>
     <h2>Pay $<span id="payAmount">0</span></h2>
-    <button id="apple-pay-button"> Pay</button>
-    <div class="divider">or pay with card</div>
+    <div id="payment-request-button"></div>
+    <div class="divider" id="pay-divider" style="display:none">or pay with card</div>
     <div id="card-element"></div>
     <div id="card-errors"></div>
     <button class="pay-btn" id="payBtn" onclick="submitPayment()">Pay Now</button>
@@ -640,7 +635,7 @@
   }
 
   const publishableKey = 'pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3';
-  let stripe, cardElement, clientSecret;
+  let stripe, cardElement, clientSecret, paymentRequest, stripeInited = false;
 
   async function checkout() {
     const cart = getCart();
@@ -695,6 +690,18 @@
   }
 
   function initStripe() {
+    const amount = parseInt(document.getElementById('payAmount').textContent) * 100;
+
+    // Re-opening checkout: just refresh the express-pay amount so the
+    // Apple/Google Pay sheet charges the current cart total.
+    if (stripeInited) {
+      if (paymentRequest) {
+        paymentRequest.update({ total: { label: '5 Star Links', amount } });
+      }
+      return;
+    }
+    stripeInited = true;
+
     stripe = Stripe(publishableKey);
     const elements = stripe.elements();
     cardElement = elements.create('card', {
@@ -709,22 +716,31 @@
       document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
     });
 
-    const paymentRequest = stripe.paymentRequest({
+    paymentRequest = stripe.paymentRequest({
       country: 'US',
       currency: 'usd',
-      total: { label: '5 Star Links', amount: parseInt(document.getElementById('payAmount').textContent) * 100 },
+      total: { label: '5 Star Links', amount },
       requestPayerName: true,
       requestPayerEmail: true,
     });
 
-    paymentRequest.canMakePayment().then((result) => {
-      if (result && (result.applePay || result.googlePay)) {
-        document.getElementById('apple-pay-button').style.display = 'block';
-      }
+    // Stripe's PaymentRequestButton renders the REAL branded button: the
+    // Apple Pay logo + "Pay" in Safari on Apple devices, and the Google Pay
+    // button in Chrome/Android. Falls back to the card form when neither is
+    // available, so nothing is lost on unsupported browsers.
+    const prButton = elements.create('paymentRequestButton', {
+      paymentRequest,
+      style: { paymentRequestButton: { type: 'default', theme: 'dark', height: '48px' } }
     });
 
-    document.getElementById('apple-pay-button').addEventListener('click', () => {
-      paymentRequest.show();
+    paymentRequest.canMakePayment().then((result) => {
+      if (result) {
+        prButton.mount('#payment-request-button');
+        document.getElementById('pay-divider').style.display = 'block';
+      } else {
+        document.getElementById('payment-request-button').style.display = 'none';
+        document.getElementById('pay-divider').style.display = 'none';
+      }
     });
 
     paymentRequest.on('paymentmethod', async (e) => {
