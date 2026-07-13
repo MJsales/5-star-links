@@ -119,6 +119,24 @@
       'ai-video': { name: 'AI Video Splicer', url: 'video.html' }
     };
 
+    // Returning from a redirect-based method (Klarna, Cash App Pay): Stripe
+    // appends redirect_status. Finalize the pending purchase that cart.html
+    // snapshotted before sending the buyer off-site.
+    const params = new URLSearchParams(window.location.search);
+    const redirectStatus = params.get('redirect_status');
+    if (redirectStatus === 'succeeded' || redirectStatus === 'processing') {
+      const pending = JSON.parse(localStorage.getItem('pendingPurchase') || '[]');
+      if (pending.length) {
+        const existing = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+        localStorage.setItem('purchasedItems', JSON.stringify(existing.concat(pending)));
+        localStorage.removeItem('pendingPurchase');
+        localStorage.removeItem('cart');
+      }
+    } else if (redirectStatus === 'failed') {
+      localStorage.removeItem('pendingPurchase');
+      window.location.href = 'cart.html';
+    }
+
     const cart = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
     const container = document.getElementById('products');
 

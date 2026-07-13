@@ -251,15 +251,8 @@
       background: none; border: none; color: #555; font-size: 1.5rem; cursor: pointer;
     }
     .payment-close:hover { color: #fff; }
-    #payment-request-button { margin-bottom: 1rem; }
-    .divider {
-      text-align: center; color: #444; margin: 1rem 0; font-size: 0.85rem;
-    }
-    #card-element {
-      padding: 12px; background: #050208;
-      border: 1px solid rgba(168,85,247,0.2); border-radius: 10px; margin-bottom: 1rem;
-    }
-    #card-errors { color: #c02828; font-size: 0.85rem; margin-bottom: 1rem; min-height: 1.2em; }
+    #payment-element { margin-bottom: 1rem; }
+    #payment-message { color: #c02828; font-size: 0.85rem; margin-bottom: 1rem; min-height: 1.2em; }
     .pay-btn {
       width: 100%; padding: 14px;
       background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
@@ -347,10 +340,8 @@
   <div class="payment-modal">
     <button class="payment-close" onclick="closePayment()">&times;</button>
     <h2>Pay $<span id="payAmount">0</span></h2>
-    <div id="payment-request-button"></div>
-    <div class="divider" id="pay-divider" style="display:none">or pay with card</div>
-    <div id="card-element"></div>
-    <div id="card-errors"></div>
+    <div id="payment-element"></div>
+    <div id="payment-message"></div>
     <button class="pay-btn" id="payBtn" onclick="submitPayment()">Pay Now</button>
   </div>
 </div>
@@ -635,7 +626,7 @@
   }
 
   const publishableKey = 'pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3';
-  let stripe, cardElement, clientSecret, paymentRequest, stripeInited = false;
+  let stripe, elements, clientSecret;
 
   async function checkout() {
     const cart = getCart();
@@ -679,7 +670,7 @@
       const data = await res.json();
       if (data.clientSecret) {
         clientSecret = data.clientSecret;
-        initStripe();
+        await mountPaymentElement(clientSecret);
         document.getElementById('paymentOverlay').classList.add('active');
       } else {
         showToast('Failed to start checkout');
@@ -689,75 +680,45 @@
     }
   }
 
-  function initStripe() {
-    const amount = parseInt(document.getElementById('payAmount').textContent) * 100;
+  // Stripe's Payment Element renders every method enabled in the dashboard
+  // in one form: card, Apple Pay, Google Pay, Cash App Pay, Klarna, Link.
+  // Each PaymentIntent has its own clientSecret (and amount), so rebuild the
+  // element on every checkout open.
+  async function mountPaymentElement(secret) {
+    if (!stripe) stripe = Stripe(publishableKey);
 
-    // Re-opening checkout: just refresh the express-pay amount so the
-    // Apple/Google Pay sheet charges the current cart total.
-    if (stripeInited) {
-      if (paymentRequest) {
-        paymentRequest.update({ total: { label: '5 Star Links', amount } });
-      }
-      return;
+    if (elements) {
+      const prev = elements.getElement('payment');
+      if (prev) prev.unmount();
     }
-    stripeInited = true;
 
-    stripe = Stripe(publishableKey);
-    const elements = stripe.elements();
-    cardElement = elements.create('card', {
-      style: {
-        base: { color: '#fff', fontSize: '16px', '::placeholder': { color: '#666' } },
-        invalid: { color: '#c02828' }
-      }
-    });
-    cardElement.mount('#card-element');
+    const appearance = {
+      theme: 'night',
+      variables: {
+        colorPrimary: '#a855f7',
+        colorBackground: '#0d0815',
+        colorText: '#ffffff',
+        colorTextSecondary: '#a78bfa',
+        borderRadius: '10px',
+        fontFamily: 'Inter, sans-serif',
+      },
+    };
+    elements = stripe.elements({ clientSecret: secret, appearance });
+    const paymentElement = elements.create('payment', { layout: 'tabs' });
+    paymentElement.mount('#payment-element');
+    document.getElementById('payment-message').textContent = '';
+  }
 
-    cardElement.on('change', (event) => {
-      document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
-    });
-
-    paymentRequest = stripe.paymentRequest({
-      country: 'US',
-      currency: 'usd',
-      total: { label: '5 Star Links', amount },
-      requestPayerName: true,
-      requestPayerEmail: true,
-    });
-
-    // Stripe's PaymentRequestButton renders the REAL branded button: the
-    // Apple Pay logo + "Pay" in Safari on Apple devices, and the Google Pay
-    // button in Chrome/Android. Falls back to the card form when neither is
-    // available, so nothing is lost on unsupported browsers.
-    const prButton = elements.create('paymentRequestButton', {
-      paymentRequest,
-      style: { paymentRequestButton: { type: 'default', theme: 'dark', height: '48px' } }
-    });
-
-    paymentRequest.canMakePayment().then((result) => {
-      if (result) {
-        prButton.mount('#payment-request-button');
-        document.getElementById('pay-divider').style.display = 'block';
-      } else {
-        document.getElementById('payment-request-button').style.display = 'none';
-        document.getElementById('pay-divider').style.display = 'none';
-      }
-    });
-
-    paymentRequest.on('paymentmethod', async (e) => {
-      const { error } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: e.paymentMethod.id
-      }, { handleActions: false });
-      if (error) {
-        e.complete('fail');
-        showToast(error.message);
-      } else {
-        e.complete('success');
-        var existing3 = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
-        localStorage.setItem('purchasedItems', JSON.stringify(existing3.concat(expandForPurchase(getCart()))));
-        localStorage.removeItem('cart');
-        window.location.href = 'success.html';
-      }
-    });
+  // Record the purchase and clear the cart. Kept as a snapshot in
+  // pendingPurchase first so it survives a redirect (Klarna / Cash App Pay
+  // send the buyer off-site to approve, then back to success.html).
+  function finalizePurchase() {
+    const pending = JSON.parse(localStorage.getItem('pendingPurchase') || '[]');
+    const existing = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+    localStorage.setItem('purchasedItems', JSON.stringify(existing.concat(pending)));
+    localStorage.removeItem('pendingPurchase');
+    localStorage.removeItem('cart');
+    if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
   }
 
   async function submitPayment() {
@@ -765,19 +726,33 @@
     btn.disabled = true;
     btn.textContent = 'Processing...';
 
-    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: { card: cardElement }
+    // Snapshot before confirm so a redirect-based method can finalize on return.
+    localStorage.setItem('pendingPurchase', JSON.stringify(expandForPurchase(getCart())));
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: window.location.origin + '/success.html' },
+      redirect: 'if_required',
     });
 
     if (error) {
-      document.getElementById('card-errors').textContent = error.message;
+      document.getElementById('payment-message').textContent = error.message || 'Payment failed. Please try again.';
+      localStorage.removeItem('pendingPurchase');
       btn.disabled = false;
       btn.textContent = 'Pay Now';
-    } else if (paymentIntent.status === 'succeeded') {
-      var existing4 = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
-      localStorage.setItem('purchasedItems', JSON.stringify(existing4.concat(expandForPurchase(getCart()))));
-      localStorage.removeItem('cart');
+      return;
+    }
+
+    // No redirect was needed (card, Apple Pay, Google Pay, Link, Cash App on
+    // this device). Grant access on succeeded or processing.
+    if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing')) {
+      finalizePurchase();
       window.location.href = 'success.html';
+    } else {
+      document.getElementById('payment-message').textContent = 'Payment could not be completed. Please try again.';
+      localStorage.removeItem('pendingPurchase');
+      btn.disabled = false;
+      btn.textContent = 'Pay Now';
     }
   }
 
