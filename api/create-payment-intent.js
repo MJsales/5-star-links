@@ -10,6 +10,7 @@ const products = {
   'ai-stocks': { name: 'AI Stock Picks', price: 500 },
   'ai-video': { name: 'AI Video Splicer', price: 500 },
   'picks-bundle': { name: 'AI Picks Bundle (Sports + Stocks)', price: 800 },
+  'all-access': { name: 'All-Access Pass (all AI tools)', price: 1200 },
 };
 
 module.exports = async (req, res) => {

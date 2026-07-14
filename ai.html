@@ -208,7 +208,11 @@ function sendMsg() {
 
   getCredits().then(function(credits) {
     if (credits <= 0) {
-      messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>You\'ve used all 10 free predictions for today. Come back tomorrow!</div>';
+      messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>You\'ve used all 10 free predictions for today.<br><br>' +
+        '<b>Go unlimited</b> — get instant, unlimited AI picks:<br>' +
+        '<button onclick="goBuy(\'ai-picks\')" style="margin-top:8px;margin-right:8px;padding:10px 16px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Unlock Sports Picks — $5</button>' +
+        '<button onclick="goBuy(\'all-access\')" style="margin-top:8px;padding:10px 16px;background:linear-gradient(135deg,#f59e0b,#a855f7);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">All-Access — $12</button>' +
+        '<br><span style="color:#666;font-size:0.8rem;">…or come back tomorrow for 10 more free.</span></div>';
       messages.scrollTop = messages.scrollHeight;
       return;
     }
@@ -256,8 +260,28 @@ function sendMsg() {
   });
 }
 
+// Owners of AI Sports Picks (directly or via a bundle / All-Access) get
+// unlimited predictions.
+function hasUnlimited() {
+  try {
+    var owned = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+    return owned.some(function(i) { return i.id === 'ai-picks'; });
+  } catch (e) { return false; }
+}
+
+function goBuy(id) {
+  var cart = JSON.parse(localStorage.getItem('cart') || '[]');
+  if (!cart.some(function(i) { return i.id === id; })) {
+    var names = { 'ai-picks': 'AI Sports Picks', 'all-access': 'All-Access Pass' };
+    cart.push({ id: id, name: names[id] || id, color: null, quantity: 1 });
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }
+  window.location.href = 'cart.html';
+}
+
 function getCredits() {
   return new Promise(function(resolve) {
+    if (hasUnlimited()) { resolve(9999); return; }
     var user = window.authModule && window.authModule.getCurrentUser();
     if (!user) { resolve(10); return; }
     var today = new Date().toDateString();
@@ -289,6 +313,7 @@ function useCredit() {
 function updateCreditDisplay() {
   var el = document.getElementById('creditDisplay');
   if (!el) return;
+  if (hasUnlimited()) { el.textContent = '★ Unlimited predictions (unlocked)'; el.style.color = '#22c55e'; return; }
   getCredits().then(function(remaining) {
     el.textContent = remaining + '/10 free predictions today';
     if (remaining <= 0) el.style.color = '#ef4444';

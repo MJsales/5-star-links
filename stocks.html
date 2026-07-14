@@ -189,6 +189,7 @@
     <div contenteditable="true" class="chat-input" id="chatInput" placeholder="Ask about any stock or crypto..." onkeypress="if(event.key==='Enter'){event.preventDefault();sendMsg();}" style="min-height:48px;"></div>
     <button class="send-btn" onclick="sendMsg()">Send</button>
   </div>
+  <div id="creditDisplay" style="text-align:center;font-size:0.8rem;color:#666;padding:4px 0;"></div>
 </div>
 
 <div style="max-width:700px;margin:0 auto;width:100%;padding:0 1rem 1rem;">
@@ -357,6 +358,51 @@ const REFERRAL_LINKS = {
   });
 })();
 
+// Owners of AI Stock Picks (directly or via All-Access) get unlimited picks.
+function stockHasUnlimited() {
+  try {
+    return JSON.parse(localStorage.getItem('purchasedItems') || '[]')
+      .some(function(i) { return i.id === 'ai-stocks'; });
+  } catch (e) { return false; }
+}
+
+function goBuy(id) {
+  var cart = JSON.parse(localStorage.getItem('cart') || '[]');
+  if (!cart.some(function(i) { return i.id === id; })) {
+    var names = { 'ai-stocks': 'AI Stock Picks', 'all-access': 'All-Access Pass' };
+    cart.push({ id: id, name: names[id] || id, color: null, quantity: 1 });
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }
+  window.location.href = 'cart.html';
+}
+
+function stockCreditsLeft() {
+  if (stockHasUnlimited()) return 9999;
+  var today = new Date().toDateString();
+  var raw = JSON.parse(localStorage.getItem('stockCredits') || '{}');
+  if (raw.date !== today) return 10;
+  return Math.max(0, 10 - (raw.count || 0));
+}
+
+function useStockCredit() {
+  if (stockHasUnlimited()) return;
+  var today = new Date().toDateString();
+  var raw = JSON.parse(localStorage.getItem('stockCredits') || '{}');
+  if (raw.date !== today) raw = { date: today, count: 0 };
+  raw.count = (raw.count || 0) + 1;
+  localStorage.setItem('stockCredits', JSON.stringify(raw));
+  updateStockCredit();
+}
+
+function updateStockCredit() {
+  var el = document.getElementById('creditDisplay');
+  if (!el) return;
+  if (stockHasUnlimited()) { el.textContent = '★ Unlimited picks (unlocked)'; el.style.color = '#22c55e'; return; }
+  var left = stockCreditsLeft();
+  el.textContent = left + '/10 free picks today';
+  el.style.color = left <= 0 ? '#ef4444' : (left <= 3 ? '#f59e0b' : '#666');
+}
+
 function sendMsg() {
   var input = document.getElementById('chatInput');
   var text = input.textContent.trim();
@@ -367,10 +413,21 @@ function sendMsg() {
   messages.innerHTML += '<div class="msg user">' + escHtml(text) + '</div>';
   messages.scrollTop = messages.scrollHeight;
 
+  if (stockCreditsLeft() <= 0) {
+    messages.innerHTML += '<div class="msg ai"><div class="label">AI Market Bot</div>You\'ve used all 10 free picks for today.<br><br>' +
+      '<b>Go unlimited</b> — get instant, unlimited AI stock &amp; crypto picks:<br>' +
+      '<button onclick="goBuy(\'ai-stocks\')" style="margin-top:8px;margin-right:8px;padding:10px 16px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Unlock Stock Picks — $5</button>' +
+      '<button onclick="goBuy(\'all-access\')" style="margin-top:8px;padding:10px 16px;background:linear-gradient(135deg,#f59e0b,#a855f7);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">All-Access — $12</button>' +
+      '<br><span style="color:#666;font-size:0.8rem;">…or come back tomorrow for 10 more free.</span></div>';
+    messages.scrollTop = messages.scrollHeight;
+    return;
+  }
+
   setTimeout(function() {
     var reply = generatePrediction(text);
     messages.innerHTML += '<div class="msg ai"><div class="label">AI Market Bot</div>' + reply + '</div>';
     messages.scrollTop = messages.scrollHeight;
+    useStockCredit();
   }, 800 + Math.random() * 1200);
 }
 
@@ -406,6 +463,7 @@ function fetchLiveCryptoPrices() {
 }
 
 setInterval(fetchLiveCryptoPrices, 60000);
+updateStockCredit();
 
 var lastAlerts = {};
 
