@@ -263,6 +263,9 @@
       cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
     }
     .pay-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .wheel-wrap { position: relative; width: 200px; height: 200px; margin: 1rem auto 0; }
+    .wheel { width: 200px; height: 200px; border-radius: 50%; position: relative; border: 4px solid rgba(255,255,255,0.15); box-shadow: 0 0 0 4px rgba(168,85,247,0.3); }
+    .wheel-pointer { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 22px solid #fff; z-index: 5; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
   </style>
 </head>
 <body>
@@ -349,6 +352,19 @@
   </div>
 </div>
 
+<div class="payment-overlay" id="wheelOverlay">
+  <div class="payment-modal" style="text-align:center;max-width:360px;">
+    <button class="payment-close" onclick="closeWheel()">&times;</button>
+    <h2 style="text-align:center;">🎡 Spin to Win</h2>
+    <div class="wheel-wrap">
+      <div class="wheel-pointer"></div>
+      <div class="wheel" id="wheel"></div>
+    </div>
+    <button class="pay-btn" id="spinBtn" onclick="spinWheel()" style="margin-top:1.2rem;">Spin</button>
+    <div id="wheelResult" style="margin-top:1rem;min-height:2.4em;color:#fff;font-weight:700;"></div>
+  </div>
+</div>
+
 <script>
   const colorData = {
     black:  { fill: '#1a1a1a', stroke: '#000' },
@@ -364,6 +380,79 @@
 
   function getCart() { return JSON.parse(localStorage.getItem('cart') || '[]'); }
   function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); }
+
+  const DISCORD_INVITE = 'https://discord.gg/N8zSTmvZd';
+
+  // Spin-to-win: a won percentage discount is stored until it's used on a
+  // completed purchase. Only 5/10/15 are ever honored.
+  function getSpinDiscount() {
+    const v = parseInt(localStorage.getItem('spinDiscountPct') || '0', 10);
+    return [5, 10, 15].includes(v) ? v : 0;
+  }
+
+  const WHEEL_PRIZES = [
+    { label: '5% OFF', type: 'pct', val: 5, color: '#a855f7' },
+    { label: '10% OFF', type: 'pct', val: 10, color: '#7c3aed' },
+    { label: 'FREE\nDISCORD', type: 'discord', color: '#5865F2' },
+    { label: '15% OFF', type: 'pct', val: 15, color: '#f59e0b' },
+    { label: '5% OFF', type: 'pct', val: 5, color: '#9333ea' },
+    { label: '10% OFF', type: 'pct', val: 10, color: '#6d28d9' },
+  ];
+  let wheelSpun = false;
+
+  function buildWheel() {
+    const wheel = document.getElementById('wheel');
+    const seg = 360 / WHEEL_PRIZES.length;
+    const stops = WHEEL_PRIZES.map((p, i) => `${p.color} ${i * seg}deg ${(i + 1) * seg}deg`).join(',');
+    wheel.style.background = `conic-gradient(${stops})`;
+    wheel.innerHTML = WHEEL_PRIZES.map((p, i) => {
+      const a = i * seg + seg / 2;
+      return `<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(${a}deg) translateY(-64px) rotate(${-a}deg);font-size:0.68rem;font-weight:800;color:#fff;text-align:center;white-space:pre-line;text-shadow:0 1px 2px rgba(0,0,0,0.7);line-height:1.05;">${p.label}</div>`;
+    }).join('');
+  }
+
+  function openWheel() {
+    if (localStorage.getItem('spinUsed') === '1') return;
+    buildWheel();
+    wheelSpun = false;
+    const wheel = document.getElementById('wheel');
+    wheel.style.transition = 'none';
+    wheel.style.transform = 'rotate(0deg)';
+    document.getElementById('wheelResult').textContent = '';
+    const btn = document.getElementById('spinBtn');
+    btn.disabled = false; btn.textContent = 'Spin';
+    document.getElementById('wheelOverlay').classList.add('active');
+  }
+
+  function closeWheel() { document.getElementById('wheelOverlay').classList.remove('active'); }
+
+  function spinWheel() {
+    if (wheelSpun) return;
+    wheelSpun = true;
+    const btn = document.getElementById('spinBtn');
+    btn.disabled = true;
+    const seg = 360 / WHEEL_PRIZES.length;
+    const idx = Math.floor(Math.random() * WHEEL_PRIZES.length);
+    const jitter = (Math.random() - 0.5) * (seg - 16);
+    const finalDeg = 360 * 5 - (idx * seg + seg / 2) - jitter;
+    const wheel = document.getElementById('wheel');
+    wheel.style.transition = 'transform 4s cubic-bezier(0.17,0.67,0.2,1)';
+    requestAnimationFrame(() => { wheel.style.transform = 'rotate(' + finalDeg + 'deg)'; });
+    setTimeout(() => {
+      const prize = WHEEL_PRIZES[idx];
+      localStorage.setItem('spinUsed', '1');
+      const res = document.getElementById('wheelResult');
+      if (prize.type === 'discord') {
+        res.innerHTML = '🎉 You won <b style="color:#8b93ff;">Free Discord Access</b>!<br>' +
+          '<a href="' + DISCORD_INVITE + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;padding:8px 16px;background:#5865F2;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Join the Discord →</a>';
+      } else {
+        localStorage.setItem('spinDiscountPct', String(prize.val));
+        res.innerHTML = '🎉 You won <b style="color:#22c55e;">' + prize.val + '% OFF</b>! Applied at checkout.';
+        setTimeout(() => { closeWheel(); render(); }, 1800);
+      }
+      btn.textContent = 'Done';
+    }, 4100);
+  }
 
   // Per-item prices in dollars; everything not listed is the flat $5.
   const itemPrices = { 'picks-bundle': 8, 'all-access': 12 };
@@ -564,11 +653,26 @@
         </div>`;
     }
 
+    const spinPct = getSpinDiscount();
+    const spinUsed = localStorage.getItem('spinUsed') === '1';
+    const discounted = spinPct > 0 ? +(total * (1 - spinPct / 100)).toFixed(2) : total;
+    const spinPromptHTML = !spinUsed
+      ? `<button onclick="openWheel()" style="width:100%;margin-top:1rem;padding:0.9rem;background:linear-gradient(135deg,#f59e0b,#a855f7);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:0.95rem;cursor:pointer;">🎡 Spin to Win a Discount!</button>`
+      : '';
+    const discountRowHTML = spinPct > 0
+      ? `<div class="row" style="color:#22c55e;"><span>🎡 Spin discount (${spinPct}% off)</span><span>-$${(total - discounted).toFixed(2)}</span></div>`
+      : '';
+    const totalHTML = spinPct > 0
+      ? `<span style="text-decoration:line-through;color:#666;">$${total}</span> $${discounted}`
+      : `$${total}`;
+
     el.innerHTML = `
       ${itemsHTML}
       ${upsellHTML}
+      ${spinPromptHTML}
       <div class="summary">
         <div class="row"><span>Subtotal (${cart.length} item${cart.length > 1 ? 's' : ''})</span><span>$${total}</span></div>
+        ${discountRowHTML}
         <div class="promo-section">
           <div class="promo-input-wrap">
             <input type="text" class="promo-input" id="promoInput" placeholder="Promo code" autocomplete="off" />
@@ -576,10 +680,10 @@
           </div>
           <div class="promo-msg" id="promoMsg"></div>
         </div>
-        <div class="row total"><span>Total</span><span id="totalDisplay">$${total}</span></div>
+        <div class="row total"><span>Total</span><span id="totalDisplay">${totalHTML}</span></div>
       </div>
       <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">
-        Checkout &mdash; $<span id="checkoutTotal">${total}</span>
+        Checkout &mdash; $<span id="checkoutTotal">${discounted}</span>
       </button>`;
   }
 
@@ -673,13 +777,19 @@
     }));
 
     const total = cartTotal(cart);
-    document.getElementById('payAmount').textContent = total;
+    const spinPct = getSpinDiscount();
+    const chargeTotal = spinPct > 0 ? +(total * (1 - spinPct / 100)).toFixed(2) : total;
+    document.getElementById('payAmount').textContent = chargeTotal;
 
     try {
+      // When a spin discount is active, charge the reduced amount directly
+      // (the payment-intent endpoint accepts an explicit `amount`); otherwise
+      // let the server price the items.
+      const body = spinPct > 0 ? { amount: Math.round(chargeTotal * 100) } : { items };
       const res = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items })
+        body: JSON.stringify(body)
       });
       const data = await res.json();
       if (data.clientSecret) {
@@ -732,6 +842,7 @@
     localStorage.setItem('purchasedItems', JSON.stringify(existing.concat(pending)));
     localStorage.removeItem('pendingPurchase');
     localStorage.removeItem('cart');
+    localStorage.removeItem('spinDiscountPct');
     if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
   }
 
