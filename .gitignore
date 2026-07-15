@@ -17,3 +17,6 @@ app/5star-splicer.bat
 graphify-out/
 app/dist-mac/
 .DS_Store
+app/5star-splicer-mac-native
+app/web
+downloads/5starclips-mac-extracted/
