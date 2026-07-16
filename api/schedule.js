@@ -12,11 +12,15 @@ module.exports = async (req, res) => {
   const date = req.query.date || new Date().toISOString().split('T')[0];
   const espnDate = date.replace(/-/g, '');
 
+  // Major soccer leagues pulled from ESPN (each league is its own endpoint).
+  const soccerLeagues = ['usa.1', 'eng.1', 'esp.1', 'ita.1', 'ger.1', 'fra.1', 'uefa.champions'];
+
   const sources = [
     { sport: 'mlb', kind: 'mlb', url: `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${date}&hydrate=team,linescore` },
     { sport: 'nfl', kind: 'espn', url: `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${espnDate}` },
     { sport: 'nba', kind: 'espn', url: `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${espnDate}` },
-    { sport: 'nhl', kind: 'espn', url: `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${espnDate}` }
+    { sport: 'nhl', kind: 'espn', url: `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${espnDate}` },
+    ...soccerLeagues.map(lg => ({ sport: 'soccer', kind: 'espn', url: `https://site.api.espn.com/apis/site/v2/sports/soccer/${lg}/scoreboard?dates=${espnDate}` }))
   ];
 
   try {
