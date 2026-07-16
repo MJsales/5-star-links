@@ -760,6 +760,7 @@
 
     if (promoApplied && promoDiscount > 0) {
       var existing = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+      localStorage.setItem('lastOrder', JSON.stringify(expandForPurchase(cart)));
       localStorage.setItem('purchasedItems', JSON.stringify(existing.concat(expandForPurchase(cart))));
       localStorage.removeItem('cart');
       if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
