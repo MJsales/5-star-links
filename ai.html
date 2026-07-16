@@ -198,14 +198,6 @@ function sendMsg() {
   messages.innerHTML += '<div class="msg user">' + escHtml(text) + '</div>';
   messages.scrollTop = messages.scrollHeight;
 
-  var user = window.authModule && window.authModule.getCurrentUser();
-  if (!user) {
-    messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>Please sign in to use AI Sports Picks. It\'s free!</div>';
-    messages.scrollTop = messages.scrollHeight;
-    authModule.showAuth();
-    return;
-  }
-
   getCredits().then(function(credits) {
     if (credits <= 0) {
       messages.innerHTML += '<div class="msg ai"><div class="label">AI Sports Bot</div>You\'ve used all 10 free predictions for today.<br><br>' +
@@ -283,7 +275,14 @@ function getCredits() {
   return new Promise(function(resolve) {
     if (hasUnlimited()) { resolve(9999); return; }
     var user = window.authModule && window.authModule.getCurrentUser();
-    if (!user) { resolve(10); return; }
+    if (!user) {
+      // Guests get the same 10/day, tracked in this browser.
+      var gToday = new Date().toDateString();
+      var g = {};
+      try { g = JSON.parse(localStorage.getItem('aiGuestCredits') || '{}'); } catch (e) {}
+      resolve(g.date === gToday ? Math.max(0, 10 - (g.count || 0)) : 10);
+      return;
+    }
     var today = new Date().toDateString();
     window._fbDb.collection('aiCredits').doc(user.uid).get().then(function(doc) {
       if (doc.exists && doc.data().date === today) {
@@ -297,7 +296,16 @@ function getCredits() {
 
 function useCredit() {
   var user = window.authModule && window.authModule.getCurrentUser();
-  if (!user) return;
+  if (!user) {
+    var gToday = new Date().toDateString();
+    var g = {};
+    try { g = JSON.parse(localStorage.getItem('aiGuestCredits') || '{}'); } catch (e) {}
+    if (g.date === gToday) g.count = (g.count || 0) + 1;
+    else g = { date: gToday, count: 1 };
+    localStorage.setItem('aiGuestCredits', JSON.stringify(g));
+    updateCreditDisplay();
+    return;
+  }
   var today = new Date().toDateString();
   var ref = window._fbDb.collection('aiCredits').doc(user.uid);
   ref.get().then(function(doc) {
