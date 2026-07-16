@@ -156,25 +156,23 @@
     const DISCORD_CLIENT_ID = '1526466717570830386';
     const DISCORD_REDIRECT = window.location.origin + '/api/discord';
     const piId = params.get('payment_intent') || localStorage.getItem('lastPaymentIntent');
+    const promoCode = localStorage.getItem('lastPromoCode');
     const boughtVip = cart.some(item => item.id === 'discord-vip');
-    if (piId && boughtVip) {
+    // Paid orders verify via the PaymentIntent; promo orders send the code and
+    // /api/discord re-checks it server-side.
+    const claimState = piId || (promoCode ? 'promo:' + promoCode : null);
+    if (claimState && boughtVip) {
       const authUrl = 'https://discord.com/oauth2/authorize'
         + '?client_id=' + DISCORD_CLIENT_ID
         + '&redirect_uri=' + encodeURIComponent(DISCORD_REDIRECT)
         + '&response_type=code'
         + '&scope=' + encodeURIComponent('identify guilds.join')
-        + '&state=' + encodeURIComponent(piId);
+        + '&state=' + encodeURIComponent(claimState);
       const vip = document.getElementById('vipClaim');
       vip.href = authUrl;
       vip.style.display = 'inline-flex';
       localStorage.removeItem('lastPaymentIntent');
-    } else if (boughtVip) {
-      // Free/promo orders have no Stripe payment to verify, so VIP can't be
-      // auto-granted — explain instead of showing a blank page.
-      const note = document.createElement('p');
-      note.style.cssText = 'color:#a78bfa;font-size:0.9rem;max-width:340px;margin:10px auto 0;';
-      note.textContent = 'Discord VIP unlocks with a paid checkout — promo-code orders can\'t be verified. Message us on Discord and we\'ll set you up.';
-      container.appendChild(note);
+      localStorage.removeItem('lastPromoCode');
     }
 
     const seen = {};

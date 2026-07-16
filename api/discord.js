@@ -28,11 +28,18 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // 1) Verify the payment before granting anything.
-    if (!state || !/^pi_/.test(state)) return page(res, 402, 'No valid payment found for this claim.');
-    const pi = await stripe.paymentIntents.retrieve(state);
-    if (!pi || (pi.status !== 'succeeded' && pi.status !== 'processing')) {
-      return page(res, 402, 'We could not confirm a completed payment. VIP was not granted.');
+    // 1) Verify the payment (or an allowed promo code) before granting anything.
+    // Promo codes mirror the ones cart.html accepts; override via env var.
+    const promoCodes = (process.env.VIP_PROMO_CODES || 'JOHNABBY,DAY1').split(',').map(s => s.trim().toUpperCase());
+    if (state && state.startsWith('promo:')) {
+      const code = state.slice(6).toUpperCase();
+      if (!promoCodes.includes(code)) return page(res, 402, 'That promo code is not valid for VIP.');
+    } else {
+      if (!state || !/^pi_/.test(state)) return page(res, 402, 'No valid payment found for this claim.');
+      const pi = await stripe.paymentIntents.retrieve(state);
+      if (!pi || (pi.status !== 'succeeded' && pi.status !== 'processing')) {
+        return page(res, 402, 'We could not confirm a completed payment. VIP was not granted.');
+      }
     }
 
     // 2) Exchange the OAuth code for the buyer's Discord access token.

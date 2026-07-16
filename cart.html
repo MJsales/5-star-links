@@ -760,6 +760,9 @@
 
     if (promoApplied && promoDiscount > 0) {
       var existing = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+      // Let success.html offer the Discord VIP claim on promo orders too —
+      // /api/discord re-checks the code server-side.
+      localStorage.setItem('lastPromoCode', document.getElementById('promoInput').value.trim().toUpperCase());
       localStorage.setItem('lastOrder', JSON.stringify(expandForPurchase(cart)));
       localStorage.setItem('purchasedItems', JSON.stringify(existing.concat(expandForPurchase(cart))));
       localStorage.removeItem('cart');
