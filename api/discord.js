@@ -100,7 +100,7 @@ async function dailyPost(req, res) {
     if (!Array.isArray(channels)) return res.status(500).json({ error: 'Could not list channels', detail: channels });
     const text = channels.filter(c => c.type === 0);
     const vipCh = text.find(c => c.name.includes(process.env.DISCORD_VIP_CHANNEL || 'vip'));
-    const freeCh = text.find(c => ['game-of-the-day', 'daily', 'free'].some(n => c.name.includes(process.env.DISCORD_FREE_CHANNEL || n)));
+    const freeCh = text.find(c => !c.name.includes('vip') && ['ai', 'game-of-the-day', 'daily', 'free'].some(n => c.name.includes(process.env.DISCORD_FREE_CHANNEL || n)));
 
     const posted = { vip: false, free: false, games: games.length };
 
