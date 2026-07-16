@@ -581,6 +581,14 @@
         <text x="100" y="118" text-anchor="middle" fill="#fff" font-size="15" font-weight="900" font-family="Inter,sans-serif">ALL-ACCESS</text>
         <text x="100" y="138" text-anchor="middle" fill="#a855f7" font-size="11" font-weight="700" font-family="Inter,sans-serif">EVERYTHING</text>
       </svg>`;
+    } else if (item.id === 'discord-vip') {
+      return `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#5865F2" stroke-width="3"/>
+        <path d="M74 84c9-6 43-6 52 0 6 14 6 32 0 46-4 3-9 5-14 6l-4-7c3-1 6-2 8-4-1 1-13 5-30 0 2 2 5 3 8 4l-4 7c-5-1-10-3-14-6-6-14-6-32 0-46z" fill="#5865F2"/>
+        <circle cx="88" cy="107" r="6" fill="#110a1a"/>
+        <circle cx="112" cy="107" r="6" fill="#110a1a"/>
+        <text x="100" y="150" text-anchor="middle" fill="#fff" font-size="14" font-weight="900" font-family="Inter,sans-serif">VIP</text>
+      </svg>`;
     } else if (item.id === 'ai-stocks') {
       return `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="100" cy="100" r="80" fill="#110a1a" stroke="#22c55e" stroke-width="3"/>
@@ -759,16 +767,11 @@
       return;
     }
 
+    // Referral credits are worth $5 each and come OFF the total; whatever is
+    // left still goes through Stripe. (Previously one credit made the whole
+    // order free and skipped Stripe — which also skipped the paid-VIP check.)
     const referralCredits = parseInt(localStorage.getItem('referralCredits') || '0');
-    if (referralCredits > 0) {
-      localStorage.setItem('referralCredits', '0');
-      var existing2 = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
-      localStorage.setItem('purchasedItems', JSON.stringify(existing2.concat(expandForPurchase(cart))));
-      localStorage.removeItem('cart');
-      if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
-      window.location.href = 'success.html?free=1';
-      return;
-    }
+    const creditDollars = referralCredits * 5;
 
     const items = cart.map(item => ({
       id: item.id,
@@ -778,14 +781,28 @@
 
     const total = cartTotal(cart);
     const spinPct = getSpinDiscount();
-    const chargeTotal = spinPct > 0 ? +(total * (1 - spinPct / 100)).toFixed(2) : total;
+    let chargeTotal = spinPct > 0 ? +(total * (1 - spinPct / 100)).toFixed(2) : total;
+    if (creditDollars > 0) chargeTotal = Math.max(0, +(chargeTotal - creditDollars).toFixed(2));
+
+    // Credits covered everything (and Stripe can't charge under $0.50).
+    if (chargeTotal < 0.5) {
+      localStorage.setItem('referralCredits', '0');
+      var existing2 = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+      var pendingFree = expandForPurchase(cart);
+      localStorage.setItem('lastOrder', JSON.stringify(pendingFree));
+      localStorage.setItem('purchasedItems', JSON.stringify(existing2.concat(pendingFree)));
+      localStorage.removeItem('cart');
+      if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
+      window.location.href = 'success.html?free=1';
+      return;
+    }
     document.getElementById('payAmount').textContent = chargeTotal;
 
     try {
       // When a spin discount is active, charge the reduced amount directly
       // (the payment-intent endpoint accepts an explicit `amount`); otherwise
       // let the server price the items.
-      const body = spinPct > 0 ? { amount: Math.round(chargeTotal * 100) } : { items };
+      const body = (spinPct > 0 || creditDollars > 0) ? { amount: Math.round(chargeTotal * 100) } : { items };
       const res = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -839,10 +856,14 @@
   function finalizePurchase() {
     const pending = JSON.parse(localStorage.getItem('pendingPurchase') || '[]');
     const existing = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+    // Snapshot just this order so success.html shows only what was bought now.
+    localStorage.setItem('lastOrder', JSON.stringify(pending));
     localStorage.setItem('purchasedItems', JSON.stringify(existing.concat(pending)));
     localStorage.removeItem('pendingPurchase');
     localStorage.removeItem('cart');
     localStorage.removeItem('spinDiscountPct');
+    // Any referral credits were applied to this charge — consume them now.
+    localStorage.setItem('referralCredits', '0');
     if (window.authModule && window.authModule.getCurrentUser()) window.authModule.syncToCloud();
   }
 

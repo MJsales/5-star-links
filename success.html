@@ -129,6 +129,7 @@
       const pending = JSON.parse(localStorage.getItem('pendingPurchase') || '[]');
       if (pending.length) {
         const existing = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+        localStorage.setItem('lastOrder', JSON.stringify(pending));
         localStorage.setItem('purchasedItems', JSON.stringify(existing.concat(pending)));
         localStorage.removeItem('pendingPurchase');
         localStorage.removeItem('cart');
@@ -138,7 +139,10 @@
       window.location.href = 'cart.html';
     }
 
-    const cart = JSON.parse(localStorage.getItem('purchasedItems') || '[]');
+    // Show only the order just placed (lastOrder); fall back to full history
+    // for anyone landing here from an old flow.
+    const lastOrder = JSON.parse(localStorage.getItem('lastOrder') || '[]');
+    const cart = lastOrder.length ? lastOrder : JSON.parse(localStorage.getItem('purchasedItems') || '[]');
     const container = document.getElementById('products');
 
     if (window.authModule && window.authModule.getCurrentUser() && cart.length > 0) {
