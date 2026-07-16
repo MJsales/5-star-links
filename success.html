@@ -168,6 +168,13 @@
       vip.href = authUrl;
       vip.style.display = 'inline-flex';
       localStorage.removeItem('lastPaymentIntent');
+    } else if (boughtVip) {
+      // Free/promo orders have no Stripe payment to verify, so VIP can't be
+      // auto-granted — explain instead of showing a blank page.
+      const note = document.createElement('p');
+      note.style.cssText = 'color:#a78bfa;font-size:0.9rem;max-width:340px;margin:10px auto 0;';
+      note.textContent = 'Discord VIP unlocks with a paid checkout — promo-code orders can\'t be verified. Message us on Discord and we\'ll set you up.';
+      container.appendChild(note);
     }
 
     const seen = {};
