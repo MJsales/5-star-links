@@ -109,19 +109,26 @@ async function dailyPost(req, res) {
       channelsSeen: text.map(c => c.name),
     };
 
+    const preds = await getPredictions(games);
+    posted.predictions = Object.keys(preds).length;
+
     if (vipCh) {
-      const chunks = games.length ? buildVipMessages(etDate, games) : [`📅 **${etDate}** — no games on the slate today. Rest day!`];
+      const chunks = games.length ? buildVipMessages(etDate, games, preds) : [`📅 **${etDate}** — no games on the slate today. Rest day!`];
       for (const chunk of chunks) {
         const r = await postMessage(vipCh.id, chunk);
         posted.vip = r && r.id ? 'posted' : (r && r.message) || 'failed';
       }
     }
     if (freeCh && games.length) {
-      const pick = games[Math.floor(Math.random() * games.length)];
+      const idx = Math.floor(Math.random() * games.length);
+      const pick = games[idx];
+      const p = preds[idx];
+      const predLine = p ? `\n🤖 **AI Prediction: ${p.pick}** (${p.conf}% confidence)${p.note ? ' — ' + p.note : ''}\n` : '\n';
       const r = await postMessage(freeCh.id,
-        `🎯 **Free Game of the Day — ${etDate}**\n` +
-        `${sportEmoji(pick.sport)} **${pick.awayFull} @ ${pick.homeFull}** — ${gameTime(pick)}\n\n` +
-        `Want the AI's pick for EVERY game today? ⭐ VIP members see the full slate → https://www.5starlinks.xyz`);
+        `🎯 **Free AI Prediction of the Day — ${etDate}**\n` +
+        `${sportEmoji(pick.sport)} **${pick.awayFull} @ ${pick.homeFull}** — ${gameTime(pick)}\n` +
+        predLine +
+        `\nWant the AI's prediction for EVERY game today? ⭐ VIP members get the full slate → https://www.5starlinks.xyz`);
       posted.free = r && r.id ? 'posted' : (r && r.message) || 'failed';
     }
 
@@ -131,14 +138,19 @@ async function dailyPost(req, res) {
   }
 }
 
-function buildVipMessages(etDate, games) {
+function buildVipMessages(etDate, games, preds) {
+  preds = preds || {};
   const bySport = {};
-  games.forEach(g => { (bySport[g.sport] = bySport[g.sport] || []).push(g); });
+  games.forEach((g, i) => { g._idx = i; (bySport[g.sport] = bySport[g.sport] || []).push(g); });
 
-  let lines = [`📅 **Today's Games — ${etDate}** (${games.length} games)`];
+  let lines = [`🤖 **AI Predictions — ${etDate}** (${games.length} games)`];
   Object.keys(bySport).forEach(sport => {
     lines.push('', `${sportEmoji(sport)} **${sport.toUpperCase()}**`);
-    bySport[sport].forEach(g => lines.push(`• ${g.awayFull} @ ${g.homeFull} — ${gameTime(g)}`));
+    bySport[sport].forEach(g => {
+      const p = preds[g._idx];
+      lines.push(`• ${g.awayFull} @ ${g.homeFull} — ${gameTime(g)}`);
+      if (p) lines.push(`   🤖 **${p.pick}** (${p.conf}%)${p.note ? ' — ' + p.note : ''}`);
+    });
   });
 
   // Discord caps messages at 2000 chars; split on line boundaries.
@@ -150,6 +162,42 @@ function buildVipMessages(etDate, games) {
   });
   if (cur) chunks.push(cur);
   return chunks;
+}
+
+// Ask Gemini (same brain as ai.html) for a winner + confidence per game.
+// Returns { gameIndex: {pick, conf, note} }; empty object on any failure so
+// the schedule still posts without predictions.
+async function getPredictions(games) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || !games.length) return {};
+  try {
+    const list = games.map((g, i) => `${i}: [${g.sport}] ${g.awayFull} @ ${g.homeFull}`).join('\n');
+    const prompt = 'You are an expert sports analyst. For each game below pick the winner with a confidence percent (51-85) and a very short reason (under 10 words). '
+      + 'Respond with ONLY a JSON array, one object per game, no markdown: '
+      + '[{"i":0,"pick":"Team Name","conf":64,"note":"short reason"}]\n\nToday\'s games:\n' + list;
+    const resp = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
+        }),
+      }
+    );
+    if (!resp.ok) return {};
+    const data = await resp.json();
+    const text = (data.candidates && data.candidates[0] && data.candidates[0].content
+      && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text) || '';
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) return {};
+    const map = {};
+    JSON.parse(match[0]).forEach(p => { if (p && p.pick != null) map[p.i] = p; });
+    return map;
+  } catch (e) {
+    return {};
+  }
 }
 
 function sportEmoji(sport) {
