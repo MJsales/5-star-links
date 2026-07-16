@@ -159,7 +159,7 @@ function centsToUsd(cents) {
 }
 
 async function fetchIncome(key) {
-  const res = await fetch('/api/get-income', {
+  const res = await fetch('/api/get-balance?type=income', {
     headers: { 'X-Admin-Key': key }
   });
   if (res.status === 401) throw new Error('unauthorized');

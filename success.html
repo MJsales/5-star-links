@@ -107,6 +107,7 @@
   <h1>Order Confirmed!</h1>
   <p>Click below to get your item.</p>
   <div class="products" id="products"></div>
+  <a id="vipClaim" href="#" style="display:none;align-items:center;justify-content:center;gap:8px;margin:8px auto 0;max-width:320px;padding:14px 22px;background:#5865F2;color:#fff;text-decoration:none;border-radius:12px;font-weight:800;box-shadow:0 8px 24px rgba(88,101,242,0.35);">⭐ Claim your Discord VIP</a>
   <a href="index.html" class="back-btn">Continue Shopping</a>
 
   <script>
@@ -142,6 +143,26 @@
 
     if (window.authModule && window.authModule.getCurrentUser() && cart.length > 0) {
       window.authModule.saveOrder(cart);
+    }
+
+    // Discord VIP claim — show it once we can tie this to a real payment.
+    // The PaymentIntent id comes from the redirect URL (Klarna/Cash App) or from
+    // localStorage (inline card/wallet flow). We pass it as OAuth `state` so the
+    // /api/discord endpoint can verify the payment before granting the role.
+    const DISCORD_CLIENT_ID = '1526466717570830386';
+    const DISCORD_REDIRECT = window.location.origin + '/api/discord';
+    const piId = params.get('payment_intent') || localStorage.getItem('lastPaymentIntent');
+    if (piId && cart.length > 0) {
+      const authUrl = 'https://discord.com/oauth2/authorize'
+        + '?client_id=' + DISCORD_CLIENT_ID
+        + '&redirect_uri=' + encodeURIComponent(DISCORD_REDIRECT)
+        + '&response_type=code'
+        + '&scope=' + encodeURIComponent('identify guilds.join')
+        + '&state=' + encodeURIComponent(piId);
+      const vip = document.getElementById('vipClaim');
+      vip.href = authUrl;
+      vip.style.display = 'inline-flex';
+      localStorage.removeItem('lastPaymentIntent');
     }
 
     const seen = {};

@@ -872,6 +872,9 @@
     // this device). Grant access on succeeded or processing.
     if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing')) {
       finalizePurchase();
+      // Stash the intent id so success.html can verify the payment before
+      // granting the Discord VIP role (inline flow has no URL redirect params).
+      localStorage.setItem('lastPaymentIntent', paymentIntent.id);
       window.location.href = 'success.html';
     } else {
       document.getElementById('payment-message').textContent = 'Payment could not be completed. Please try again.';
