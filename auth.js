@@ -48,7 +48,20 @@ function syncFromCloud(auth, db) {
     if (doc.exists) {
       var data = doc.data();
       if (data.cart) localStorage.setItem('cart', JSON.stringify(data.cart));
-      if (data.purchasedItems) localStorage.setItem('purchasedItems', JSON.stringify(data.purchasedItems));
+      if (data.purchasedItems) {
+        // MERGE cloud purchases with anything bought on this device before
+        // signing in, so a guest purchase is never wiped by logging in.
+        var local = [];
+        try { local = JSON.parse(localStorage.getItem('purchasedItems') || '[]'); } catch (e) {}
+        var merged = data.purchasedItems.slice();
+        local.forEach(function(item) {
+          var dup = merged.some(function(m) { return m.id === item.id && (m.color || null) === (item.color || null); });
+          if (!dup) merged.push(item);
+        });
+        localStorage.setItem('purchasedItems', JSON.stringify(merged));
+        // Push the merged list back up so the account keeps it too.
+        if (merged.length > data.purchasedItems.length) syncToCloud();
+      }
     }
   }).catch(function(e) { console.error('Sync error:', e); });
 }
