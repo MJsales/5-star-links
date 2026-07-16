@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "crons": [
+    { "path": "/api/discord?task=daily", "schedule": "0 14 * * *" }
+  ],
   "functions": {
     "api/youtube.js": {
       "maxDuration": 15

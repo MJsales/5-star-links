@@ -19,6 +19,9 @@ const VIP_ROLE_ID = process.env.DISCORD_VIP_ROLE_ID || '1526836212181237873';
 const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'https://www.5starlinks.xyz/api/discord';
 
 module.exports = async (req, res) => {
+  // Vercel cron hits /api/discord?task=daily once a day to post the games.
+  if (req.query.task === 'daily') return dailyPost(req, res);
+
   const code = req.query.code;
   const state = req.query.state; // Stripe PaymentIntent id
 
@@ -73,6 +76,106 @@ module.exports = async (req, res) => {
     return page(res, 500, 'Something went wrong granting VIP: ' + escapeHtml(e.message));
   }
 };
+
+// --- Daily game posts --------------------------------------------------------
+// Posts today's schedule: every game into the VIP channel, one featured game
+// into the free channel. Channels are found by name so no channel IDs are
+// needed: VIP = first text channel whose name contains "vip", free = first
+// whose name contains "game-of-the-day", "daily" or "free".
+async function dailyPost(req, res) {
+  // Vercel sends "Authorization: Bearer <CRON_SECRET>" on cron invocations
+  // when the CRON_SECRET env var is set; enforce it so randoms can't spam.
+  if (process.env.CRON_SECRET && req.headers.authorization !== 'Bearer ' + process.env.CRON_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!process.env.DISCORD_BOT_TOKEN) return res.status(500).json({ error: 'DISCORD_BOT_TOKEN not set' });
+
+  try {
+    // Today's date in ET (matches how the site shows the daily slate).
+    const etDate = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const sched = await fetchOwnJSON('https://www.5starlinks.xyz/api/schedule?date=' + etDate);
+    const games = (sched && sched.games) || [];
+
+    const channels = await botRequest('GET', `/api/guilds/${GUILD_ID}/channels`, null);
+    if (!Array.isArray(channels)) return res.status(500).json({ error: 'Could not list channels', detail: channels });
+    const text = channels.filter(c => c.type === 0);
+    const vipCh = text.find(c => c.name.includes(process.env.DISCORD_VIP_CHANNEL || 'vip'));
+    const freeCh = text.find(c => ['game-of-the-day', 'daily', 'free'].some(n => c.name.includes(process.env.DISCORD_FREE_CHANNEL || n)));
+
+    const posted = { vip: false, free: false, games: games.length };
+
+    if (games.length === 0) {
+      if (vipCh) { await postMessage(vipCh.id, `📅 **${etDate}** — no games on the slate today. Rest day!`); posted.vip = true; }
+      return res.status(200).json(posted);
+    }
+
+    if (vipCh) {
+      for (const chunk of buildVipMessages(etDate, games)) await postMessage(vipCh.id, chunk);
+      posted.vip = true;
+    }
+    if (freeCh) {
+      const pick = games[Math.floor(Math.random() * games.length)];
+      await postMessage(freeCh.id,
+        `🎯 **Free Game of the Day — ${etDate}**\n` +
+        `${sportEmoji(pick.sport)} **${pick.awayFull} @ ${pick.homeFull}** — ${gameTime(pick)}\n\n` +
+        `Want the AI's pick for EVERY game today? ⭐ VIP members see the full slate → https://www.5starlinks.xyz`);
+      posted.free = true;
+    }
+
+    res.status(200).json(posted);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+}
+
+function buildVipMessages(etDate, games) {
+  const bySport = {};
+  games.forEach(g => { (bySport[g.sport] = bySport[g.sport] || []).push(g); });
+
+  let lines = [`📅 **Today's Games — ${etDate}** (${games.length} games)`];
+  Object.keys(bySport).forEach(sport => {
+    lines.push('', `${sportEmoji(sport)} **${sport.toUpperCase()}**`);
+    bySport[sport].forEach(g => lines.push(`• ${g.awayFull} @ ${g.homeFull} — ${gameTime(g)}`));
+  });
+
+  // Discord caps messages at 2000 chars; split on line boundaries.
+  const chunks = [];
+  let cur = '';
+  lines.forEach(l => {
+    if ((cur + '\n' + l).length > 1900) { chunks.push(cur); cur = l; }
+    else cur = cur ? cur + '\n' + l : l;
+  });
+  if (cur) chunks.push(cur);
+  return chunks;
+}
+
+function sportEmoji(sport) {
+  return { mlb: '⚾', nfl: '🏈', nba: '🏀', nhl: '🏒', soccer: '⚽' }[sport] || '🎮';
+}
+
+function gameTime(g) {
+  try {
+    return new Date(g.timestamp).toLocaleTimeString('en-US', {
+      timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit',
+    }) + ' ET';
+  } catch (e) { return 'TBD'; }
+}
+
+function postMessage(channelId, content) {
+  return botRequest('POST', `/api/channels/${channelId}/messages`, { content });
+}
+
+function fetchOwnJSON(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (resp) => {
+      let data = '';
+      resp.on('data', (c) => (data += c));
+      resp.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch (e) { reject(new Error('Bad schedule response')); }
+      });
+    }).on('error', reject);
+  });
+}
 
 // --- Discord REST helpers ---------------------------------------------------
 function botRequest(method, path, body) {
