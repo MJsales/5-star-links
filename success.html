@@ -152,7 +152,8 @@
     const DISCORD_CLIENT_ID = '1526466717570830386';
     const DISCORD_REDIRECT = window.location.origin + '/api/discord';
     const piId = params.get('payment_intent') || localStorage.getItem('lastPaymentIntent');
-    if (piId && cart.length > 0) {
+    const boughtVip = cart.some(item => item.id === 'discord-vip');
+    if (piId && boughtVip) {
       const authUrl = 'https://discord.com/oauth2/authorize'
         + '?client_id=' + DISCORD_CLIENT_ID
         + '&redirect_uri=' + encodeURIComponent(DISCORD_REDIRECT)

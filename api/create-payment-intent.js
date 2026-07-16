@@ -11,6 +11,7 @@ const products = {
   'ai-video': { name: 'AI Video Splicer', price: 500 },
   'picks-bundle': { name: 'AI Picks Bundle (Sports + Stocks)', price: 800 },
   'all-access': { name: 'All-Access Pass (all AI tools)', price: 1200 },
+  'discord-vip': { name: 'Discord VIP', price: 500 },
 };
 
 module.exports = async (req, res) => {
