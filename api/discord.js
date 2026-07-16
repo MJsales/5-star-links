@@ -102,24 +102,27 @@ async function dailyPost(req, res) {
     const vipCh = text.find(c => c.name.includes(process.env.DISCORD_VIP_CHANNEL || 'vip'));
     const freeCh = text.find(c => !c.name.includes('vip') && ['ai', 'game-of-the-day', 'daily', 'free'].some(n => c.name.includes(process.env.DISCORD_FREE_CHANNEL || n)));
 
-    const posted = { vip: false, free: false, games: games.length };
-
-    if (games.length === 0) {
-      if (vipCh) { await postMessage(vipCh.id, `📅 **${etDate}** — no games on the slate today. Rest day!`); posted.vip = true; }
-      return res.status(200).json(posted);
-    }
+    const posted = {
+      games: games.length,
+      vipChannel: vipCh ? vipCh.name : 'NOT FOUND',
+      freeChannel: freeCh ? freeCh.name : 'NOT FOUND',
+      channelsSeen: text.map(c => c.name),
+    };
 
     if (vipCh) {
-      for (const chunk of buildVipMessages(etDate, games)) await postMessage(vipCh.id, chunk);
-      posted.vip = true;
+      const chunks = games.length ? buildVipMessages(etDate, games) : [`📅 **${etDate}** — no games on the slate today. Rest day!`];
+      for (const chunk of chunks) {
+        const r = await postMessage(vipCh.id, chunk);
+        posted.vip = r && r.id ? 'posted' : (r && r.message) || 'failed';
+      }
     }
-    if (freeCh) {
+    if (freeCh && games.length) {
       const pick = games[Math.floor(Math.random() * games.length)];
-      await postMessage(freeCh.id,
+      const r = await postMessage(freeCh.id,
         `🎯 **Free Game of the Day — ${etDate}**\n` +
         `${sportEmoji(pick.sport)} **${pick.awayFull} @ ${pick.homeFull}** — ${gameTime(pick)}\n\n` +
         `Want the AI's pick for EVERY game today? ⭐ VIP members see the full slate → https://www.5starlinks.xyz`);
-      posted.free = true;
+      posted.free = r && r.id ? 'posted' : (r && r.message) || 'failed';
     }
 
     res.status(200).json(posted);
