@@ -9,7 +9,9 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  const date = req.query.date || new Date().toISOString().split('T')[0];
+  // Default to the ET calendar day, not UTC — in the evening UTC has already
+  // rolled over to tomorrow and would show the wrong slate.
+  const date = req.query.date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const espnDate = date.replace(/-/g, '');
 
   // Major soccer leagues pulled from ESPN (each league is its own endpoint).
