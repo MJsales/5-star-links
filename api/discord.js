@@ -19,8 +19,10 @@ const VIP_ROLE_ID = process.env.DISCORD_VIP_ROLE_ID || '1526836212181237873';
 const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'https://www.5starlinks.xyz/api/discord';
 
 module.exports = async (req, res) => {
-  // Vercel cron hits /api/discord?task=daily once a day to post the games.
-  if (req.query.task === 'daily') return dailyPost(req, res);
+  // Vercel cron hits /api/discord?task=daily once a day to post the games,
+  // and ?task=update in the evening to re-post only if the slate changed.
+  if (req.query.task === 'daily') return dailyPost(req, res, false);
+  if (req.query.task === 'update') return dailyPost(req, res, true);
 
   const code = req.query.code;
   const state = req.query.state; // Stripe PaymentIntent id
@@ -82,7 +84,7 @@ module.exports = async (req, res) => {
 // into the free channel. Channels are found by name so no channel IDs are
 // needed: VIP = first text channel whose name contains "vip", free = first
 // whose name contains "game-of-the-day", "daily" or "free".
-async function dailyPost(req, res) {
+async function dailyPost(req, res, isUpdate) {
   // Vercel sends "Authorization: Bearer <CRON_SECRET>" on cron invocations
   // when the CRON_SECRET env var is set; enforce it so randoms can't spam.
   if (process.env.CRON_SECRET && req.headers.authorization !== 'Bearer ' + process.env.CRON_SECRET) {
@@ -109,17 +111,37 @@ async function dailyPost(req, res) {
       channelsSeen: text.map(c => c.name),
     };
 
+    // Evening update: compare today's slate against what was already posted;
+    // stay quiet unless a game was added, removed, or rescheduled away.
+    if (isUpdate && vipCh) {
+      const msgs = await botRequest('GET', `/api/channels/${vipCh.id}/messages?limit=30`, null);
+      const alreadyPosted = new Set();
+      if (Array.isArray(msgs)) {
+        msgs.filter(m => m.content && m.content.includes(etDate)).forEach(m => {
+          m.content.split('\n').forEach(l => {
+            const mm = l.match(/^• (.+?) — /);
+            if (mm) alreadyPosted.add(mm[1]);
+          });
+        });
+      }
+      const current = new Set(games.map(g => g.awayFull + ' @ ' + g.homeFull));
+      const unchanged = alreadyPosted.size === current.size && [...current].every(x => alreadyPosted.has(x));
+      if (unchanged) return res.status(200).json({ updated: false, reason: 'slate unchanged' });
+      posted.updated = true;
+    }
+
     const preds = await getPredictions(games);
     posted.predictions = Object.keys(preds).length;
 
     if (vipCh) {
-      const chunks = games.length ? buildVipMessages(etDate, games, preds) : [`📅 **${etDate}** — no games on the slate today. Rest day!`];
+      const header = isUpdate ? '🔄 Schedule Update' : '🤖 AI Predictions';
+      const chunks = games.length ? buildVipMessages(etDate, games, preds, header) : [`📅 **${etDate}** — no games on the slate today. Rest day!`];
       for (const chunk of chunks) {
         const r = await postMessage(vipCh.id, chunk);
         posted.vip = r && r.id ? 'posted' : (r && r.message) || 'failed';
       }
     }
-    if (freeCh && games.length) {
+    if (freeCh && games.length && !isUpdate) {
       const idx = Math.floor(Math.random() * games.length);
       const pick = games[idx];
       const p = preds[idx];
@@ -138,12 +160,12 @@ async function dailyPost(req, res) {
   }
 }
 
-function buildVipMessages(etDate, games, preds) {
+function buildVipMessages(etDate, games, preds, header) {
   preds = preds || {};
   const bySport = {};
   games.forEach((g, i) => { g._idx = i; (bySport[g.sport] = bySport[g.sport] || []).push(g); });
 
-  let lines = [`🤖 **AI Predictions — ${etDate}** (${games.length} games)`];
+  let lines = [`**${header || '🤖 AI Predictions'} — ${etDate}** (${games.length} games)`];
   Object.keys(bySport).forEach(sport => {
     lines.push('', `${sportEmoji(sport)} **${sport.toUpperCase()}**`);
     bySport[sport].forEach(g => {
