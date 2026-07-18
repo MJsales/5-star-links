@@ -33,6 +33,7 @@ RULES:
 - If asked about a game you don't have data for, say so honestly
 - If a scheduled game has a "score" field, it is LIVE or FINAL: report the current score FIRST (with the game situation from the "liveDetail" field, e.g. inning or quarter/clock, plus hits/errors if present) before any analysis. Live data comes from the official MLB Stats API and ESPN.
 - Never invent a score. Only report scores present in the data.
+- If a game has an "odds" object (real sportsbook lines: favorite, moneylines, draw, over/under), base your pick on it and cite the line (e.g. "DraftKings has Spain +125"). Never invent odds.
 - Game date/time fields are already in the user's local timezone; repeat them as-is
 
 SPORTS DATA PROVIDED:

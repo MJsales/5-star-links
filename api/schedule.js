@@ -99,9 +99,18 @@ function mapEspn(data, sport, league) {
     const st = (comp.status && comp.status.type) || (ev.status && ev.status.type) || {};
     const state = st.state;
     const hasScore = state === 'in' || state === 'post';
+    const o = comp.odds && comp.odds[0];
     return {
       sport: sport,
       league: league || null,
+      odds: o ? {
+        favorite: o.details || null,
+        overUnder: o.overUnder != null ? o.overUnder : null,
+        homeML: o.homeTeamOdds && o.homeTeamOdds.moneyLine != null ? o.homeTeamOdds.moneyLine : null,
+        awayML: o.awayTeamOdds && o.awayTeamOdds.moneyLine != null ? o.awayTeamOdds.moneyLine : null,
+        drawML: o.drawOdds && o.drawOdds.moneyLine != null ? o.drawOdds.moneyLine : null,
+        book: (o.provider && o.provider.displayName) || null
+      } : null,
       home: homeC.team.name || homeC.team.shortDisplayName,
       away: awayC.team.name || awayC.team.shortDisplayName,
       homeFull: homeC.team.displayName,

@@ -372,12 +372,14 @@ function fetchScheduleDay(offset) {
           exists.liveDetail = g.liveDetail;
           exists.hits = g.hits;
           exists.errors = g.errors;
+          if (g.odds) exists.odds = g.odds;
           if (!exists.homeFull) exists.homeFull = g.homeFull;
           if (!exists.awayFull) exists.awayFull = g.awayFull;
         } else {
           scheduledGames.push({
             sport: g.sport || 'mlb',
             league: g.league || null,
+            odds: g.odds || null,
             home: g.home,
             away: g.away,
             homeFull: g.homeFull,
