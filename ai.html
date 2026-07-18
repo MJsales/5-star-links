@@ -377,6 +377,7 @@ function fetchScheduleDay(offset) {
         } else {
           scheduledGames.push({
             sport: g.sport || 'mlb',
+            league: g.league || null,
             home: g.home,
             away: g.away,
             homeFull: g.homeFull,

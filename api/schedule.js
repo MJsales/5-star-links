@@ -21,14 +21,18 @@ module.exports = async (req, res) => {
 
   // Major soccer leagues pulled from ESPN (each league is its own endpoint).
   // fifa.world = World Cup, mex.1 = Liga MX (plays through summer breaks).
-  const soccerLeagues = ['fifa.world', 'usa.1', 'mex.1', 'eng.1', 'esp.1', 'ita.1', 'ger.1', 'fra.1', 'uefa.champions'];
+  const soccerLeagues = {
+    'fifa.world': 'World Cup', 'usa.1': 'MLS', 'mex.1': 'Liga MX', 'eng.1': 'Premier League',
+    'esp.1': 'La Liga', 'ita.1': 'Serie A', 'ger.1': 'Bundesliga', 'fra.1': 'Ligue 1',
+    'uefa.champions': 'Champions League'
+  };
 
   const sources = [
     { sport: 'mlb', kind: 'mlb', url: `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${date}&hydrate=team,linescore` },
     { sport: 'nfl', kind: 'espn', url: `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${espnDate}` },
     { sport: 'nba', kind: 'espn', url: `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${espnDate}` },
     { sport: 'nhl', kind: 'espn', url: `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${espnDate}` },
-    ...soccerLeagues.map(lg => ({ sport: 'soccer', kind: 'espn', url: `https://site.api.espn.com/apis/site/v2/sports/soccer/${lg}/scoreboard?dates=${espnDate}` }))
+    ...Object.keys(soccerLeagues).map(lg => ({ sport: 'soccer', kind: 'espn', league: soccerLeagues[lg], url: `https://site.api.espn.com/apis/site/v2/sports/soccer/${lg}/scoreboard?dates=${espnDate}` }))
   ];
 
   try {
@@ -40,7 +44,7 @@ module.exports = async (req, res) => {
     results.forEach(r => {
       if (!r.data) return;
       if (r.source.kind === 'mlb') games = games.concat(mapMlb(r.data));
-      else games = games.concat(mapEspn(r.data, r.source.sport));
+      else games = games.concat(mapEspn(r.data, r.source.sport, r.source.league));
     });
 
     res.status(200).json({ date, games });
@@ -84,7 +88,7 @@ function mapMlb(data) {
   });
 }
 
-function mapEspn(data, sport) {
+function mapEspn(data, sport, league) {
   const events = (data && data.events) || [];
   return events.map(ev => {
     const comp = ev.competitions && ev.competitions[0];
@@ -97,6 +101,7 @@ function mapEspn(data, sport) {
     const hasScore = state === 'in' || state === 'post';
     return {
       sport: sport,
+      league: league || null,
       home: homeC.team.name || homeC.team.shortDisplayName,
       away: awayC.team.name || awayC.team.shortDisplayName,
       homeFull: homeC.team.displayName,
