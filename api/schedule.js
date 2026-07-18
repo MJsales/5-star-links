@@ -20,7 +20,8 @@ module.exports = async (req, res) => {
   const espnDate = date.replace(/-/g, '');
 
   // Major soccer leagues pulled from ESPN (each league is its own endpoint).
-  const soccerLeagues = ['usa.1', 'eng.1', 'esp.1', 'ita.1', 'ger.1', 'fra.1', 'uefa.champions'];
+  // fifa.world = World Cup, mex.1 = Liga MX (plays through summer breaks).
+  const soccerLeagues = ['fifa.world', 'usa.1', 'mex.1', 'eng.1', 'esp.1', 'ita.1', 'ger.1', 'fra.1', 'uefa.champions'];
 
   const sources = [
     { sport: 'mlb', kind: 'mlb', url: `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${date}&hydrate=team,linescore` },
