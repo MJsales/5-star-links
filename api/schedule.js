@@ -11,6 +11,8 @@ module.exports = async (req, res) => {
 
   // Stock/index candles proxy (Yahoo blocks browser CORS, so apps call us instead).
   if (req.query.type === 'stocks') return handleStocks(req, res);
+  if (req.query.type === 'stockquotes') return handleStockQuotes(req, res);
+  if (req.query.type === 'stocksearch') return handleStockSearch(req, res);
 
   // Default to the ET calendar day, not UTC — in the evening UTC has already
   // rolled over to tomorrow and would show the wrong slate.
@@ -143,6 +145,44 @@ async function handleStocks(req, res) {
       },
       candles
     });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+}
+
+const YAHOO_UA = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' };
+
+// Latest price + previous close for many symbols in one call (sidebar tickers).
+async function handleStockQuotes(req, res) {
+  const symbols = req.query.symbols || '';
+  if (!/^[\^A-Za-z0-9.\-,]{1,300}$/.test(symbols)) return res.status(400).json({ error: 'bad symbols' });
+  try {
+    const j = await fetchJSON('https://query1.finance.yahoo.com/v8/finance/spark?symbols=' + encodeURIComponent(symbols) + '&range=1d&interval=5m', YAHOO_UA);
+    const src = j.spark && j.spark.result ? Object.fromEntries(j.spark.result.map(r => [r.symbol, r.response && r.response[0]])) : j;
+    const out = {};
+    Object.keys(src).forEach(sym => {
+      const v = src[sym];
+      if (!v) return;
+      const closes = (v.close || []).filter(x => x != null);
+      const prev = v.chartPreviousClose || (v.meta && v.meta.chartPreviousClose);
+      if (closes.length) out[sym] = { price: closes[closes.length - 1], prevClose: prev };
+    });
+    res.status(200).json(out);
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+}
+
+// Ticker/company search so the app can chart any stock.
+async function handleStockSearch(req, res) {
+  const q = (req.query.q || '').slice(0, 40);
+  if (!q) return res.status(400).json({ error: 'no q' });
+  try {
+    const j = await fetchJSON('https://query1.finance.yahoo.com/v1/finance/search?q=' + encodeURIComponent(q) + '&quotesCount=8&newsCount=0', YAHOO_UA);
+    const out = (j.quotes || [])
+      .filter(x => x.symbol && ['EQUITY', 'ETF', 'INDEX'].indexOf(x.quoteType) !== -1)
+      .map(x => ({ symbol: x.symbol, name: x.shortname || x.longname || x.symbol, type: x.quoteType }));
+    res.status(200).json(out);
   } catch (e) {
     res.status(502).json({ error: e.message });
   }
