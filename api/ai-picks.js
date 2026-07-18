@@ -39,7 +39,7 @@ SPORTS DATA PROVIDED:
 ${sportsData ? JSON.stringify(sportsData) : 'No team stats available'}
 
 SCHEDULED GAMES:
-${scheduledGames ? JSON.stringify(scheduledGames.slice(0, 20)) : 'No scheduled games available'}
+${scheduledGames ? JSON.stringify(scheduledGames.slice(0, 60)) : 'No scheduled games available'}
 
 LIVE ODDS:
 ${liveOdds ? JSON.stringify(liveOdds) : 'No live odds available'}`;
