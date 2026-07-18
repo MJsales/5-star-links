@@ -9,6 +9,9 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
+  // Stock/index candles proxy (Yahoo blocks browser CORS, so apps call us instead).
+  if (req.query.type === 'stocks') return handleStocks(req, res);
+
   // Default to the ET calendar day, not UTC — in the evening UTC has already
   // rolled over to tomorrow and would show the wrong slate.
   const date = req.query.date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
@@ -109,9 +112,45 @@ function mapEspn(data, sport) {
   }).filter(Boolean);
 }
 
-function fetchJSON(url) {
+async function handleStocks(req, res) {
+  const symbol = req.query.symbol || '^GSPC';
+  const interval = req.query.interval || '1d';
+  const range = req.query.range || '1y';
+  if (!/^[\^A-Za-z0-9.\-]{1,12}$/.test(symbol) || !/^[a-z0-9]{1,6}$/.test(interval) || !/^[a-z0-9]{1,6}$/.test(range)) {
+    return res.status(400).json({ error: 'bad params' });
+  }
+  try {
+    const url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol) +
+      '?interval=' + interval + '&range=' + range;
+    const j = await fetchJSON(url, { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' });
+    const r = j.chart && j.chart.result && j.chart.result[0];
+    if (!r || !r.timestamp) return res.status(502).json({ error: 'no data' });
+    const q = r.indicators.quote[0];
+    const candles = [];
+    for (let i = 0; i < r.timestamp.length; i++) {
+      if (q.close[i] == null) continue;
+      candles.push({
+        time: r.timestamp[i],
+        open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i],
+        volume: q.volume[i] || 0
+      });
+    }
+    res.status(200).json({
+      meta: {
+        symbol: r.meta.symbol,
+        price: r.meta.regularMarketPrice,
+        prevClose: r.meta.chartPreviousClose
+      },
+      candles
+    });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+}
+
+function fetchJSON(url, headers) {
   return new Promise((resolve, reject) => {
-    https.get(url, (response) => {
+    https.get(url, headers ? { headers } : {}, (response) => {
       let data = '';
       response.on('data', (chunk) => { data += chunk; });
       response.on('end', () => {
