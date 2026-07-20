@@ -15,6 +15,7 @@ module.exports = async (req, res) => {
   if (req.query.type === 'stocksearch') return handleStockSearch(req, res);
   if (req.query.type === 'memetrending') return handleMemeTrending(req, res);
   if (req.query.type === 'memecandles') return handleMemeCandles(req, res);
+  if (req.query.type === 'memetrades') return handleMemeTrades(req, res);
 
   // Default to the ET calendar day, not UTC — in the evening UTC has already
   // rolled over to tomorrow and would show the wrong slate.
@@ -181,6 +182,30 @@ async function handleMemeTrending(req, res) {
         price: parseFloat(a.base_token_price_usd),
         change24h: a.price_change_percentage ? parseFloat(a.price_change_percentage.h24) : null,
         vol24h: a.volume_usd ? Math.round(parseFloat(a.volume_usd.h24)) : null
+      };
+    });
+    res.status(200).json(out);
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+}
+
+// Recent big trades in a pool — whale watching.
+async function handleMemeTrades(req, res) {
+  const pool = req.query.pool || '';
+  const min = String(parseInt(req.query.min || '1000', 10) || 1000);
+  if (!/^[A-Za-z0-9]{20,60}$/.test(pool)) return res.status(400).json({ error: 'bad pool' });
+  try {
+    const j = await fetchJSON('https://api.geckoterminal.com/api/v2/networks/solana/pools/' + pool + '/trades?trade_volume_in_usd_greater_than=' + min, YAHOO_UA);
+    const out = (j.data || []).map(t => {
+      const a = t.attributes;
+      return {
+        ts: a.block_timestamp,
+        kind: a.kind,
+        usd: Math.round(parseFloat(a.volume_in_usd)),
+        wallet: a.tx_from_address,
+        tx: a.tx_hash,
+        price: parseFloat(a.price_to_in_usd || a.price_from_in_usd)
       };
     });
     res.status(200).json(out);
