@@ -13,6 +13,8 @@ module.exports = async (req, res) => {
   if (req.query.type === 'stocks') return handleStocks(req, res);
   if (req.query.type === 'stockquotes') return handleStockQuotes(req, res);
   if (req.query.type === 'stocksearch') return handleStockSearch(req, res);
+  if (req.query.type === 'memetrending') return handleMemeTrending(req, res);
+  if (req.query.type === 'memecandles') return handleMemeCandles(req, res);
 
   // Default to the ET calendar day, not UTC — in the evening UTC has already
   // rolled over to tomorrow and would show the wrong slate.
@@ -166,6 +168,43 @@ async function handleStocks(req, res) {
 }
 
 const YAHOO_UA = { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' };
+
+// Trending Solana meme pools (GeckoTerminal free API has no browser CORS).
+async function handleMemeTrending(req, res) {
+  try {
+    const j = await fetchJSON('https://api.geckoterminal.com/api/v2/networks/solana/trending_pools?page=1', YAHOO_UA);
+    const out = (j.data || []).slice(0, 12).map(p => {
+      const a = p.attributes;
+      return {
+        address: a.address,
+        name: (a.name || '').split(' / ')[0],
+        price: parseFloat(a.base_token_price_usd),
+        change24h: a.price_change_percentage ? parseFloat(a.price_change_percentage.h24) : null,
+        vol24h: a.volume_usd ? Math.round(parseFloat(a.volume_usd.h24)) : null
+      };
+    });
+    res.status(200).json(out);
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+}
+
+async function handleMemeCandles(req, res) {
+  const pool = req.query.pool || '';
+  const tf = req.query.tf || 'minute';
+  const agg = req.query.agg || '5';
+  if (!/^[A-Za-z0-9]{20,60}$/.test(pool) || !/^(minute|hour|day)$/.test(tf) || !/^\d{1,2}$/.test(agg)) {
+    return res.status(400).json({ error: 'bad params' });
+  }
+  try {
+    const j = await fetchJSON('https://api.geckoterminal.com/api/v2/networks/solana/pools/' + pool + '/ohlcv/' + tf + '?aggregate=' + agg + '&limit=1000', YAHOO_UA);
+    const list = (j.data && j.data.attributes && j.data.attributes.ohlcv_list) || [];
+    const candles = list.map(a => ({ time: a[0], open: a[1], high: a[2], low: a[3], close: a[4], volume: a[5] })).sort((x, y) => x.time - y.time);
+    res.status(200).json({ candles });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+}
 
 // Latest price + previous close for many symbols in one call (sidebar tickers).
 async function handleStockQuotes(req, res) {
