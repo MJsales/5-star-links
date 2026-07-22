@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listing Videos for Airbnb Hosts - 5 Star Links</title>
+  <meta name="description" content="Turn your Airbnb listing photos into a scroll-stopping video. No videographer, no reshoot, delivered in 48 hours.">
+  <link rel="icon" type="image/png" href="pics/logo/favicon.png">
+  <link rel="apple-touch-icon" href="pics/logo/logo.png.png">
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #050208;
+      color: #ccc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .topbar {
+      background: rgba(13,8,21,0.9); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding: 1rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar h1 {
+      font-size: 1.3rem; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .back-btn { color: #a78bfa; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+    .back-btn:hover { color: #fff; }
+
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* HERO */
+    .hero { text-align: center; padding: 4rem 0 3rem; position: relative; }
+    .hero::before {
+      content: ''; position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+      width: 560px; height: 380px; max-width: 120vw;
+      background: radial-gradient(circle, rgba(168,85,247,0.16) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero .eyebrow {
+      display: inline-block; color: #a78bfa; font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase; margin-bottom: 1.1rem;
+      border: 1px solid rgba(168,85,247,0.3); border-radius: 50px; padding: 0.45rem 1.1rem;
+      background: rgba(168,85,247,0.07); position: relative;
+    }
+    .hero h2 {
+      font-size: clamp(2rem, 6vw, 3.4rem); font-weight: 900; line-height: 1.1;
+      color: #fff; margin-bottom: 1.1rem; letter-spacing: -1px; position: relative;
+    }
+    .hero h2 .grad {
+      background: linear-gradient(135deg, #a855f7, #e9d5ff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p.sub {
+      color: #999; font-size: 1.05rem; line-height: 1.7; max-width: 560px;
+      margin: 0 auto 2rem; position: relative;
+    }
+    .cta-row { display: flex; gap: 0.9rem; justify-content: center; flex-wrap: wrap; position: relative; }
+    .btn {
+      display: inline-block; text-decoration: none; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      padding: 0.95rem 2.2rem; border-radius: 50px;
+      font-size: 0.95rem; font-weight: 700; letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      box-shadow: 0 4px 20px rgba(168,85,247,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(168,85,247,0.45); }
+    .btn-ghost {
+      background: rgba(168,85,247,0.08); color: #d8b4fe;
+      border: 1px solid rgba(168,85,247,0.3);
+    }
+    .btn-ghost:hover { background: rgba(168,85,247,0.16); color: #fff; }
+
+    /* PHONE DEMO */
+    .demo { display: flex; justify-content: center; margin: 3.5rem 0 1rem; }
+    .phone {
+      width: 260px; height: 470px; border-radius: 34px; padding: 10px;
+      background: linear-gradient(160deg, #1c1128, #0d0815);
+      border: 1px solid rgba(168,85,247,0.3);
+      box-shadow: 0 24px 70px rgba(168,85,247,0.18);
+      position: relative; flex-shrink: 0;
+    }
+    .phone-screen {
+      width: 100%; height: 100%; border-radius: 26px; overflow: hidden;
+      position: relative; background: #000;
+    }
+    .slide {
+      position: absolute; inset: 0; opacity: 0;
+      animation: cycle 12s infinite; display: flex; flex-direction: column;
+      justify-content: flex-end; padding: 18px;
+    }
+    .slide:nth-child(1) { animation-delay: 0s;  background: linear-gradient(160deg,#4c1d95,#7c3aed 45%,#c084fc); }
+    .slide:nth-child(2) { animation-delay: 3s;  background: linear-gradient(160deg,#0c4a6e,#0369a1 45%,#38bdf8); }
+    .slide:nth-child(3) { animation-delay: 6s;  background: linear-gradient(160deg,#78350f,#c2410c 45%,#fbbf24); }
+    .slide:nth-child(4) { animation-delay: 9s;  background: linear-gradient(160deg,#064e3b,#059669 45%,#6ee7b7); }
+    @keyframes cycle {
+      0%   { opacity: 0; transform: scale(1.14); }
+      4%   { opacity: 1; }
+      25%  { opacity: 1; transform: scale(1); }
+      29%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    .slide .tag {
+      color: rgba(255,255,255,0.85); font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px;
+    }
+    .slide .headline { color: #fff; font-size: 1.15rem; font-weight: 800; line-height: 1.25; }
+    .phone-label {
+      position: absolute; bottom: -34px; left: 0; right: 0; text-align: center;
+      color: #666; font-size: 0.75rem; letter-spacing: 1px;
+    }
+
+    /* SECTION */
+    section { padding: 4rem 0; }
+    .sec-head { text-align: center; margin-bottom: 2.6rem; }
+    .sec-head h3 {
+      font-size: clamp(1.5rem, 4vw, 2.1rem); font-weight: 800; color: #fff;
+      margin-bottom: 0.6rem; letter-spacing: -0.5px;
+    }
+    .sec-head p { color: #888; font-size: 0.95rem; line-height: 1.7; max-width: 520px; margin: 0 auto; }
+
+    /* STEPS */
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1.2rem; }
+    .step {
+      background: linear-gradient(145deg, #0d0815 0%, #110a1a 100%);
+      border: 1px solid rgba(168,85,247,0.18);
+      border-radius: 18px; padding: 1.8rem 1.5rem; position: relative;
+      transition: all 0.25s;
+    }
+    .step:hover { border-color: rgba(168,85,247,0.45); transform: translateY(-4px); }
+    .step .num {
+      width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      font-weight: 800; font-size: 1rem; margin-bottom: 1rem;
+    }
+    .step h4 { color: #fff; font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .step p { color: #888; font-size: 0.88rem; line-height: 1.65; }
+
+    /* PRICING */
+    .tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 1.3rem; align-items: start; }
+    .tier {
+      background: linear-gradient(145deg, #0d0815 0%, #110a1a 100%);
+      border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 20px; padding: 2rem 1.6rem; position: relative;
+      transition: all 0.25s; cursor: pointer;
+    }
+    .tier:hover { border-color: rgba(168,85,247,0.5); transform: translateY(-4px); }
+    .tier.featured {
+      border-color: #a855f7;
+      box-shadow: 0 0 0 1px rgba(168,85,247,0.4), 0 18px 50px rgba(168,85,247,0.16);
+    }
+    .tier .badge {
+      position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      font-size: 0.62rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+      padding: 0.35rem 0.9rem; border-radius: 50px; white-space: nowrap;
+    }
+    .tier .name {
+      color: #a78bfa; font-size: 0.75rem; font-weight: 800;
+      letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 0.8rem;
+    }
+    .tier .price { color: #fff; font-size: 2.6rem; font-weight: 900; letter-spacing: -2px; line-height: 1; }
+    .tier .price span { font-size: 1rem; font-weight: 600; color: #666; letter-spacing: 0; }
+    .tier .price-note { color: #777; font-size: 0.8rem; margin: 0.6rem 0 1.4rem; }
+    .tier ul { list-style: none; margin-bottom: 1.6rem; }
+    .tier li {
+      color: #aaa; font-size: 0.87rem; line-height: 1.5; padding: 0.5rem 0 0.5rem 1.6rem;
+      position: relative; border-bottom: 1px solid rgba(168,85,247,0.07);
+    }
+    .tier li:last-child { border-bottom: none; }
+    .tier li::before {
+      content: '✓'; position: absolute; left: 0; top: 0.5rem;
+      color: #a855f7; font-weight: 800;
+    }
+    .tier .btn { width: 100%; text-align: center; }
+
+    /* WHY */
+    .why { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 1.1rem; }
+    .why-card {
+      background: rgba(168,85,247,0.05);
+      border: 1px solid rgba(168,85,247,0.15);
+      border-radius: 14px; padding: 1.4rem;
+    }
+    .why-card .ico { font-size: 1.5rem; margin-bottom: 0.7rem; display: block; }
+    .why-card h4 { color: #fff; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.45rem; }
+    .why-card p { color: #888; font-size: 0.85rem; line-height: 1.6; }
+
+    /* FORM */
+    .form-card {
+      background: linear-gradient(145deg, #0d0815 0%, #110a1a 100%);
+      border: 1px solid rgba(168,85,247,0.28);
+      border-radius: 22px; padding: 2.4rem 2rem;
+      max-width: 640px; margin: 0 auto;
+    }
+    .field { margin-bottom: 1.2rem; }
+    .field label {
+      display: block; color: #d8b4fe; font-size: 0.78rem; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 0.5rem;
+    }
+    .field label .opt { color: #555; font-weight: 500; letter-spacing: 0; text-transform: none; }
+    .field input, .field select, .field textarea {
+      width: 100%; background: #060309; color: #eee;
+      border: 1px solid rgba(168,85,247,0.22); border-radius: 12px;
+      padding: 0.85rem 1rem; font-size: 0.95rem; font-family: 'Inter', sans-serif;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,0.12);
+    }
+    .field input::placeholder, .field textarea::placeholder { color: #4a4a55; }
+    .field textarea { resize: vertical; min-height: 88px; }
+    .field select option { background: #0d0815; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-note {
+      color: #777; font-size: 0.8rem; line-height: 1.6; text-align: center;
+      margin-top: 1rem;
+    }
+    .form-msg {
+      display: none; margin-top: 1.2rem; padding: 1rem 1.2rem; border-radius: 12px;
+      font-size: 0.9rem; line-height: 1.6;
+      background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.35); color: #86efac;
+    }
+    .form-msg.show { display: block; }
+    .form-msg.err { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.35); color: #fca5a5; }
+
+    /* FAQ */
+    .faq { max-width: 700px; margin: 0 auto; }
+    .qa {
+      border-bottom: 1px solid rgba(168,85,247,0.12); padding: 1.1rem 0;
+    }
+    .qa summary {
+      color: #fff; font-size: 0.98rem; font-weight: 700; cursor: pointer;
+      list-style: none; display: flex; justify-content: space-between; align-items: center;
+      gap: 1rem;
+    }
+    .qa summary::-webkit-details-marker { display: none; }
+    .qa summary::after { content: '+'; color: #a855f7; font-size: 1.4rem; font-weight: 400; flex-shrink: 0; }
+    .qa[open] summary::after { content: '−'; }
+    .qa p { color: #888; font-size: 0.9rem; line-height: 1.75; margin-top: 0.8rem; }
+
+    .footer {
+      text-align: center; padding: 2.5rem 1rem; font-size: 0.85rem;
+      color: #444; border-top: 1px solid rgba(168,85,247,0.1); margin-top: 2rem;
+    }
+    .footer a { color: #a78bfa; text-decoration: none; }
+    .footer a:hover { color: #fff; }
+
+    @media (max-width: 560px) {
+      .row2 { grid-template-columns: 1fr; }
+      .form-card { padding: 1.8rem 1.3rem; }
+      section { padding: 3rem 0; }
+      .hero { padding: 3rem 0 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Listing Videos</h1>
+  <a href="index.html" class="back-btn">&larr; Shop</a>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="eyebrow">For Airbnb &amp; VRBO Hosts</div>
+    <h2>Your photos are fine.<br><span class="grad">Your video will book it.</span></h2>
+    <p class="sub">
+      Send us the link to your listing. We turn the photos you already have into a
+      cinematic walkthrough video for Airbnb, Instagram, and TikTok — no videographer,
+      no reshoot, no cleaning the place again.
+    </p>
+    <div class="cta-row">
+      <a href="#order" class="btn btn-primary">Get My Listing Video</a>
+      <a href="#pricing" class="btn btn-ghost">See Pricing</a>
+    </div>
+
+    <div class="demo">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="slide"><div class="tag">Downtown Loft</div><div class="headline">Wake up over the city</div></div>
+          <div class="slide"><div class="tag">Lakeside Cabin</div><div class="headline">Coffee on the dock</div></div>
+          <div class="slide"><div class="tag">Desert Casita</div><div class="headline">Sunsets, every night</div></div>
+          <div class="slide"><div class="tag">Beach Bungalow</div><div class="headline">Steps from the sand</div></div>
+        </div>
+        <div class="phone-label">Vertical format — ready to post</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW -->
+  <section id="how">
+    <div class="sec-head">
+      <h3>Three steps. You do almost nothing.</h3>
+      <p>The whole point is that you don't have to reshoot anything or learn any software.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <h4>Send your listing link</h4>
+        <p>Paste your Airbnb, VRBO, or Zillow URL below. Your photos are already public there, so there's nothing to upload. Got better originals? Email them and we'll use those instead.</p>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h4>We build the video</h4>
+        <p>Your best shots get motion, pacing, licensed music, and clean text overlays that call out what makes the place worth booking.</p>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h4>You post it</h4>
+        <p>Delivered in 48 hours as a ready-to-upload file. One free round of changes if anything feels off.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section>
+    <div class="sec-head">
+      <h3>Why bother with a video</h3>
+      <p>Every listing in your area has photos. Almost none of them have a video.</p>
+    </div>
+    <div class="why">
+      <div class="why-card">
+        <span class="ico">&#128241;</span>
+        <h4>Stops the scroll</h4>
+        <p>A still photo gets skipped in half a second. Motion holds attention long enough for someone to actually read your title.</p>
+      </div>
+      <div class="why-card">
+        <span class="ico">&#127968;</span>
+        <h4>Shows the flow</h4>
+        <p>Photos show rooms. Video shows how the space connects — which is the thing guests are actually trying to picture.</p>
+      </div>
+      <div class="why-card">
+        <span class="ico">&#128176;</span>
+        <h4>Costs less than one night</h4>
+        <p>A single extra booking usually covers the whole thing. After that it keeps working for free.</p>
+      </div>
+      <div class="why-card">
+        <span class="ico">&#9889;</span>
+        <h4>No reshoot</h4>
+        <p>No staging, no cleaning, no scheduling a videographer around your guests. We use what's already on your listing.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing">
+    <div class="sec-head">
+      <h3>Pick your package</h3>
+      <p>One-time cost. You own the file forever and can post it anywhere.</p>
+    </div>
+    <div class="tiers">
+      <div class="tier" onclick="pickTier('Starter')">
+        <div class="name">Starter</div>
+        <div class="price">$99</div>
+        <div class="price-note">One listing, one video</div>
+        <ul>
+          <li>30-second vertical video</li>
+          <li>Up to 15 of your photos</li>
+          <li>Smooth motion &amp; transitions</li>
+          <li>Licensed background music</li>
+          <li>48-hour delivery</li>
+          <li>1 free revision</li>
+        </ul>
+        <button class="btn btn-ghost">Choose Starter</button>
+      </div>
+
+      <div class="tier featured" onclick="pickTier('Pro')">
+        <div class="badge">Most Popular</div>
+        <div class="name">Pro</div>
+        <div class="price">$179</div>
+        <div class="price-note">Built to post everywhere</div>
+        <ul>
+          <li>Up to 60-second video</li>
+          <li>Unlimited photos from your listing</li>
+          <li>Text overlays on key features</li>
+          <li><strong>3 sizes</strong> — vertical, square, wide</li>
+          <li>Custom hook &amp; call-to-action</li>
+          <li>24-hour delivery</li>
+          <li>2 free revisions</li>
+        </ul>
+        <button class="btn btn-primary">Choose Pro</button>
+      </div>
+
+      <div class="tier" onclick="pickTier('Portfolio')">
+        <div class="name">Portfolio</div>
+        <div class="price">$299</div>
+        <div class="price-note">For multiple properties</div>
+        <ul>
+          <li>Everything in Pro</li>
+          <li><strong>Up to 3 listings</strong></li>
+          <li>5 extra short clips for social</li>
+          <li>Seasonal re-cut later in the year</li>
+          <li>Priority 24-hour delivery</li>
+          <li>Unlimited revisions</li>
+        </ul>
+        <button class="btn btn-ghost">Choose Portfolio</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ORDER -->
+  <section id="order">
+    <div class="sec-head">
+      <h3>Start your video</h3>
+      <p>Fill this out and we'll confirm by email with a preview timeline before anything is charged.</p>
+    </div>
+
+    <div class="form-card">
+      <form id="orderForm" onsubmit="return submitOrder(event)">
+        <div class="row2">
+          <div class="field">
+            <label for="fname">Your Name</label>
+            <input type="text" id="fname" required placeholder="Jordan Reyes">
+          </div>
+          <div class="field">
+            <label for="femail">Email</label>
+            <input type="email" id="femail" required placeholder="you@email.com">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="flink">Listing Link <span class="opt">— Airbnb, VRBO, Zillow, anything public</span></label>
+          <input type="url" id="flink" placeholder="https://www.airbnb.com/rooms/...">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="ftype">Property Type</label>
+            <select id="ftype">
+              <option>Apartment / Condo</option>
+              <option>House</option>
+              <option>Cabin / Chalet</option>
+              <option>Beach / Waterfront</option>
+              <option>Tiny Home / Unique Stay</option>
+              <option>Multiple Properties</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fpkg">Package</label>
+            <select id="fpkg">
+              <option value="Starter">Starter — $99</option>
+              <option value="Pro" selected>Pro — $179</option>
+              <option value="Portfolio">Portfolio — $299</option>
+              <option value="Not sure">Not sure yet</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="fnotes">What makes your place special? <span class="opt">— optional</span></label>
+          <textarea id="fnotes" placeholder="Hot tub with a mountain view, 5 min from downtown, dog friendly..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;">Send My Request</button>
+        <div class="form-msg" id="formMsg"></div>
+        <p class="form-note">
+          No payment now. We reply within 24 hours to confirm the details,
+          and you only pay once you approve the plan for your video.
+        </p>
+      </form>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section>
+    <div class="sec-head"><h3>Questions</h3></div>
+    <div class="faq">
+      <details class="qa">
+        <summary>Do I need to take new photos?</summary>
+        <p>No. That's the whole point. We pull from the photos already on your listing. If you happen to have higher-resolution originals sitting on your phone or camera, email them over and we'll use those since they give a sharper final video — but it's completely optional.</p>
+      </details>
+      <details class="qa">
+        <summary>What exactly do I get?</summary>
+        <p>A finished MP4 video file, sized for wherever you plan to post it. Airbnb itself doesn't accept video uploads on most listings, so the real value is Instagram Reels, TikTok, Facebook, your direct-booking site, and anywhere you advertise the property. Pro and Portfolio include multiple sizes so one order covers every platform.</p>
+      </details>
+      <details class="qa">
+        <summary>How fast is delivery?</summary>
+        <p>48 hours for Starter, 24 hours for Pro and Portfolio, counted from when you approve the plan. If you're up against a deadline, say so in the notes and we'll tell you honestly whether we can make it.</p>
+      </details>
+      <details class="qa">
+        <summary>What if I don't like it?</summary>
+        <p>Every package includes revisions — one for Starter, two for Pro, unlimited for Portfolio. Tell us what feels off and we recut it. You don't pay anything until you've approved the plan for the video.</p>
+      </details>
+      <details class="qa">
+        <summary>Is the music actually cleared?</summary>
+        <p>Yes. We only use licensed or royalty-free tracks, so your post won't get muted or hit with a claim on Instagram or TikTok.</p>
+      </details>
+      <details class="qa">
+        <summary>I manage several properties. Can I get a deal?</summary>
+        <p>Portfolio covers up to 3 listings at $299. If you run more than that, send the request form with "Multiple Properties" selected and we'll put together a per-unit rate for you.</p>
+      </details>
+    </div>
+  </section>
+
+</div>
+
+<div class="footer">
+  <div style="margin-bottom:10px;">
+    <a href="https://www.tiktok.com/@5starlinks.xyz" target="_blank" rel="noopener" aria-label="TikTok" style="margin:0 8px;display:inline-block;vertical-align:middle;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+    <a href="https://www.instagram.com/5starlinks.xyz" target="_blank" rel="noopener" aria-label="Instagram" style="margin:0 8px;display:inline-block;vertical-align:middle;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C8.74 0 8.333.014 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.014 8.333 0 8.74 0 12s.014 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.986 8.74 24 12 24s3.667-.014 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.336 1.384-2.126.296-.765.499-1.636.558-2.913.058-1.28.072-1.687.072-4.947s-.014-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.014 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.897 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.897-.421-.419-.69-.824-.897-1.38-.165-.42-.36-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.06-1.17.255-1.814.42-2.234.207-.569.477-.96.897-1.381.419-.419.81-.689 1.379-.896.42-.165 1.05-.36 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z"/></svg></a>
+    <a href="https://discord.gg/N8zSTmvZd" target="_blank" rel="noopener" aria-label="Discord" style="color:#a855f7;margin:0 8px;display:inline-block;vertical-align:middle;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.128 12.299 12.299 0 0 1-1.873.892.076.076 0 0 0-.04.106c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.029 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.057c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.947 2.418-2.157 2.418z"/></svg></a>
+  </div>
+  &copy; 2026 <strong>5 Star Links</strong> &middot; <a href="terms.html">Terms of Service</a> &middot; <a href="contact.html">Contact</a> &middot; <a href="index.html">Shop</a>
+</div>
+
+<script>
+const SUPPORT_EMAIL = 'support@5starlinks.xyz';
+
+function pickTier(name) {
+  const sel = document.getElementById('fpkg');
+  for (const o of sel.options) { if (o.value === name) sel.value = name; }
+  document.getElementById('order').scrollIntoView({ behavior: 'smooth' });
+  setTimeout(() => document.getElementById('fname').focus(), 500);
+}
+
+function submitOrder(e) {
+  e.preventDefault();
+  const v = id => (document.getElementById(id).value || '').trim();
+  const name = v('fname'), email = v('femail'), link = v('flink');
+  const type = v('ftype'), pkg = v('fpkg'), notes = v('fnotes');
+  const msg = document.getElementById('formMsg');
+
+  if (!name || !email) {
+    msg.className = 'form-msg err show';
+    msg.textContent = 'Please add your name and email so we can get back to you.';
+    return false;
+  }
+
+  const lead = { name, email, link, type, pkg, notes, at: new Date().toISOString() };
+
+  // Keep a local copy so nothing is lost if the email client misbehaves
+  try {
+    const all = JSON.parse(localStorage.getItem('listingVideoLeads') || '[]');
+    all.push(lead);
+    localStorage.setItem('listingVideoLeads', JSON.stringify(all));
+  } catch (err) {}
+
+  const body =
+    'New listing video request\n' +
+    '---------------------------------\n' +
+    'Name: ' + name + '\n' +
+    'Email: ' + email + '\n' +
+    'Package: ' + pkg + '\n' +
+    'Property type: ' + type + '\n' +
+    'Listing link: ' + (link || '(not provided)') + '\n\n' +
+    'Notes:\n' + (notes || '(none)') + '\n';
+
+  const mailto = 'mailto:' + SUPPORT_EMAIL +
+    '?subject=' + encodeURIComponent('Listing Video Request — ' + pkg + ' — ' + name) +
+    '&body=' + encodeURIComponent(body);
+
+  window.location.href = mailto;
+
+  msg.className = 'form-msg show';
+  msg.innerHTML = '<strong>Almost done —</strong> your email app should be opening with everything filled in. ' +
+    'Just hit send. If nothing opened, email us directly at <a href="mailto:' + SUPPORT_EMAIL +
+    '" style="color:#86efac;">' + SUPPORT_EMAIL + '</a> and we\'ll take it from there.';
+  return false;
+}
+</script>
+
+</body>
+</html>
