@@ -111,9 +111,25 @@ function getVideoInfo(url) {
   return ytdlpJSON(url, COOKIE_ARGS).catch(() => ytdlpJSON(url, []));
 }
 
+// YouTube throttles a long single-connection download until it stops moving
+// entirely -- observed dying at the same ~79% of the audio track every time,
+// on both the opus and m4a streams. The connection stays open, so a socket
+// timeout never fires and yt-dlp waits on it forever. Requesting the file as
+// ranged chunks means a throttled chunk ends and the next one starts on a
+// fresh request, which sails past the point that used to hang (38MB in ~18s
+// vs. stalling indefinitely). The timeout and retries cover genuinely dead
+// connections, and --continue resumes from bytes already on disk.
+const STALL_ARGS = [
+  '--http-chunk-size', '10M',
+  '--socket-timeout', '30',
+  '--retries', '10',
+  '--fragment-retries', '10',
+  '--continue',
+];
+
 function runDownload(url, outputPath, extraArgs) {
   return new Promise((resolve, reject) => {
-    const proc = spawn('yt-dlp', extraArgs.concat([
+    const proc = spawn('yt-dlp', extraArgs.concat(STALL_ARGS, [
       '-f', 'bestvideo[height<=720]+bestaudio[ext=m4a]/best[height<=720]/best',
       '--merge-output-format', 'mp4', '-o', outputPath, '--no-playlist', url,
     ]));
@@ -662,7 +678,24 @@ function attachSpliceEvents(es){
     renderLicenseBanner();
   });
   es.addEventListener("done",function(e){var d=JSON.parse(e.data);document.getElementById("progressFill").style.width="100%";document.getElementById("doneBox").classList.add("active");document.getElementById("doneMsg").textContent=d.clips+" clips saved to: "+d.dir;document.getElementById("startBtn").disabled=false;document.getElementById("startBtn").textContent="Start Splicing";es.close();});
-  es.addEventListener("error",function(e){try{var d=JSON.parse(e.data);var lb=document.getElementById("logBox");var ln=document.createElement("div");ln.className="log-line";ln.textContent="Error: "+d.msg;lb.appendChild(ln);}catch(ex){}document.getElementById("startBtn").disabled=false;document.getElementById("startBtn").textContent="Start Splicing";es.close();});
+  // An EventSource fires "error" for a dropped connection as well as for a
+  // server-sent error event. Only the latter carries data, and only the latter
+  // means the splice actually failed -- treating a dropped connection as fatal
+  // is what used to freeze the log while the backend kept working.
+  es.addEventListener("error",function(e){
+    if(!e || !e.data) return;
+    var d;
+    try{ d=JSON.parse(e.data); }catch(ex){ return; }
+    var lb=document.getElementById("logBox");
+    var ln=document.createElement("div");
+    ln.className="log-line";
+    ln.textContent="Error: "+d.msg;
+    lb.appendChild(ln);
+    lb.scrollTop=lb.scrollHeight;
+    document.getElementById("startBtn").disabled=false;
+    document.getElementById("startBtn").textContent="Start Splicing";
+    es.close();
+  });
   es.onerror=function(){if(document.getElementById("startBtn").disabled){setTimeout(function(){if(document.getElementById("startBtn").disabled){evtSource=new EventSource("/api/events");attachSpliceEvents(evtSource);}},2000);}};
 }
 

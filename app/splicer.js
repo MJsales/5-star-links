@@ -143,9 +143,21 @@ function getVideoInfo(url) {
   return dump(COOKIE_ARGS).catch(() => dump([])).then(stdout => JSON.parse(stdout));
 }
 
+// YouTube throttles a long single-connection download until it stops moving
+// entirely, and because the connection stays open no socket timeout fires --
+// yt-dlp just waits on it forever. Ranged chunks end a throttled read and
+// start the next on a fresh request, which gets past the point that hangs.
+const STALL_ARGS = [
+  '--http-chunk-size', '10M',
+  '--socket-timeout', '30',
+  '--retries', '10',
+  '--fragment-retries', '10',
+  '--continue',
+];
+
 function runDownload(url, outputPath, extraArgs) {
   return new Promise((resolve, reject) => {
-    const proc = require('child_process').spawn(YTDLP, extraArgs.concat([
+    const proc = require('child_process').spawn(YTDLP, extraArgs.concat(STALL_ARGS, [
       '-f', 'bestvideo[height<=720]+bestaudio[ext=m4a]/best[height<=720]/best',
       '--merge-output-format', 'mp4', '-o', outputPath, '--no-playlist', url,
     ]));
