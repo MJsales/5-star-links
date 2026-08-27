@@ -6,13 +6,26 @@ const products = {
   'ski-mask': { name: 'Ski Mask', price: 500 },
   'spider-hoodie': { name: 'S Hoodie', price: 500 },
   'bape-hoodie': { name: 'B Hoodie', price: 500 },
-  'ai-picks': { name: 'AI Sports Picks', price: 500 },
-  'ai-stocks': { name: 'AI Stock Picks', price: 500 },
   'ai-video': { name: 'AI Video Splicer', price: 500 },
-  'picks-bundle': { name: 'AI Picks Bundle (Sports + Stocks)', price: 800 },
-  'all-access': { name: 'All-Access Pass (all AI tools)', price: 1200 },
   'discord-vip': { name: 'Discord VIP', price: 500 },
+  'website-build': { name: 'Custom Website Build', price: 50000 },
 };
+
+// Project details from website.html ride along on the PaymentIntent so they
+// show up next to the charge in the Stripe dashboard. Client-supplied, so only
+// known keys are kept and each value is truncated to Stripe's 500-char limit.
+const METADATA_KEYS = ['name', 'email', 'business', 'siteType', 'details'];
+
+function cleanMetadata(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  METADATA_KEYS.forEach(k => {
+    if (raw[k] == null) return;
+    const v = String(raw[k]).trim();
+    if (v) out[k] = v.slice(0, 500);
+  });
+  return out;
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -28,7 +41,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { items, amount } = req.body;
+    const { items, amount, metadata } = req.body;
 
     let totalAmount = 0;
 
@@ -45,10 +58,14 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Invalid amount' });
     }
 
+    const meta = cleanMetadata(metadata);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount,
       currency: 'usd',
       automatic_payment_methods: { enabled: true },
+      ...(Object.keys(meta).length ? { metadata: meta } : {}),
+      ...(meta.email ? { receipt_email: meta.email } : {}),
     });
 
     res.status(200).json({ clientSecret: paymentIntent.client_secret });

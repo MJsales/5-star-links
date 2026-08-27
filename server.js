@@ -31,12 +31,9 @@ const products = {
   'ski-mask': { name: 'Ski Mask', price: 500 },
   'spider-hoodie': { name: 'S Hoodie', price: 500 },
   'bape-hoodie': { name: 'B Hoodie', price: 500 },
-  'ai-picks': { name: 'AI Sports Picks', price: 500 },
-  'ai-stocks': { name: 'AI Stock Picks', price: 500 },
   'ai-video': { name: 'AI Video Splicer', price: 500 },
-  'picks-bundle': { name: 'AI Picks Bundle (Sports + Stocks)', price: 800 },
-  'all-access': { name: 'All-Access Pass (all AI tools)', price: 1200 },
   'discord-vip': { name: 'Discord VIP', price: 500 },
+  'website-build': { name: 'Custom Website Build', price: 50000 },
 };
 
 app.post('/create-payment-intent', async (req, res) => {

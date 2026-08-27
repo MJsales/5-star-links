@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Website Build — $500 | 5 Star Links</title>
+  <meta name="description" content="A custom-built website, designed and launched for a flat $500. Mobile-ready, fast, and yours to keep." />
+  <meta property="og:title" content="Custom Website Build — $500" />
+  <meta property="og:description" content="A custom-built website, designed and launched for a flat $500." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.5starlinks.xyz/website.html" />
+  <link rel="icon" type="image/png" href="pics/logo/favicon.png">
+  <link rel="apple-touch-icon" href="pics/logo/logo.png.png">
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #050208; color: #fff;
+      min-height: 100vh; display: flex; flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(13,8,21,0.92); backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding: 1rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .topbar h1 {
+      font-size: 1.15rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .topbar a {
+      background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3);
+      color: #fff; padding: 0.45rem 1rem; border-radius: 50px;
+      font-size: 0.82rem; font-weight: 600; text-decoration: none; white-space: nowrap;
+    }
+
+    .wrap { width: 100%; max-width: 900px; margin: 0 auto; padding: 0 1.25rem; }
+
+    .hero { text-align: center; padding: 4rem 0 3rem; position: relative; }
+    .hero::before {
+      content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+      width: 460px; height: 460px; max-width: 100%;
+      background: radial-gradient(circle, rgba(168,85,247,0.18), transparent 68%);
+      pointer-events: none;
+    }
+    .overline {
+      display: inline-block; position: relative;
+      color: #a78bfa; font-size: 0.7rem; font-weight: 800;
+      letter-spacing: 3px; text-transform: uppercase; margin-bottom: 1rem;
+    }
+    .hero h2 {
+      position: relative;
+      font-size: clamp(2rem, 6vw, 3.1rem); font-weight: 900; line-height: 1.08;
+      letter-spacing: -1.5px;
+      background: linear-gradient(135deg, #fff 30%, #a855f7);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      position: relative; color: #b0a8c4; font-size: 1.02rem;
+      margin: 1rem auto 0; max-width: 540px; line-height: 1.6;
+    }
+    .price-tag {
+      position: relative; display: inline-flex; align-items: baseline; gap: 0.5rem;
+      margin-top: 1.6rem; padding: 0.7rem 1.6rem;
+      background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.35);
+      border-radius: 50px;
+    }
+    .price-tag b { font-size: 2rem; font-weight: 900; color: #4ade80; letter-spacing: -1px; }
+    .price-tag span { color: #86efac; font-size: 0.85rem; font-weight: 600; }
+
+    .btn {
+      display: inline-block; padding: 0.9rem 2rem; border: none;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      border-radius: 50px; font-size: 0.95rem; font-weight: 800;
+      font-family: inherit; letter-spacing: 0.5px;
+      cursor: pointer; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(168,85,247,0.4); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    section { padding: 2.5rem 0; }
+    .sec-head { text-align: center; margin-bottom: 2rem; }
+    .sec-head h3 { font-size: 1.5rem; font-weight: 900; letter-spacing: -0.5px; }
+    .sec-head p { color: #8b8b9e; font-size: 0.92rem; margin-top: 0.45rem; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 1rem; }
+    .card {
+      background: linear-gradient(150deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.16); border-radius: 16px;
+      padding: 1.4rem; transition: border-color 0.25s, transform 0.25s;
+    }
+    .card:hover { border-color: rgba(168,85,247,0.45); transform: translateY(-3px); }
+    .card .ico { font-size: 1.6rem; margin-bottom: 0.6rem; }
+    .card h4 { font-size: 0.98rem; font-weight: 800; margin-bottom: 0.35rem; }
+    .card p { color: #8b8b9e; font-size: 0.85rem; line-height: 1.55; }
+
+    .steps { display: grid; gap: 0.75rem; }
+    .step {
+      display: flex; gap: 1rem; align-items: flex-start;
+      background: rgba(168,85,247,0.05); border: 1px solid rgba(168,85,247,0.14);
+      border-radius: 14px; padding: 1.1rem 1.25rem;
+    }
+    .step .num {
+      flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 0.85rem;
+    }
+    .step h4 { font-size: 0.95rem; font-weight: 800; margin-bottom: 0.2rem; }
+    .step p { color: #8b8b9e; font-size: 0.85rem; line-height: 1.55; }
+
+    .form-card {
+      background: linear-gradient(150deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.25); border-radius: 20px;
+      padding: 2rem;
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .field { margin-bottom: 1rem; }
+    .field label {
+      display: block; color: #a78bfa; font-size: 0.7rem; font-weight: 800;
+      letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 0.45rem;
+    }
+    .field label .opt { color: #555; font-weight: 500; letter-spacing: 0; text-transform: none; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 0.8rem 1rem;
+      background: #0a0612; border: 1px solid rgba(168,85,247,0.28);
+      border-radius: 10px; color: #fff; font-size: 0.92rem;
+      font-family: inherit; outline: none; transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: #a855f7; }
+    .field input::placeholder, .field textarea::placeholder { color: #444; }
+    .field textarea { min-height: 110px; resize: vertical; line-height: 1.55; }
+
+    .msg {
+      display: none; margin-top: 0.9rem; padding: 0.8rem 1rem;
+      border-radius: 10px; font-size: 0.85rem; line-height: 1.5;
+      background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); color: #d8c9ff;
+    }
+    .msg.show { display: block; }
+    .msg.err { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.35); color: #fca5a5; }
+
+    .note { color: #6b6b80; font-size: 0.78rem; line-height: 1.55; margin-top: 0.9rem; text-align: center; }
+
+    #payStep { display: none; }
+    #payStep.show { display: block; }
+    #payment-element { margin: 1.2rem 0; }
+    .pay-summary {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.9rem 1.1rem; margin-bottom: 0.5rem;
+      background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.3);
+      border-radius: 12px; font-size: 0.9rem;
+    }
+    .pay-summary b { color: #4ade80; font-size: 1.25rem; font-weight: 900; }
+    .link-btn {
+      background: none; border: none; color: #8b8b9e; font-family: inherit;
+      font-size: 0.82rem; cursor: pointer; text-decoration: underline; padding: 0.5rem;
+    }
+    .link-btn:hover { color: #fff; }
+
+    #doneState { display: none; text-align: center; padding: 1rem 0; }
+    #doneState.show { display: block; }
+    #doneState .check { font-size: 3rem; margin-bottom: 0.6rem; }
+    #doneState h3 { font-size: 1.4rem; font-weight: 900; color: #4ade80; margin-bottom: 0.5rem; }
+    #doneState p { color: #b0a8c4; font-size: 0.92rem; line-height: 1.6; max-width: 440px; margin: 0 auto; }
+
+    .faq details {
+      background: rgba(168,85,247,0.05); border: 1px solid rgba(168,85,247,0.14);
+      border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 0.6rem;
+    }
+    .faq summary { cursor: pointer; font-weight: 700; font-size: 0.92rem; list-style: none; }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary::before { content: '+ '; color: #a855f7; font-weight: 900; }
+    .faq details[open] summary::before { content: '– '; }
+    .faq details p { color: #8b8b9e; font-size: 0.87rem; line-height: 1.6; margin-top: 0.7rem; }
+
+    .footer {
+      margin-top: auto; text-align: center; padding: 3rem 1rem 2rem;
+      color: #3a3a4a; font-size: 0.8rem;
+      border-top: 1px solid rgba(168,85,247,0.1);
+    }
+    .footer a { color: #6b6b80; text-decoration: none; }
+
+    @media (max-width: 620px) {
+      .row2 { grid-template-columns: 1fr; }
+      .form-card { padding: 1.5rem 1.2rem; }
+      .hero { padding: 2.5rem 0 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>5 Star Links</h1>
+  <a href="index.html">← Back to Site</a>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <span class="overline">Custom Website Build</span>
+    <h2>I'll build your website for you</h2>
+    <p>Design, build, and launch — one flat price, no monthly fees, no surprises. You end up with a real site you own.</p>
+    <div class="price-tag"><b>$500</b><span>flat, one time</span></div>
+    <div style="position:relative;margin-top:1.6rem;">
+      <a class="btn" href="#start">Get Started</a>
+    </div>
+  </div>
+
+  <section>
+    <div class="sec-head">
+      <h3>What you get</h3>
+      <p>Everything below is included in the $500.</p>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <div class="ico">&#127912;</div>
+        <h4>Custom design</h4>
+        <p>Built around your business and your look — not a template everyone else is using.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128241;</div>
+        <h4>Works on phones</h4>
+        <p>Looks right on phones, tablets, and desktops. Most of your visitors will be on a phone.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#9889;</div>
+        <h4>Fast &amp; live</h4>
+        <p>Set up on fast hosting and pushed live, connected to your domain name.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128231;</div>
+        <h4>Contact &amp; forms</h4>
+        <p>A contact form, booking links, socials, maps — whatever you need people to reach you.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128269;</div>
+        <h4>Google-ready</h4>
+        <p>Titles, descriptions, and page setup done properly so you can be found in search.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128260;</div>
+        <h4>Revisions included</h4>
+        <p>We go back and forth until it looks the way you want it before it goes live.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h3>How it works</h3></div>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div>
+          <h4>Tell me about it</h4>
+          <p>Fill out the form below with what the site is for and anything you already have in mind.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div>
+          <h4>Pay the $500</h4>
+          <p>One flat payment through Stripe. Card, Apple Pay, and Google Pay all work.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div>
+          <h4>I build it</h4>
+          <p>I'll email you within 24 hours to go over the details, then send a first version to review.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">4</div>
+        <div>
+          <h4>It goes live</h4>
+          <p>Once you're happy with it, the site gets connected to your domain and launched.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="sec-head">
+      <h3>Start your website</h3>
+      <p>Takes about a minute.</p>
+    </div>
+
+    <div class="form-card">
+
+      <!-- STEP 1: details -->
+      <div id="detailStep">
+        <div class="row2">
+          <div class="field">
+            <label for="fname">Your Name</label>
+            <input type="text" id="fname" placeholder="Jordan Reyes" autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="femail">Email</label>
+            <input type="email" id="femail" placeholder="you@email.com" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="fbiz">Business / Project Name</label>
+            <input type="text" id="fbiz" placeholder="Reyes Detailing">
+          </div>
+          <div class="field">
+            <label for="ftype">Type of Site</label>
+            <select id="ftype">
+              <option>Business / Services</option>
+              <option>Online Store</option>
+              <option>Restaurant / Food</option>
+              <option>Portfolio</option>
+              <option>Booking / Appointments</option>
+              <option>Landing Page</option>
+              <option>Not sure yet</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="fdetails">What do you want on it? <span class="opt">— the more detail the better</span></label>
+          <textarea id="fdetails" placeholder="Pages you want, colors or sites you like, whether you already own a domain name, anything else..."></textarea>
+        </div>
+
+        <button type="button" class="btn" style="width:100%;" id="continueBtn" onclick="startPayment()">Continue to Payment — $500</button>
+        <div class="msg" id="detailMsg"></div>
+        <p class="note">Payment is handled by Stripe. Your card details never touch this site.</p>
+      </div>
+
+      <!-- STEP 2: payment -->
+      <div id="payStep">
+        <div class="pay-summary">
+          <span>Custom Website Build</span>
+          <b>$500</b>
+        </div>
+        <div id="payment-element"></div>
+        <button type="button" class="btn" style="width:100%;" id="payBtn" onclick="submitPayment()">Pay $500</button>
+        <div class="msg" id="payMsg"></div>
+        <div style="text-align:center;">
+          <button type="button" class="link-btn" onclick="backToDetails()">← Edit my details</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: done -->
+      <div id="doneState">
+        <div class="check">&#127881;</div>
+        <h3>Payment received</h3>
+        <p>
+          Thank you — your website build is booked. You'll get a Stripe receipt by email,
+          and I'll reach out within 24 hours to go over the details and get started.
+        </p>
+        <div style="margin-top:1.5rem;">
+          <a class="btn" href="index.html">Back to Site</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="faq">
+    <div class="sec-head"><h3>Questions</h3></div>
+    <details>
+      <summary>Do I need to already have a domain name?</summary>
+      <p>No. If you already own one, I'll connect the site to it. If you don't, I'll help you pick and set one up — domain registration is paid directly to the registrar and usually runs about $10–15 a year.</p>
+    </details>
+    <details>
+      <summary>Are there monthly fees?</summary>
+      <p>Not to me — the $500 is one flat payment. Hosting for a site like this is typically free or a few dollars a month depending on what it needs, and that's paid to the host directly, not to me.</p>
+    </details>
+    <details>
+      <summary>How long does it take?</summary>
+      <p>Most sites are ready for you to review within about a week of getting your details, then live shortly after you approve it. Bigger or more complex sites can take longer — I'll tell you upfront.</p>
+    </details>
+    <details>
+      <summary>What if I want changes later?</summary>
+      <p>Revisions during the build are included until you're happy with it. Changes further down the road are easy to do too — just reach out and we'll sort it out.</p>
+    </details>
+    <details>
+      <summary>Do I own the website?</summary>
+      <p>Yes. It's yours — the design, the content, and the domain are all in your name.</p>
+    </details>
+  </section>
+
+</div>
+
+<div class="footer">
+  &copy; 2026 5 Star Links &bull;
+  <a href="terms.html">Terms</a> &bull;
+  <a href="privacy.html">Privacy</a> &bull;
+  <a href="contact.html">Contact</a>
+</div>
+
+<script>
+const publishableKey = 'pk_live_51OK8LoRoJdnBoS06bKCHFFdDdpp5M0JheA9pWH80WJemFTP4hfyrqUvhE0lzxlJ3322yRk5BhsZq8mJa4vd3h6jF00W4iiMxI3';
+let stripe, elements, clientSecret;
+
+const $ = id => document.getElementById(id);
+const val = id => ($(id).value || '').trim();
+
+function showMsg(el, text, isErr) {
+  el.className = 'msg show' + (isErr ? ' err' : '');
+  el.textContent = text;
+}
+function hideMsg(el) { el.className = 'msg'; el.textContent = ''; }
+
+function collectDetails() {
+  return {
+    name: val('fname'),
+    email: val('femail'),
+    business: val('fbiz'),
+    siteType: val('ftype'),
+    details: val('fdetails'),
+  };
+}
+
+// Kept locally so the buyer's answers survive a redirect-based payment method
+// (Cash App / Klarna leave the page and come back to ?paid=1).
+function saveDraft(d) {
+  try { localStorage.setItem('websiteBuildRequest', JSON.stringify(d)); } catch (e) {}
+}
+
+async function startPayment() {
+  const msg = $('detailMsg');
+  const d = collectDetails();
+
+  if (!d.name || !d.email) {
+    showMsg(msg, 'Please add your name and email so I can get back to you about the site.', true);
+    return;
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) {
+    showMsg(msg, 'That email address doesn\'t look right — mind double-checking it?', true);
+    return;
+  }
+
+  const btn = $('continueBtn');
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+  hideMsg(msg);
+  saveDraft(d);
+
+  try {
+    // Priced server-side from the 'website-build' product id, so the $500
+    // can't be altered from the browser.
+    const res = await fetch('/api/create-payment-intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: [{ id: 'website-build', quantity: 1 }], metadata: d }),
+    });
+    const data = await res.json();
+
+    if (!data.clientSecret) {
+      showMsg(msg, data.error || 'Could not start checkout. Please try again in a moment.', true);
+      btn.disabled = false;
+      btn.textContent = 'Continue to Payment — $500';
+      return;
+    }
+
+    clientSecret = data.clientSecret;
+    if (!stripe) stripe = Stripe(publishableKey);
+
+    if (elements) {
+      const prev = elements.getElement('payment');
+      if (prev) prev.unmount();
+    }
+    elements = stripe.elements({
+      clientSecret,
+      appearance: {
+        theme: 'night',
+        variables: {
+          colorPrimary: '#a855f7',
+          colorBackground: '#0a0612',
+          colorText: '#ffffff',
+          colorTextSecondary: '#a78bfa',
+          borderRadius: '10px',
+          fontFamily: 'Inter, sans-serif',
+        },
+      },
+    });
+    elements.create('payment', { layout: 'tabs' }).mount('#payment-element');
+
+    $('detailStep').style.display = 'none';
+    $('payStep').classList.add('show');
+    $('start').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    showMsg(msg, 'Network error — please check your connection and try again.', true);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Continue to Payment — $500';
+}
+
+function backToDetails() {
+  $('payStep').classList.remove('show');
+  $('detailStep').style.display = 'block';
+  hideMsg($('payMsg'));
+}
+
+async function submitPayment() {
+  const btn = $('payBtn');
+  const msg = $('payMsg');
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+  hideMsg(msg);
+
+  const d = collectDetails();
+  saveDraft(d);
+
+  const { error, paymentIntent } = await stripe.confirmPayment({
+    elements,
+    confirmParams: {
+      return_url: window.location.origin + '/website.html?paid=1',
+      payment_method_data: { billing_details: { name: d.name, email: d.email } },
+    },
+    redirect: 'if_required',
+  });
+
+  if (error) {
+    showMsg(msg, error.message || 'Payment failed. Please try again.', true);
+    btn.disabled = false;
+    btn.textContent = 'Pay $500';
+    return;
+  }
+
+  if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing')) {
+    showDone();
+  } else {
+    showMsg(msg, 'Payment could not be completed. Please try again.', true);
+    btn.disabled = false;
+    btn.textContent = 'Pay $500';
+  }
+}
+
+function showDone() {
+  $('detailStep').style.display = 'none';
+  $('payStep').classList.remove('show');
+  $('doneState').classList.add('show');
+  $('start').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Coming back from a redirect-based payment method.
+if (new URLSearchParams(window.location.search).get('paid') === '1') {
+  showDone();
+}
+</script>
+
+</body>
+</html>

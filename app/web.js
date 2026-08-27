@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const http = require('http');
-const { execSync, spawn, exec } = require('child_process');
+const { execSync, spawn, exec, execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -88,30 +88,52 @@ function isLicensed(state) {
   return !!(state.license && state.license.licensed);
 }
 
-function getVideoInfo(url) {
+// Passing the signed-in browser's cookies makes YouTube treat these requests
+// as a logged-in user, which avoids the "Sign in to confirm you're not a bot"
+// block that otherwise hits after a handful of downloads. The cookie source is
+// per-platform, and reading it can fail on its own (browser not installed,
+// locked profile, no disk-access permission) -- so every call retries without
+// cookies rather than failing outright.
+const COOKIE_BROWSER = process.platform === 'darwin' ? 'safari' : 'chrome';
+const COOKIE_ARGS = ['--cookies-from-browser', COOKIE_BROWSER];
+
+function ytdlpJSON(url, extraArgs) {
   return new Promise((resolve, reject) => {
-    exec('yt-dlp --dump-json --no-download "' + url + '"', { timeout: 60000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
-      if (err) return reject(err);
-      try { resolve(JSON.parse(stdout)); } catch { reject(new Error('Parse error')); }
-    });
+    execFile('yt-dlp', extraArgs.concat(['--dump-json', '--no-download', url]),
+      { timeout: 60000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
+        if (err) return reject(err);
+        try { resolve(JSON.parse(stdout)); } catch { reject(new Error('Parse error')); }
+      });
   });
 }
 
-function downloadVideo(url, outputDir) {
+function getVideoInfo(url) {
+  return ytdlpJSON(url, COOKIE_ARGS).catch(() => ytdlpJSON(url, []));
+}
+
+function runDownload(url, outputPath, extraArgs) {
   return new Promise((resolve, reject) => {
-    const outputPath = path.join(outputDir, 'video.mp4');
-    log('Downloading video...');
-    const proc = spawn('yt-dlp', ['-f', 'best[height<=720]', '-o', outputPath, '--no-playlist', url]);
+    const proc = spawn('yt-dlp', extraArgs.concat([
+      '-f', 'bestvideo[height<=720]+bestaudio[ext=m4a]/best[height<=720]/best',
+      '--merge-output-format', 'mp4', '-o', outputPath, '--no-playlist', url,
+    ]));
     let stderr = '';
     proc.stderr.on('data', d => { stderr += d.toString(); });
     proc.on('close', code => {
       if (code !== 0) return reject(new Error(stderr || 'Download failed'));
       if (!fs.existsSync(outputPath)) return reject(new Error('File not created'));
-      log('Download complete');
       resolve(outputPath);
     });
     proc.on('error', reject);
   });
+}
+
+function downloadVideo(url, outputDir) {
+  const outputPath = path.join(outputDir, 'video.mp4');
+  log('Downloading video...');
+  return runDownload(url, outputPath, COOKIE_ARGS)
+    .catch(() => runDownload(url, outputPath, []))
+    .then(p => { log('Download complete'); return p; });
 }
 
 // ffmpeg's own text renderer (drawtext) needs libfreetype/fontconfig, which the
@@ -229,7 +251,11 @@ async function clipVideo(inputPath, outputDir, startSec, duration, index, title,
   // downscale is invisible, but boxblur does ~16x less pixel work this way. This
   // (not the encoder) was the actual bottleneck on weak CPUs.
   const inputs = ['-ss', String(startSec), '-t', String(duration), '-i', inputPath, '-i', overlayPath];
-  let FILTER = '[0:v]split=2[bg][fg];[bg]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=8:2,scale=1080:1920[bgb];[fg]crop=min(iw\\,ih*4/3):ih,scale=1080:-2[fgs];[bgb][fgs]overlay=(W-w)/2:(H-h)/2[base];[base][1:v]overlay=0:70:format=auto' + (watermarkPath ? '[t1]' : '[outv]');
+  // Foreground is cropped to 4:3 and scaled to width 1080, giving it a fixed
+  // height (810 for a standard 16:9 source) centered in the 1920-tall canvas --
+  // so the title box (320 tall) is offset to land just above that foreground
+  // band instead of pinned to the very top of the frame.
+  let FILTER = '[0:v]split=2[bg][fg];[bg]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=8:2,scale=1080:1920[bgb];[fg]crop=min(iw\\,ih*4/3):ih,scale=1080:-2[fgs];[bgb][fgs]overlay=(W-w)/2:(H-h)/2[base];[base][1:v]overlay=0:210:format=auto' + (watermarkPath ? '[t1]' : '[outv]');
   if (watermarkPath) {
     inputs.push('-i', watermarkPath);
     FILTER += ';[t1][2:v]overlay=W-w-20:H-h-40:format=auto[outv]';
@@ -625,6 +651,21 @@ function submitPayment(){
     });
 }
 
+function attachSpliceEvents(es){
+  es.addEventListener("log",function(e){var d=JSON.parse(e.data);var lb=document.getElementById("logBox");var ln=document.createElement("div");ln.className="log-line";ln.textContent=d.msg;lb.appendChild(ln);lb.scrollTop=lb.scrollHeight;});
+  es.addEventListener("info",function(e){var d=JSON.parse(e.data);document.getElementById("infoBox").classList.add("active");document.getElementById("infoTitle").textContent=d.title;document.getElementById("infoDuration").textContent="Duration: "+Math.floor(d.duration/60)+"m "+(d.duration%60)+"s";document.getElementById("infoChannel").textContent=d.channel;});
+  es.addEventListener("progress",function(e){
+    var d=JSON.parse(e.data);
+    document.getElementById("progressFill").style.width=Math.round(d.current/d.total*100)+"%";
+    licenseState.licensed = d.licensed;
+    licenseState.freeRemaining = d.freeRemaining;
+    renderLicenseBanner();
+  });
+  es.addEventListener("done",function(e){var d=JSON.parse(e.data);document.getElementById("progressFill").style.width="100%";document.getElementById("doneBox").classList.add("active");document.getElementById("doneMsg").textContent=d.clips+" clips saved to: "+d.dir;document.getElementById("startBtn").disabled=false;document.getElementById("startBtn").textContent="Start Splicing";es.close();});
+  es.addEventListener("error",function(e){try{var d=JSON.parse(e.data);var lb=document.getElementById("logBox");var ln=document.createElement("div");ln.className="log-line";ln.textContent="Error: "+d.msg;lb.appendChild(ln);}catch(ex){}document.getElementById("startBtn").disabled=false;document.getElementById("startBtn").textContent="Start Splicing";es.close();});
+  es.onerror=function(){if(document.getElementById("startBtn").disabled){setTimeout(function(){if(document.getElementById("startBtn").disabled){evtSource=new EventSource("/api/events");attachSpliceEvents(evtSource);}},2000);}};
+}
+
 function startSplice(){
   var url=document.getElementById("url").value.trim();
   if(!url)return document.getElementById("url").focus();
@@ -637,18 +678,7 @@ function startSplice(){
   fetch("/api/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url,duration:duration})});
   if(evtSource)evtSource.close();
   evtSource=new EventSource("/api/events");
-  evtSource.addEventListener("log",function(e){var d=JSON.parse(e.data);var lb=document.getElementById("logBox");var ln=document.createElement("div");ln.className="log-line";ln.textContent=d.msg;lb.appendChild(ln);lb.scrollTop=lb.scrollHeight;});
-  evtSource.addEventListener("info",function(e){var d=JSON.parse(e.data);document.getElementById("infoBox").classList.add("active");document.getElementById("infoTitle").textContent=d.title;document.getElementById("infoDuration").textContent="Duration: "+Math.floor(d.duration/60)+"m "+(d.duration%60)+"s";document.getElementById("infoChannel").textContent=d.channel;});
-  evtSource.addEventListener("progress",function(e){
-    var d=JSON.parse(e.data);
-    document.getElementById("progressFill").style.width=Math.round(d.current/d.total*100)+"%";
-    licenseState.licensed = d.licensed;
-    licenseState.freeRemaining = d.freeRemaining;
-    renderLicenseBanner();
-  });
-  evtSource.addEventListener("done",function(e){var d=JSON.parse(e.data);document.getElementById("progressFill").style.width="100%";document.getElementById("doneBox").classList.add("active");document.getElementById("doneMsg").textContent=d.clips+" clips saved to: "+d.dir;document.getElementById("startBtn").disabled=false;document.getElementById("startBtn").textContent="Start Splicing";evtSource.close();});
-  evtSource.addEventListener("error",function(e){try{var d=JSON.parse(e.data);var lb=document.getElementById("logBox");var ln=document.createElement("div");ln.className="log-line";ln.textContent="Error: "+d.msg;lb.appendChild(ln);}catch(ex){}document.getElementById("startBtn").disabled=false;document.getElementById("startBtn").textContent="Start Splicing";evtSource.close();});
-  evtSource.onerror=function(){if(document.getElementById("startBtn").disabled){setTimeout(function(){if(document.getElementById("startBtn").disabled)evtSource=new EventSource("/api/events");},2000);}};
+  attachSpliceEvents(evtSource);
 }
 document.getElementById("url").addEventListener("keydown",function(e){if(e.key==="Enter")startSplice();});
 loadLicenseStatus();

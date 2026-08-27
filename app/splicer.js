@@ -131,26 +131,42 @@ function runCmd(exe, args) {
   });
 }
 
+// Signed-in browser cookies keep YouTube from serving the "confirm you're not
+// a bot" block. Source is per-platform, and reading it can fail on its own
+// (browser missing, locked profile, no disk-access permission) -- so each call
+// retries without cookies instead of failing outright.
+const COOKIE_BROWSER = IS_MAC ? 'safari' : 'chrome';
+const COOKIE_ARGS = ['--cookies-from-browser', COOKIE_BROWSER];
+
 function getVideoInfo(url) {
-  return runCmd(YTDLP, ['--dump-json', '--no-download', url]).then(stdout => JSON.parse(stdout));
+  const dump = args => runCmd(YTDLP, args.concat(['--dump-json', '--no-download', url]));
+  return dump(COOKIE_ARGS).catch(() => dump([])).then(stdout => JSON.parse(stdout));
 }
 
-function downloadVideo(url, outputDir) {
+function runDownload(url, outputPath, extraArgs) {
   return new Promise((resolve, reject) => {
-    const outputPath = path.join(outputDir, 'video.mp4');
-    console.log('  Downloading video...');
-    const proc = require('child_process').spawn(YTDLP, ['-f', 'best[height<=720]', '-o', outputPath, '--no-playlist', url]);
+    const proc = require('child_process').spawn(YTDLP, extraArgs.concat([
+      '-f', 'bestvideo[height<=720]+bestaudio[ext=m4a]/best[height<=720]/best',
+      '--merge-output-format', 'mp4', '-o', outputPath, '--no-playlist', url,
+    ]));
     let stderr = '';
     proc.stdout.on('data', () => {});
     proc.stderr.on('data', d => { stderr += d.toString(); });
     proc.on('close', code => {
       if (code !== 0) return reject(new Error(stderr || 'Download failed'));
       if (!fs.existsSync(outputPath)) return reject(new Error('File not created'));
-      console.log('  ✓ Download complete');
       resolve(outputPath);
     });
     proc.on('error', reject);
   });
+}
+
+function downloadVideo(url, outputDir) {
+  const outputPath = path.join(outputDir, 'video.mp4');
+  console.log('  Downloading video...');
+  return runDownload(url, outputPath, COOKIE_ARGS)
+    .catch(() => runDownload(url, outputPath, []))
+    .then(p => { console.log('  ✓ Download complete'); return p; });
 }
 
 function clipVideo(inputPath, outputDir, startSec, duration, index, total) {
