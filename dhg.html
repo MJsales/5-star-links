@@ -161,6 +161,7 @@
 
 <script>
 const shoes = [
+  { name: "DHG Clothes — Full List", link: "https://docs.google.com/spreadsheets/d/1s2yxng7IpFqyE_hL9w6F-DNEj5dB9y6Qrm3-jKWTsJE/preview", cat: "Clothes" },
   { name: "Jason Jewelry (Chrome Heart Rings)", link: "https://docs.google.com/spreadsheets/d/1g4lQLqgqwFC5A3v-6jXOkgH-bUOpVSj6r6-Wx-gYmDQ/edit#gid=1953553672&range=A2", cat: "Other" },
   { name: "1:1 Multi LV wallet and card holder", link: "https://sale.dhgate.com/ZM7moQ47", cat: "LV" },
   { name: "Dior Alpha Sandal Oblique", link: "https://sale.dhgate.com/u1n8pm73", cat: "Other" },
@@ -435,6 +436,7 @@ const shoes = [
 ];
 
 const catOrder = [
+  "Clothes",
   "Jordan 1", "Jordan 3", "Jordan 4", "Jordan 5", "Jordan 11", "Jordan 14",
   "Nike Dunk", "Air Force 1", "Nike Kobe", "Balenciaga", "LV", "Rick Owens",
   "Amiri", "Bape", "Yeezy", "Off-White", "Other"
@@ -458,16 +460,18 @@ function render() {
     html += `<div class="section-label">${cat} <span class="cat-count">${filtered.length}</span></div>`;
     html += `<div class="grid">`;
     filtered.forEach(s => {
+      // A few entries point at a Google Sheet rather than a DHGate listing.
+      const label = s.link.includes('docs.google.com') ? 'Open Spreadsheet' : 'View on DHGate';
       html += `<div class="card">
         <h3>${s.name}</h3>
-        <a href="${s.link}" target="_blank" rel="noopener noreferrer">View on DHGate</a>
+        <a href="${s.link}" target="_blank" rel="noopener noreferrer">${label}</a>
       </div>`;
     });
     html += `</div>`;
   });
 
   grid.innerHTML = html;
-  document.getElementById('totalCount').textContent = total + ' shoes';
+  document.getElementById('totalCount').textContent = total + ' items';
   noRes.classList.toggle('show', total === 0);
 }
 

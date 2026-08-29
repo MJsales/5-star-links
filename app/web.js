@@ -95,7 +95,20 @@ function isLicensed(state) {
 // locked profile, no disk-access permission) -- so every call retries without
 // cookies rather than failing outright.
 const COOKIE_BROWSER = process.platform === 'darwin' ? 'safari' : 'chrome';
-const COOKIE_ARGS = ['--cookies-from-browser', COOKIE_BROWSER];
+const COOKIE_FILE = path.join(os.homedir(), '.5star_splicer', 'cookies.txt');
+
+// Reading cookies straight out of the browser needs Full Disk Access, and that
+// grant is tied to the app's code signature -- so it silently lapses every time
+// the app is rebuilt. It also has to survive three hops (app -> this backend ->
+// yt-dlp's python), which macOS does not reliably attribute. An exported cookie
+// file in the user's home directory needs no special permission and survives
+// updates, so prefer it and keep the browser read as a fallback.
+function cookieArgs() {
+  try {
+    if (fs.statSync(COOKIE_FILE).size > 0) return ['--cookies', COOKIE_FILE];
+  } catch {}
+  return ['--cookies-from-browser', COOKIE_BROWSER];
+}
 
 function ytdlpJSON(url, extraArgs) {
   return new Promise((resolve, reject) => {
@@ -107,8 +120,28 @@ function ytdlpJSON(url, extraArgs) {
   });
 }
 
+// Reading the cookies is the single most load-bearing step here: signed out,
+// YouTube both bot-checks the metadata call and throttles the download until
+// it stops moving. When it fails the run can still limp on, but say so loudly
+// rather than falling back in silence -- a silent fallback surfaces later as
+// an unrelated-looking bot-check error or a download stuck at 79%.
+let cookieWarningShown = false;
+
+function warnCookiesUnavailable() {
+  if (cookieWarningShown) return;
+  cookieWarningShown = true;
+  log('WARNING: YouTube sign-in cookies unavailable -- continuing signed out.');
+  log('YouTube may block this as a bot, or throttle the download until it stalls.');
+  log('Fix: refresh the cookie file by running this in Terminal --');
+  log('yt-dlp --cookies-from-browser ' + COOKIE_BROWSER + ' --cookies ' + COOKIE_FILE +
+      ' --simulate https://www.youtube.com/watch?v=jNQXAC9IVRw');
+}
+
 function getVideoInfo(url) {
-  return ytdlpJSON(url, COOKIE_ARGS).catch(() => ytdlpJSON(url, []));
+  return ytdlpJSON(url, cookieArgs()).catch(() => {
+    warnCookiesUnavailable();
+    return ytdlpJSON(url, []);
+  });
 }
 
 // YouTube throttles a long single-connection download until it stops moving
@@ -144,11 +177,27 @@ function runDownload(url, outputPath, extraArgs) {
   });
 }
 
+// Every run writes to the same video.mp4, and yt-dlp treats an existing output
+// as "already downloaded" -- it exits 0 without fetching anything. So a run
+// left over from an earlier video (any run that failed before the cleanup at
+// the end) makes the next one silently splice the OLD video while displaying
+// the NEW title. Stale .fNNN partials are just as bad: the format id is per
+// format, not per video, so --continue would happily resume one video's
+// partial into another's file. Clear both before every download.
+function clearStaleDownload(outputDir) {
+  let files;
+  try { files = fs.readdirSync(outputDir); } catch { return; }
+  files
+    .filter(f => f === 'video.mp4' || f.startsWith('video.mp4.') || /^video\.f\d+\./.test(f))
+    .forEach(f => { try { fs.unlinkSync(path.join(outputDir, f)); } catch {} });
+}
+
 function downloadVideo(url, outputDir) {
   const outputPath = path.join(outputDir, 'video.mp4');
+  clearStaleDownload(outputDir);
   log('Downloading video...');
-  return runDownload(url, outputPath, COOKIE_ARGS)
-    .catch(() => runDownload(url, outputPath, []))
+  return runDownload(url, outputPath, cookieArgs())
+    .catch(() => { warnCookiesUnavailable(); return runDownload(url, outputPath, []); })
     .then(p => { log('Download complete'); return p; });
 }
 

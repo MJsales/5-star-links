@@ -173,8 +173,21 @@ function runDownload(url, outputPath, extraArgs) {
   });
 }
 
+// yt-dlp treats an existing output file as "already downloaded" and exits 0,
+// so a video.mp4 left behind by a failed run makes the next run splice the OLD
+// video under the NEW title. Stale .fNNN partials are worse -- the format id is
+// per format, not per video, so --continue can resume one video into another.
+function clearStaleDownload(outputDir) {
+  let files;
+  try { files = fs.readdirSync(outputDir); } catch { return; }
+  files
+    .filter(f => f === 'video.mp4' || f.startsWith('video.mp4.') || /^video\.f\d+\./.test(f))
+    .forEach(f => { try { fs.unlinkSync(path.join(outputDir, f)); } catch {} });
+}
+
 function downloadVideo(url, outputDir) {
   const outputPath = path.join(outputDir, 'video.mp4');
+  clearStaleDownload(outputDir);
   console.log('  Downloading video...');
   return runDownload(url, outputPath, COOKIE_ARGS)
     .catch(() => runDownload(url, outputPath, []))
