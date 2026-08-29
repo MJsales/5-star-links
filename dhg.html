@@ -93,6 +93,17 @@
       font-size: 0.95rem; font-weight: 700; letter-spacing: 0.5px;
       margin-bottom: 0.8rem; line-height: 1.3; color: #e0d6f5;
     }
+    .tags {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin: -0.4rem 0 0.8rem;
+    }
+    .tag {
+      font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px;
+      padding: 3px 8px; border-radius: 6px; white-space: nowrap;
+    }
+    .tag-price { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.35); color: #4ade80; }
+    .tag-size  { background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3); color: #c9a8ff; }
+    .tag-up    { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; }
     .card a {
       display: block; width: 100%; padding: 0.6rem;
       background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
@@ -161,7 +172,122 @@
 
 <script>
 const shoes = [
-  { name: "DHG Clothes — Full List", link: "https://docs.google.com/spreadsheets/d/1s2yxng7IpFqyE_hL9w6F-DNEj5dB9y6Qrm3-jKWTsJE/preview", cat: "Clothes" },
+  // --- Hoodies & Sweaters (21) ---
+  { name: "SUPREME HOODIE", link: "http://sale.dhgate.com/CAYNS352", cat: "Hoodies & Sweaters", price: "$68.84", sizing: "TRUE TO SIZE" },
+  { name: "CHROME HEART HOODIES", link: "https://sale.dhgate.com/ujkePh44", cat: "Hoodies & Sweaters", price: "$72.92", sizing: "ONE SIZE UP" },
+  { name: "ESSENTIALS HOODIE", link: "http://sale.dhgate.com/YY7vyh38", cat: "Hoodies & Sweaters", price: "$58.64", sizing: "TRUE TO SIZE" },
+  { name: "ESSENTIALS HOODIE 2", link: "http://sale.dhgate.com/pyiWrH56", cat: "Hoodies & Sweaters", price: "$58.64", sizing: "TRUE TO SIZE" },
+  { name: "HELLSTAR HOODIE", link: "https://sale.dhgate.com/6kPcbY11", cat: "Hoodies & Sweaters", price: "$69.48", sizing: "TRUE TO SIZE" },
+  { name: "Vale Forever Valley HOODIE", link: "https://sale.dhgate.com/179AaT74", cat: "Hoodies & Sweaters", sizing: "TRUE TO SIZE" },
+  { name: "Amiri Hoodie", link: "http://sale.dhgate.com/T1zjBE50", cat: "Hoodies & Sweaters", price: "$68.84", sizing: "ONE SIZE UP" },
+  { name: "Amiri Hoodie", link: "https://sale.dhgate.com/NpPg0t47", cat: "Hoodies & Sweaters", price: "$68.84", sizing: "ONE SIZE UP" },
+  { name: "GALLERY DEPT HOODIE", link: "http://sale.dhgate.com/Q7JVe515", cat: "Hoodies & Sweaters", price: "$69.76", sizing: "ONE SIZE UP" },
+  { name: "THAT'S A AWFUL LOT OF COUGH SYRUP HOODIE", link: "https://sale.dhgate.com/GvaUZJ53", cat: "Hoodies & Sweaters", sizing: "ONE SIZE UP" },
+  { name: "BAPE HOODIES", link: "https://sale.dhgate.com/wNfHYe40", cat: "Hoodies & Sweaters", price: "$49.46", sizing: "ONE SIZE UP" },
+  { name: "OFF WHITE HOODIE", link: "https://sale.dhgate.com/BoAnoX83", cat: "Hoodies & Sweaters", price: "$68.84", sizing: "ONE SIZE UP" },
+  { name: "Godspeed HOODIE", link: "https://sale.dhgate.com/PwqoXs82", cat: "Hoodies & Sweaters", price: "$49.74", sizing: "TRUE TO SIZE" },
+  { name: "BALENCIAGA HOODIE", link: "https://sale.dhgate.com/5jJZTd23", cat: "Hoodies & Sweaters", price: "$62.72", sizing: "TRUE TO SIZE" },
+  { name: "ALL PALM ANGELS HOODIE", link: "https://sale.dhgate.com/aDqyi905", cat: "Hoodies & Sweaters", price: "$63.74", sizing: "ONE SIZE UP" },
+  { name: "PALM ANGELS HOODIE", link: "http://sale.dhgate.com/cf44wj64", cat: "Hoodies & Sweaters", price: "$68.84", sizing: "ONE SIZE UP" },
+  { name: "Vetements Hoodie", link: "http://sale.dhgate.com/CYf3mj17", cat: "Hoodies & Sweaters", price: "$69.86", sizing: "ONE SIZE UP" },
+  { name: "Ralph Lauren Sweater", link: "http://sale.dhgate.com/iAcrjs12", cat: "Hoodies & Sweaters", price: "$59.62", sizing: "ONE SIZE UP" },
+  { name: "BAPE HOODIE", link: "http://sale.dhgate.com/gZ6oJu36", cat: "Hoodies & Sweaters", price: "$64.66", sizing: "ONE SIZE UP" },
+  { name: "REPRESENT HOODIE", link: "http://sale.dhgate.com/44YSPZ81", cat: "Hoodies & Sweaters", price: "$49.30", sizing: "ONE SIZE UP" },
+  { name: "CPFM KANYE HOODIES", link: "https://sale.dhgate.com/GZL9Iu75", cat: "Hoodies & Sweaters", sizing: "ONE SIZE UP" },
+  // --- T-Shirts & Polos (43) ---
+  { name: "SUPREME T SHIRT", link: "https://sale.dhgate.com/9IjAwf75", cat: "T-Shirts & Polos", sizing: "TRUE TO SIZE" },
+  { name: "SP5DER T SHIRT", link: "https://sale.dhgate.com/jHJ0Yu00", cat: "T-Shirts & Polos", price: "$49.36", sizing: "TRUE TO SIZE" },
+  { name: "CHROME HEARTS LONG SLEEVE T SHIRT", link: "https://sale.dhgate.com/3UipJU79", cat: "T-Shirts & Polos", price: "$56.60", sizing: "ONE SIZE UP" },
+  { name: "CHROME HEART T SHIRT", link: "https://sale.dhgate.com/K6enCk00", cat: "T-Shirts & Polos", price: "$56.60", sizing: "TRUE TO SIZE" },
+  { name: "ESSENTIALS T SHIRT", link: "https://sale.dhgate.com/yAiSN347", cat: "T-Shirts & Polos", price: "$49.46", sizing: "TRUE TO SIZE" },
+  { name: "HELLSTAR Long Seeved T-shirt", link: "http://sale.dhgate.com/SCHRRW58", cat: "T-Shirts & Polos", price: "$49.46", sizing: "TRUE TO SIZE" },
+  { name: "HELLSTAR T SHIRTS 1", link: "https://sale.dhgate.com/9UJWzg19", cat: "T-Shirts & Polos", price: "$49.46", sizing: "TRUE TO SIZE" },
+  { name: "HELLSTAR T SHIRTS 2", link: "https://sale.dhgate.com/2NurxQ02", cat: "T-Shirts & Polos", price: "$49.46", sizing: "TRUE TO SIZE" },
+  { name: "HELLSTAR Vintage T SHIRT 3", link: "https://sale.dhgate.com/vEjF7116", cat: "T-Shirts & Polos", price: "$49.36", sizing: "ONE SIZE UP" },
+  { name: "Vale Forever T SHIRT", link: "https://sale.dhgate.com/179AaT74", cat: "T-Shirts & Polos", sizing: "TRUE TO SIZE" },
+  { name: "Amiri T SHIRT", link: "https://sale.dhgate.com/YfY3LC66", cat: "T-Shirts & Polos", price: "$49.46", sizing: "TRUE TO SIZE" },
+  { name: "RoughPlay Gorilla T-Shirt", link: "https://sale.dhgate.com/Ewhpxu67", cat: "T-Shirts & Polos", sizing: "TRUE TO SIZE" },
+  { name: "GALLERY DEPT T SHIRTS", link: "https://sale.dhgate.com/51B6FH56", cat: "T-Shirts & Polos", price: "$49.46", sizing: "TRUE TO SIZE" },
+  { name: "GALLERY DEPT T SHIRTS 2", link: "http://sale.dhgate.com/Icpy4Q33", cat: "T-Shirts & Polos", price: "$49.46", sizing: "TRUE TO SIZE" },
+  { name: "THAT'S A AWFUL LOT OF COUGH SYRUP T SHIRT", link: "https://sale.dhgate.com/ayYKwY23", cat: "T-Shirts & Polos", sizing: "ONE SIZE UP" },
+  { name: "BAPE T SHIRT 1", link: "http://sale.dhgate.com/42LEyX66", cat: "T-Shirts & Polos", price: "$49.46", sizing: "ONE SIZE UP" },
+  { name: "BAPE T SHIRT 2", link: "https://sale.dhgate.com/97a97311", cat: "T-Shirts & Polos", price: "$49.46", sizing: "ONE SIZE UP" },
+  { name: "BAPE T SHIRT 3", link: "https://sale.dhgate.com/0ITkE845", cat: "T-Shirts & Polos", price: "$49.46", sizing: "ONE SIZE UP" },
+  { name: "Off White T SHIRT", link: "http://sale.dhgate.com/o6IMoT53", cat: "T-Shirts & Polos", price: "$68.84", sizing: "ONE SIZE UP" },
+  { name: "Godspeed T Shirt 1", link: "https://sale.dhgate.com/AxppW160", cat: "T-Shirts & Polos", price: "$49.74", sizing: "TRUE TO SIZE" },
+  { name: "Godspeed T Shirt 2", link: "https://sale.dhgate.com/NTGFgK52", cat: "T-Shirts & Polos", price: "$49.74", sizing: "TRUE TO SIZE" },
+  { name: "Godspeed LONG T Shirt", link: "https://sale.dhgate.com/fDjTq467", cat: "T-Shirts & Polos", price: "$49.74", sizing: "TRUE TO SIZE" },
+  { name: "ALL BALENCIAGA T SHIRT official quality", link: "http://sale.dhgate.com/MYXqcc62", cat: "T-Shirts & Polos", price: "$58.64", sizing: "TRUE TO SIZE" },
+  { name: "BURBERRY T SHIRT", link: "https://sale.dhgate.com/BdT3QG61", cat: "T-Shirts & Polos", price: "$52.52", sizing: "TRUE TO SIZE" },
+  { name: "Burberry Polos", link: "https://sale.dhgate.com/aVMykp73", cat: "T-Shirts & Polos", price: "$52.52", sizing: "TRUE TO SIZE" },
+  { name: "Burberry Polos", link: "http://sale.dhgate.com/I9HvcY94", cat: "T-Shirts & Polos", price: "$52.52", sizing: "ONE SIZE UP" },
+  { name: "Balenciaga Long sleeve T Shirt", link: "http://sale.dhgate.com/pdvwCE37", cat: "T-Shirts & Polos", price: "$62.72", sizing: "TRUE TO SIZE" },
+  { name: "CHROME HEART T SHIRT", link: "https://sale.dhgate.com/5J8I9T07", cat: "T-Shirts & Polos", price: "$56.50", sizing: "TRUE TO SIZE" },
+  { name: "BAPE T SHIRT 1", link: "https://sale.dhgate.com/97a97311", cat: "T-Shirts & Polos", price: "$49.46", sizing: "ONE SIZE UP" },
+  { name: "BAPE T SHIRT 1", link: "https://sale.dhgate.com/H4Cqss11", cat: "T-Shirts & Polos", price: "$49.46", sizing: "ONE SIZE UP" },
+  { name: "GUCCI T SHIRT", link: "https://sale.dhgate.com/7kJeUU52", cat: "T-Shirts & Polos", price: "$56.00", sizing: "ONE SIZE UP" },
+  { name: "GUCCI POLO", link: "https://sale.dhgate.com/Lnl3Su06", cat: "T-Shirts & Polos", price: "$56.00", sizing: "ONE SIZE UP" },
+  { name: "AMI T SHIRT", link: "https://sale.dhgate.com/BPoCvT92", cat: "T-Shirts & Polos", sizing: "ONE SIZE UP" },
+  { name: "MIXED EMOTION T SHIRT", link: "https://sale.dhgate.com/aTsEVU83", cat: "T-Shirts & Polos", price: "$52.52", sizing: "ONE SIZE UP" },
+  { name: "PALM ANGELS T SHIRT 1", link: "https://sale.dhgate.com/nrYoQ065", cat: "T-Shirts & Polos", price: "$49.46", sizing: "ONE SIZE UP" },
+  { name: "PALM ANGELS T SHIRT 2", link: "http://sale.dhgate.com/6YR4oG14", cat: "T-Shirts & Polos", price: "$49.46", sizing: "ONE SIZE UP" },
+  { name: "Stussy T Shirt", link: "https://sale.dhgate.com/k0ZbNA94", cat: "T-Shirts & Polos", price: "$49.46", sizing: "ONE SIZE UP" },
+  { name: "CHROME HEARTS T SHIRT", link: "https://sale.dhgate.com/5J8I9T07", cat: "T-Shirts & Polos", price: "$56.50", sizing: "TRUE TO SIZE" },
+  { name: "Maison Margiela T SHIRT", link: "https://sale.dhgate.com/uV58m670", cat: "T-Shirts & Polos", price: "$49.46", sizing: "TRUE TO SIZE" },
+  { name: "RHUDE T SHIRT", link: "https://sale.dhgate.com/0AcIKt90", cat: "T-Shirts & Polos", sizing: "ONE SIZE UP" },
+  { name: "Billionaire T Shirt", link: "http://sale.dhgate.com/V3ox5G48", cat: "T-Shirts & Polos", price: "$49.46", sizing: "TRUE TO SIZE" },
+  { name: "SAINT T SHIRT", link: "https://sale.dhgate.com/7Re3MD21", cat: "T-Shirts & Polos", sizing: "TRUE TO SIZE" },
+  { name: "Corteiz T Shirt", link: "http://sale.dhgate.com/i3gaBx44", cat: "T-Shirts & Polos", sizing: "TRUE TO SIZE" },
+  // --- Jeans & Pants (7) ---
+  { name: "CHROME HEARTS JEANS", link: "https://sale.dhgate.com/H7Gk3v28", cat: "Jeans & Pants", price: "$56.60", sizing: "ONE SIZE UP" },
+  { name: "PURPLE JEANS 1", link: "https://sale.dhgate.com/2tPLoP51", cat: "Jeans & Pants", price: "$79.90", sizing: "ONE SIZE UP" },
+  { name: "PURPLE JEANS 2 New", link: "https://sale.dhgate.com/ItSHoy15", cat: "Jeans & Pants", price: "$79.90", sizing: "ONE SIZE UP" },
+  { name: "AMIRI JEANS", link: "https://sale.dhgate.com/P8vMYR63", cat: "Jeans & Pants", price: "$80.58", sizing: "ONE SIZE UP" },
+  { name: "KSUBI JEANS", link: "https://sale.dhgate.com/xSg7qe11", cat: "Jeans & Pants", price: "$80.58", sizing: "ONE SIZE UP" },
+  { name: "GALLERY DEPT FLARED", link: "https://sale.dhgate.com/tjRuzf80", cat: "Jeans & Pants", price: "$69.76", sizing: "ONE SIZE UP" },
+  { name: "GALLERY DEPT PANTS", link: "https://sale.dhgate.com/Dt5CHE39", cat: "Jeans & Pants", price: "$69.76", sizing: "ONE SIZE UP" },
+  // --- Shorts (11) ---
+  { name: "SP5DER SHORTS", link: "https://sale.dhgate.com/FaIIzn61", cat: "Shorts", price: "$52.52", sizing: "ONE SIZE UP" },
+  { name: "HELLSTAR SHORTS", link: "https://sale.dhgate.com/j22vR320", cat: "Shorts", price: "$52.52", sizing: "ONE SIZE UP" },
+  { name: "GALLERY DEPT Shorts", link: "https://sale.dhgate.com/EuWrH054", cat: "Shorts", price: "$52.52", sizing: "ONE SIZE UP" },
+  { name: "MONCLER SHORTS", link: "https://sale.dhgate.com/YOaZNS97", cat: "Shorts", sizing: "TRUE TO SIZE" },
+  { name: "Burberry SHORTS 2", link: "https://sale.dhgate.com/pZyINh29", cat: "Shorts", price: "$53.44", sizing: "ONE SIZE UP" },
+  { name: "PALM ANGELS SHORTS", link: "https://sale.dhgate.com/6CUj7545", cat: "Shorts", price: "$51.40", sizing: "ONE SIZE UP" },
+  { name: "Eric Emanuel Shorts 1", link: "https://sale.dhgate.com/GOPKLf44", cat: "Shorts", price: "$36.20", sizing: "ONE SIZE UP" },
+  { name: "Eric Emanuel Shorts 2", link: "https://sale.dhgate.com/trNkJE79", cat: "Shorts", price: "$36.10", sizing: "ONE SIZE UP" },
+  { name: "Eric Emanuel Shorts 2", link: "http://sale.dhgate.com/GOPKLf44", cat: "Shorts", price: "$36.20", sizing: "ONE SIZE UP" },
+  { name: "BAPE SHORTS", link: "http://sale.dhgate.com/3IaXcd52", cat: "Shorts", price: "$52.52", sizing: "ONE SIZE UP" },
+  { name: "PURPLE Denim Shorts", link: "https://sale.dhgate.com/Qa3Hhv25", cat: "Shorts", price: "$75.92", sizing: "ONE SIZE UP" },
+  // --- Jackets & Outerwear (7) ---
+  { name: "CANADA GOOSE PUFFER JACKET high quality", link: "http://sale.dhgate.com/FkYLXC94", cat: "Jackets & Outerwear", sizing: "TRUE TO SIZE" },
+  { name: "The North Face Jacket", link: "http://sale.dhgate.com/eOXI5g24", cat: "Jackets & Outerwear", price: "$99.19", sizing: "ONE SIZE UP" },
+  { name: "MONCLER PUJFFER", link: "https://sale.dhgate.com/NVSzPN53", cat: "Jackets & Outerwear", price: "$99.19", sizing: "ONE SIZE UP" },
+  { name: "TOP VERSION MONCLER PUJFFER", link: "https://sale.dhgate.com/IVE1UN39", cat: "Jackets & Outerwear", price: "$99.19", sizing: "TRUE TO SIZE" },
+  { name: "RALPH LAUREN COAT", link: "https://sale.dhgate.com/aiCjbH54", cat: "Jackets & Outerwear", sizing: "ONE SIZE UP" },
+  { name: "LV Varsity Jacket", link: "http://sale.dhgate.com/Vcqdb517", cat: "Jackets & Outerwear", price: "$103.38", sizing: "ONE SIZE UP" },
+  { name: "LV VARSITY JACKET", link: "https://sale.dhgate.com/vp7vUU02", cat: "Jackets & Outerwear", price: "$103.38", sizing: "ONE SIZE UP" },
+  // --- Sets & Suits (13) ---
+  { name: "CHROME HEARTS ICE HOCKEY SUIT", link: "https://sale.dhgate.com/BxnHvl87", cat: "Sets & Suits", sizing: "TRUE TO SIZE" },
+  { name: "ESSENTIALS SUIT 2", link: "https://sale.dhgate.com/5lQb6969", cat: "Sets & Suits", price: "$58.54", sizing: "TRUE TO SIZE" },
+  { name: "DENIM TEARS SUIT", link: "http://sale.dhgate.com/IGxZBt82", cat: "Sets & Suits", price: "$50.48", sizing: "ONE SIZE UP" },
+  { name: "DENIM TEARS T SHIRT SUIT", link: "https://sale.dhgate.com/H8TvKL39", cat: "Sets & Suits", price: "$50.48", sizing: "ONE SIZE UP" },
+  { name: "NIKE TECH FLEECE SUITS Reflective", link: "https://sale.dhgate.com/Wv6qPD60", cat: "Sets & Suits", price: "$69.87", sizing: "ONE SIZE UP" },
+  { name: "NIKE TECH FLEECE SUITS", link: "https://sale.dhgate.com/Wv6qPD60", cat: "Sets & Suits", price: "$69.87", sizing: "ONE SIZE UP" },
+  { name: "NIKE TECH FLEECE SUITS 2", link: "https://sale.dhgate.com/wFwk0T91", cat: "Sets & Suits", price: "$56.00", sizing: "ONE SIZE UP" },
+  { name: "Eric Emanuel SET", link: "http://sale.dhgate.com/h6RKb852", cat: "Sets & Suits", sizing: "ONE SIZE UP" },
+  { name: "Trapstar Hoodie Suit", link: "http://sale.dhgate.com/nlkVzx15", cat: "Sets & Suits", price: "$68.84", sizing: "ONE SIZE UP" },
+  { name: "Trapstar T Shirt Suit", link: "http://sale.dhgate.com/GrldQ695", cat: "Sets & Suits", price: "$46.30", sizing: "ONE SIZE UP" },
+  { name: "GUCCI SET", link: "http://sale.dhgate.com/b8xCUh28", cat: "Sets & Suits", price: "$120.23", sizing: "ONE SIZE UP" },
+  { name: "SAINT VANITY SUIT", link: "https://sale.dhgate.com/cNPKFd09", cat: "Sets & Suits", sizing: "ONE SIZE UP" },
+  { name: "ALL PALM ANGELS SUIT", link: "https://sale.dhgate.com/aDqyi905", cat: "Sets & Suits", price: "$63.74", sizing: "ONE SIZE UP" },
+  // --- Hats & Accessories (2) ---
+  { name: "CHROME HEARTS CAP HAT", link: "https://sale.dhgate.com/6Bpjut66", cat: "Hats & Accessories" },
+  { name: "MONCLER BEANIE CAP HAT", link: "https://sale.dhgate.com/FV5Jux94", cat: "Hats & Accessories" },
+  // --- Other Clothes (4) ---
+  { name: "Sp5der 5555 Spider Styles", link: "http://sale.dhgate.com/CAYNS352", cat: "Other Clothes", price: "$68.84", sizing: "ONE SIZE UP" },
+  { name: "Sp5der 5555 Spider 1", link: "https://sale.dhgate.com/21KBAd42", cat: "Other Clothes", price: "$68.84", sizing: "ONE SIZE UP" },
+  { name: "Sp5der 5555 Spider 2", link: "https://sale.dhgate.com/21KBAd42", cat: "Other Clothes", price: "$68.84", sizing: "ONE SIZE UP" },
+  { name: "NEW SEASON TECH", link: "https://sale.dhgate.com/wFwk0T91", cat: "Other Clothes", price: "$56.50", sizing: "ONE SIZE UP" },
   { name: "Jason Jewelry (Chrome Heart Rings)", link: "https://docs.google.com/spreadsheets/d/1g4lQLqgqwFC5A3v-6jXOkgH-bUOpVSj6r6-Wx-gYmDQ/edit#gid=1953553672&range=A2", cat: "Other" },
   { name: "1:1 Multi LV wallet and card holder", link: "https://sale.dhgate.com/ZM7moQ47", cat: "LV" },
   { name: "Dior Alpha Sandal Oblique", link: "https://sale.dhgate.com/u1n8pm73", cat: "Other" },
@@ -436,7 +562,8 @@ const shoes = [
 ];
 
 const catOrder = [
-  "Clothes",
+  "Hoodies & Sweaters", "T-Shirts & Polos", "Jeans & Pants", "Shorts",
+  "Jackets & Outerwear", "Sets & Suits", "Hats & Accessories", "Other Clothes",
   "Jordan 1", "Jordan 3", "Jordan 4", "Jordan 5", "Jordan 11", "Jordan 14",
   "Nike Dunk", "Air Force 1", "Nike Kobe", "Balenciaga", "LV", "Rick Owens",
   "Amiri", "Bape", "Yeezy", "Off-White", "Other"
@@ -462,8 +589,13 @@ function render() {
     filtered.forEach(s => {
       // A few entries point at a Google Sheet rather than a DHGate listing.
       const label = s.link.includes('docs.google.com') ? 'Open Spreadsheet' : 'View on DHGate';
+      // Clothing entries carry a price and a sizing note; the shoes carry neither.
+      let meta = '';
+      if (s.price) meta += `<span class="tag tag-price">${s.price}</span>`;
+      if (s.sizing) meta += `<span class="tag tag-size${/UP/i.test(s.sizing) ? ' tag-up' : ''}">${s.sizing}</span>`;
       html += `<div class="card">
         <h3>${s.name}</h3>
+        ${meta ? `<div class="tags">${meta}</div>` : ''}
         <a href="${s.link}" target="_blank" rel="noopener noreferrer">${label}</a>
       </div>`;
     });
