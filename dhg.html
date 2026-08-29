@@ -93,6 +93,25 @@
       font-size: 0.95rem; font-weight: 700; letter-spacing: 0.5px;
       margin-bottom: 0.8rem; line-height: 1.3; color: #e0d6f5;
     }
+    .chips {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center; margin: 0 auto 1.5rem; max-width: 780px;
+    }
+    .chip {
+      background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.25);
+      color: #b9a2e0; padding: 0.45rem 0.95rem; border-radius: 50px;
+      font-size: 0.78rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .chip:hover { border-color: rgba(168,85,247,0.55); color: #fff; }
+    .chip.active {
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      border-color: transparent; color: #fff;
+      box-shadow: 0 4px 16px rgba(168,85,247,0.35);
+    }
+    .chip .n { opacity: 0.65; font-weight: 600; margin-left: 4px; }
+    @media (max-width: 640px) { .chip { font-size: 0.72rem; padding: 0.4rem 0.75rem; } }
+
     .tags {
       display: flex; flex-wrap: wrap; gap: 6px;
       margin: -0.4rem 0 0.8rem;
@@ -154,6 +173,8 @@
   <div class="search-wrap">
     <input type="text" id="searchInput" placeholder="Search shoes &amp; clothes..." oninput="filterShoes()" />
   </div>
+  <div class="chips" id="catChips"></div>
+
   <div id="noResults" class="no-results">Nothing found matching your search.</div>
 
   <div class="section-label">LKS <span class="cat-count" id="totalCount"></span></div>
@@ -573,6 +594,35 @@ function getShoesByCat(cat) {
   return shoes.filter(s => s.cat === cat);
 }
 
+// The clothing categories, in the order they appear in catOrder. Shoes are
+// browsed by scrolling/searching as before; these chips are a quick jump into
+// one clothing type. null means "show everything".
+const clothesCats = catOrder.slice(0, 8);
+let activeCat = null;
+
+function renderChips() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  const chip = (label, cat, count) =>
+    `<button type="button" class="chip${activeCat === cat ? ' active' : ''}" data-cat="${cat === null ? '' : cat}">` +
+    `${label}${count === null ? '' : `<span class="n">${count}</span>`}</button>`;
+
+  let html = chip('All', null, null);
+  clothesCats.forEach(cat => {
+    const n = getShoesByCat(cat).filter(s => s.name.toLowerCase().includes(q)).length;
+    if (n === 0) return;
+    html += chip(cat, cat, n);
+  });
+  const box = document.getElementById('catChips');
+  box.innerHTML = html;
+  box.querySelectorAll('.chip').forEach(b => {
+    b.onclick = () => {
+      const c = b.dataset.cat || null;
+      activeCat = (activeCat === c) ? null : c;   // clicking the active chip clears it
+      render();
+    };
+  });
+}
+
 function render() {
   const q = document.getElementById('searchInput').value.toLowerCase().trim();
   const grid = document.getElementById('shoeGrid');
@@ -581,6 +631,7 @@ function render() {
   let html = '';
 
   catOrder.forEach(cat => {
+    if (activeCat && cat !== activeCat) return;
     const filtered = getShoesByCat(cat).filter(s => s.name.toLowerCase().includes(q));
     if (filtered.length === 0) return;
     total += filtered.length;
@@ -605,9 +656,16 @@ function render() {
   grid.innerHTML = html;
   document.getElementById('totalCount').textContent = total + ' items';
   noRes.classList.toggle('show', total === 0);
+  renderChips();
 }
 
-function filterShoes() { render(); }
+function filterShoes() {
+  // A search that no longer has hits in the pinned category would look empty,
+  // so typing clears the chip rather than silently returning nothing.
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  if (activeCat && !getShoesByCat(activeCat).some(s => s.name.toLowerCase().includes(q))) activeCat = null;
+  render();
+}
 render();
 </script>
 
