@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meme Coins — Live Trending | 5 Star Links</title>
+  <meta name="description" content="Live trending Solana meme coins — price, 24h change and volume, updated automatically. Trade them on Axiom." />
+  <meta property="og:title" content="Meme Coins — Live Trending" />
+  <meta property="og:description" content="Live trending Solana meme coins, updated automatically." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.5starlinks.xyz/memecoins.html" />
+  <link rel="icon" type="image/png" href="pics/logo/favicon.png">
+  <link rel="apple-touch-icon" href="pics/logo/logo.png.png">
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #050208; color: #fff;
+      min-height: 100vh; display: flex; flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(13,8,21,0.92); backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(168,85,247,0.15);
+      padding: 1rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .topbar h1 {
+      font-size: 1.15rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase;
+      background: linear-gradient(135deg, #fff, #a855f7);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .topbar a {
+      background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.3);
+      color: #fff; padding: 0.45rem 1rem; border-radius: 50px;
+      font-size: 0.82rem; font-weight: 600; text-decoration: none; white-space: nowrap;
+    }
+
+    .wrap { width: 100%; max-width: 1000px; margin: 0 auto; padding: 0 1.25rem; }
+
+    .hero { text-align: center; padding: 3.5rem 0 2rem; position: relative; }
+    .hero::before {
+      content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+      width: 460px; height: 460px; max-width: 100%;
+      background: radial-gradient(circle, rgba(34,197,94,0.15), transparent 68%);
+      pointer-events: none;
+    }
+    .overline {
+      display: inline-block; position: relative;
+      color: #4ade80; font-size: 0.7rem; font-weight: 800;
+      letter-spacing: 3px; text-transform: uppercase; margin-bottom: 0.9rem;
+    }
+    .hero h2 {
+      position: relative;
+      font-size: clamp(2rem, 6vw, 3rem); font-weight: 900; line-height: 1.08;
+      letter-spacing: -1.5px;
+      background: linear-gradient(135deg, #fff 30%, #4ade80);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      position: relative; color: #b0a8c4; font-size: 1rem;
+      margin: 0.9rem auto 0; max-width: 520px; line-height: 1.6;
+    }
+
+    .btn {
+      display: inline-block; padding: 0.9rem 2rem; border: none;
+      background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff;
+      border-radius: 50px; font-size: 0.95rem; font-weight: 800;
+      font-family: inherit; letter-spacing: 0.5px;
+      cursor: pointer; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(34,197,94,0.35); }
+    .btn-row { position: relative; margin-top: 1.6rem; }
+    .ref-note { color: #6b6b80; font-size: 0.74rem; margin-top: 0.7rem; }
+
+    section { padding: 1.5rem 0 2.5rem; }
+    .sec-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem;
+    }
+    .sec-head h3 { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.5px; }
+    .sec-head .sub { color: #6b6b80; font-size: 0.8rem; }
+    .live-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: #22c55e; margin-right: 6px; vertical-align: middle;
+      box-shadow: 0 0 0 0 rgba(34,197,94,0.7); animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
+      70%  { box-shadow: 0 0 0 7px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.9rem; }
+    .coin {
+      background: linear-gradient(150deg, #0d0815, #110a1a);
+      border: 1px solid rgba(168,85,247,0.16); border-radius: 16px;
+      padding: 1.1rem; transition: border-color 0.25s, transform 0.25s;
+      display: flex; flex-direction: column; gap: 0.55rem;
+    }
+    .coin:hover { border-color: rgba(34,197,94,0.4); transform: translateY(-3px); }
+    .coin-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .coin-name {
+      font-size: 1rem; font-weight: 900; letter-spacing: 0.5px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .chg { font-size: 0.78rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 6px; white-space: nowrap; }
+    .chg.up   { color: #4ade80; background: rgba(34,197,94,0.12); }
+    .chg.down { color: #f87171; background: rgba(239,68,68,0.12); }
+    .chg.flat { color: #9aa0a6; background: rgba(255,255,255,0.06); }
+    .coin-price { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.5px; }
+    .coin-vol { color: #6b6b80; font-size: 0.76rem; }
+    .coin a.trade {
+      margin-top: 0.35rem; text-align: center;
+      background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.35);
+      color: #4ade80; padding: 0.55rem; border-radius: 10px;
+      font-size: 0.8rem; font-weight: 800; text-decoration: none;
+      transition: all 0.2s;
+    }
+    .coin a.trade:hover { background: rgba(34,197,94,0.22); color: #fff; }
+
+    .state { text-align: center; color: #6b6b80; padding: 2.5rem 1rem; font-size: 0.9rem; }
+    .state.err { color: #fca5a5; }
+
+    .steps { display: grid; gap: 0.7rem; margin-top: 0.5rem; }
+    .step {
+      display: flex; gap: 1rem; align-items: flex-start;
+      background: rgba(168,85,247,0.05); border: 1px solid rgba(168,85,247,0.14);
+      border-radius: 14px; padding: 1rem 1.2rem;
+    }
+    .step .num {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 0.8rem;
+    }
+    .step h4 { font-size: 0.93rem; font-weight: 800; margin-bottom: 0.15rem; }
+    .step p { color: #8b8b9e; font-size: 0.84rem; line-height: 1.55; }
+
+    .risk {
+      margin-top: 1.5rem; padding: 1rem 1.2rem;
+      background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.22);
+      border-radius: 12px; color: #c9a2a2; font-size: 0.8rem; line-height: 1.6;
+    }
+
+    .footer {
+      margin-top: auto; text-align: center; padding: 3rem 1rem 2rem;
+      color: #3a3a4a; font-size: 0.8rem;
+      border-top: 1px solid rgba(168,85,247,0.1);
+    }
+    .footer a { color: #6b6b80; text-decoration: none; }
+
+    @media (max-width: 620px) {
+      .hero { padding: 2.5rem 0 1.5rem; }
+      .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.7rem; }
+      .coin { padding: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>5 Star Links</h1>
+  <a href="index.html">← Back to Site</a>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <span class="overline">Meme Coins</span>
+    <h2>What's pumping right now</h2>
+    <p>Live trending Solana meme coins — price, 24-hour move and volume, refreshed automatically. Trade them on Axiom.</p>
+    <div class="btn-row">
+      <a class="btn" id="heroCta" href="#" target="_blank" rel="noopener noreferrer">Start Trading on Axiom</a>
+      <div class="ref-note">Referral link — I get a small kickback, you pay the same either way.</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="sec-head">
+      <h3><span class="live-dot"></span>Trending Now</h3>
+      <span class="sub" id="updated"></span>
+    </div>
+    <div id="coinGrid" class="grid"></div>
+    <div id="state" class="state">Loading live prices…</div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h3>New to this?</h3></div>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div>
+          <h4>Make an Axiom account</h4>
+          <p>Sign up through the button above. It runs on Solana, so trades settle in seconds for a fraction of a cent.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div>
+          <h4>Fund your wallet</h4>
+          <p>Deposit SOL. Keep a little extra for network fees so a trade never fails halfway through.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div>
+          <h4>Pick from the list above</h4>
+          <p>Those are the pools with real volume right now. Volume matters more than the price move — a coin with no volume is hard to sell.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">4</div>
+        <div>
+          <h4>Decide your exit first</h4>
+          <p>Know the number you'd sell at, up and down, before you buy. The coins that move 300% in a day move down just as fast.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="risk">
+      <strong style="color:#f87171;">Know what this is.</strong>
+      Meme coins are gambling, not investing. Most go to zero, and a token can be built so that only the creator can sell.
+      Never put in money you need. Nothing here is financial advice — it's a live list of what's trading.
+    </div>
+  </section>
+
+</div>
+
+<div class="footer">
+  &copy; 2026 5 Star Links &bull;
+  <a href="terms.html">Terms</a> &bull;
+  <a href="privacy.html">Privacy</a> &bull;
+  <a href="contact.html">Contact</a>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Axiom referral link. This is the ONLY place it is written down -- every
+// button on the page is built from it, so changing this one line changes them
+// all. Replace with your own referral URL from Axiom's referral page.
+const AXIOM_REF = 'https://axiom.trade/@5starlinks';
+// ---------------------------------------------------------------------------
+
+document.getElementById('heroCta').href = AXIOM_REF;
+
+const grid = document.getElementById('coinGrid');
+const stateEl = document.getElementById('state');
+const updatedEl = document.getElementById('updated');
+
+function fmtPrice(p) {
+  if (!isFinite(p)) return '—';
+  if (p >= 1) return '$' + p.toFixed(2);
+  if (p >= 0.01) return '$' + p.toFixed(4);
+  // Sub-cent meme coins need the significant digits, not a row of zeros.
+  return '$' + p.toPrecision(3);
+}
+
+function fmtVol(v) {
+  if (!v) return '—';
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return '$' + Math.round(v / 1e3) + 'K';
+  return '$' + v;
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function render(coins) {
+  grid.innerHTML = coins.map(c => {
+    const ch = c.change24h;
+    const cls = ch == null ? 'flat' : ch > 0 ? 'up' : ch < 0 ? 'down' : 'flat';
+    const chTxt = ch == null ? '—' : (ch > 0 ? '+' : '') + ch.toFixed(1) + '%';
+    return `<div class="coin">
+      <div class="coin-top">
+        <span class="coin-name">${esc(c.name) || 'Unknown'}</span>
+        <span class="chg ${cls}">${chTxt}</span>
+      </div>
+      <div class="coin-price">${fmtPrice(c.price)}</div>
+      <div class="coin-vol">24h volume ${fmtVol(c.vol24h)}</div>
+      <a class="trade" href="${esc(AXIOM_REF)}" target="_blank" rel="noopener noreferrer">Trade on Axiom</a>
+    </div>`;
+  }).join('');
+}
+
+async function load() {
+  try {
+    const res = await fetch('/api/schedule?type=memetrending');
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) {
+      stateEl.textContent = 'No trending coins right now — check back in a minute.';
+      stateEl.className = 'state';
+      return;
+    }
+    render(data);
+    stateEl.style.display = 'none';
+    updatedEl.textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  } catch (e) {
+    // Leave whatever is already rendered on screen; only an empty grid is an error.
+    if (!grid.children.length) {
+      stateEl.textContent = "Couldn't load live prices. Refresh in a moment.";
+      stateEl.className = 'state err';
+    }
+  }
+}
+
+load();
+setInterval(load, 60000);
+</script>
+
+</body>
+</html>
