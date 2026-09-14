@@ -160,10 +160,12 @@ const STALL_ARGS = [
   '--continue',
 ];
 
-function runDownload(url, outputPath, extraArgs) {
+const SPLICE_FORMAT = 'bestvideo[height<=720]+bestaudio[ext=m4a]/best[height<=720]/best';
+
+function runDownload(url, outputPath, extraArgs, format) {
   return new Promise((resolve, reject) => {
     const proc = spawn('yt-dlp', extraArgs.concat(STALL_ARGS, [
-      '-f', 'bestvideo[height<=720]+bestaudio[ext=m4a]/best[height<=720]/best',
+      '-f', format || SPLICE_FORMAT,
       '--merge-output-format', 'mp4', '-o', outputPath, '--no-playlist', url,
     ]));
     let stderr = '';
@@ -351,6 +353,88 @@ async function clipVideo(inputPath, outputDir, startSec, duration, index, title,
   });
 }
 
+// Strip the characters a filesystem will not take, so a video title can be
+// used as the filename. Windows is the strict one here: \ / : * ? " < > |
+function safeFilename(name) {
+  return String(name || 'video')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120) || 'video';
+}
+
+// Prefer H.264 (avc1) over whatever is technically "best". YouTube increasingly
+// serves AV1, which QuickTime, iMovie and most editors on an Intel Mac cannot
+// open -- a sharper file that will not play is worse than a slightly larger one
+// that plays everywhere. Each rung falls back to any codec if avc1 is missing.
+function qualityFormat(maxHeight) {
+  const cap = maxHeight ? '[height<=' + maxHeight + ']' : '';
+  return [
+    'bestvideo' + cap + '[vcodec^=avc1]+bestaudio[ext=m4a]',
+    'bestvideo' + cap + '+bestaudio[ext=m4a]',
+    'bestvideo' + cap + '+bestaudio',
+    'best' + cap,
+    'best',
+  ].join('/');
+}
+
+const QUALITY_FORMATS = {
+  '720':  qualityFormat(720),
+  '1080': qualityFormat(1080),
+  'best': qualityFormat(null),
+};
+
+// Download the video as-is, no clipping. Saved under its own title next to a
+// separate folder from the clips so the two do not get mixed up.
+async function startDownloadOnly(url, quality) {
+  if (status === 'running') return;
+  status = 'running';
+  progress = [];
+  videoInfo = null;
+  const outputDir = path.join(process.cwd(), '5star_downloads');
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+  try {
+    const tools = findTools();
+    const installHint = process.platform === 'win32' ? 'winget install' : 'brew install';
+    if (!tools.ytDlp) { status = 'error'; log('ERROR: yt-dlp not found. Run: ' + installHint + ' yt-dlp'); return; }
+    if (!tools.ffmpeg) { status = 'error'; log('ERROR: ffmpeg not found. Run: ' + installHint + ' ffmpeg'); return; }
+
+    log('Fetching video info...');
+    const info = await getVideoInfo(url);
+    videoInfo = { title: info.title, duration: info.duration, channel: info.channel, thumbnail: info.thumbnail };
+    broadcast('info', videoInfo);
+    log('Title: ' + info.title);
+    log('Duration: ' + Math.floor(info.duration / 60) + 'm ' + (info.duration % 60) + 's');
+
+    const format = QUALITY_FORMATS[quality] || QUALITY_FORMATS['1080'];
+    const fileName = safeFilename(info.title) + '.mp4';
+    const outputPath = path.join(outputDir, fileName);
+
+    // Named per video rather than the splicer's fixed video.mp4, so an existing
+    // file here really is this same video already downloaded -- leave it be.
+    if (fs.existsSync(outputPath)) {
+      log('Already downloaded: ' + fileName);
+      status = 'done';
+      broadcast('done', { mode: 'download', file: fileName, dir: outputDir });
+      return;
+    }
+
+    log('Downloading video...');
+    await runDownload(url, outputPath, cookieArgs(), format)
+      .catch(() => { warnCookiesUnavailable(); return runDownload(url, outputPath, [], format); });
+
+    const mb = (fs.statSync(outputPath).size / 1048576).toFixed(1);
+    log('Download complete (' + mb + ' MB)');
+    log('Saved to ' + outputPath);
+    status = 'done';
+    broadcast('done', { mode: 'download', file: fileName, dir: outputDir });
+  } catch (err) {
+    status = 'error';
+    log('Error: ' + err.message);
+    broadcast('error', { msg: err.message });
+  }
+}
+
 async function startSplice(url, clipDuration) {
   if (status === 'running') return;
   status = 'running';
@@ -424,6 +508,12 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
 .btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(168,85,247,0.4)}
 .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
 .btn.secondary{background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.3)}
+.or-divider{display:flex;align-items:center;gap:12px;margin:1rem 0 0.8rem;color:#555;font-size:0.75rem;text-transform:uppercase;letter-spacing:2px}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:rgba(168,85,247,0.15)}
+.dl-row{display:flex;gap:0.6rem;align-items:stretch}
+.dl-row .btn{margin-top:0;flex:1}
+.quality-select{flex-shrink:0;padding:0 12px;background:#0a0612;border:1px solid rgba(168,85,247,0.3);border-radius:12px;color:#fff;font-size:0.9rem;font-family:inherit;outline:none;cursor:pointer}
+.quality-select:focus{border-color:#a855f7}
 .status-bar{margin-top:1rem;display:none}
 .status-bar.active{display:block}
 .progress-bar{width:100%;height:6px;background:#1a1028;border-radius:3px;overflow:hidden;margin-bottom:0.5rem}
@@ -487,6 +577,15 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
   <div class="input-group"><input type="text" id="url" placeholder="https://youtube.com/watch?v=..." autofocus></div>
   <div class="input-group"><label>Clip Duration (seconds)</label><input type="number" id="duration" value="90" min="10" max="600"></div>
   <button class="btn" id="startBtn" onclick="startSplice()">Start Splicing</button>
+  <div class="or-divider"><span>or</span></div>
+  <div class="dl-row">
+    <select id="quality" class="quality-select">
+      <option value="720">720p</option>
+      <option value="1080" selected>1080p</option>
+      <option value="best">Best available</option>
+    </select>
+    <button class="btn secondary" id="downloadBtn" onclick="downloadOnly()">Download Video Only</button>
+  </div>
   <div class="status-bar" id="statusBar"><div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div><div class="log-box" id="logBox"></div></div>
   <div class="info-box" id="infoBox"><p class="title" id="infoTitle"></p><p id="infoDuration"></p><p id="infoChannel"></p></div>
   <div class="done-box" id="doneBox"><h4>Done!</h4><p id="doneMsg"></p></div>
@@ -726,7 +825,16 @@ function attachSpliceEvents(es){
     licenseState.freeRemaining = d.freeRemaining;
     renderLicenseBanner();
   });
-  es.addEventListener("done",function(e){var d=JSON.parse(e.data);document.getElementById("progressFill").style.width="100%";document.getElementById("doneBox").classList.add("active");document.getElementById("doneMsg").textContent=d.clips+" clips saved to: "+d.dir;document.getElementById("startBtn").disabled=false;document.getElementById("startBtn").textContent="Start Splicing";es.close();});
+  es.addEventListener("done",function(e){
+    var d=JSON.parse(e.data);
+    document.getElementById("progressFill").style.width="100%";
+    document.getElementById("doneBox").classList.add("active");
+    document.getElementById("doneMsg").textContent = d.mode === "download"
+      ? d.file + " saved to: " + d.dir
+      : d.clips + " clips saved to: " + d.dir;
+    setRunning(false);
+    es.close();
+  });
   // An EventSource fires "error" for a dropped connection as well as for a
   // server-sent error event. Only the latter carries data, and only the latter
   // means the splice actually failed -- treating a dropped connection as fatal
@@ -741,27 +849,46 @@ function attachSpliceEvents(es){
     ln.textContent="Error: "+d.msg;
     lb.appendChild(ln);
     lb.scrollTop=lb.scrollHeight;
-    document.getElementById("startBtn").disabled=false;
-    document.getElementById("startBtn").textContent="Start Splicing";
+    setRunning(false);
     es.close();
   });
   es.onerror=function(){if(document.getElementById("startBtn").disabled){setTimeout(function(){if(document.getElementById("startBtn").disabled){evtSource=new EventSource("/api/events");attachSpliceEvents(evtSource);}},2000);}};
 }
 
-function startSplice(){
+// Both actions share one backend and one event stream, so only one can run at
+// a time -- disable the pair together and restore both when the run ends.
+function setRunning(running, activeBtnId, busyText){
+  var start=document.getElementById("startBtn"), dl=document.getElementById("downloadBtn");
+  start.disabled=running; dl.disabled=running;
+  start.textContent = (running && activeBtnId==="startBtn") ? busyText : "Start Splicing";
+  dl.textContent    = (running && activeBtnId==="downloadBtn") ? busyText : "Download Video Only";
+}
+
+function beginRun(endpoint, payload, btnId, busyText){
   var url=document.getElementById("url").value.trim();
   if(!url)return document.getElementById("url").focus();
-  var duration=parseInt(document.getElementById("duration").value)||90;
-  document.getElementById("startBtn").disabled=true;
-  document.getElementById("startBtn").textContent="Splicing...";
+  payload.url=url;
+  setRunning(true, btnId, busyText);
   document.getElementById("statusBar").classList.add("active");
   document.getElementById("doneBox").classList.remove("active");
   document.getElementById("logBox").innerHTML="";
-  fetch("/api/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url,duration:duration})});
+  document.getElementById("progressFill").style.width="0%";
+  fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   if(evtSource)evtSource.close();
   evtSource=new EventSource("/api/events");
   attachSpliceEvents(evtSource);
 }
+
+function startSplice(){
+  beginRun("/api/start", {duration: parseInt(document.getElementById("duration").value)||90},
+           "startBtn", "Splicing...");
+}
+
+function downloadOnly(){
+  beginRun("/api/download", {quality: document.getElementById("quality").value},
+           "downloadBtn", "Downloading...");
+}
+
 document.getElementById("url").addEventListener("keydown",function(e){if(e.key==="Enter")startSplice();});
 loadLicenseStatus();
 </script>
@@ -785,6 +912,22 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
         startSplice(data.url, data.duration || 90);
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+  if (req.url === '/api/download' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+        startDownloadOnly(data.url, data.quality);
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
