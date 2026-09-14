@@ -378,10 +378,16 @@ function qualityFormat(maxHeight) {
   ].join('/');
 }
 
+// Above 1080p there is no H.264 on YouTube at all -- 1440p and 4K exist only
+// as VP9 or AV1. So "max" cannot prefer avc1 the way the lower rungs do; it
+// takes the highest resolution and accepts whatever codec that comes in, which
+// QuickTime will not open (VLC will).
 const QUALITY_FORMATS = {
   '720':  qualityFormat(720),
   '1080': qualityFormat(1080),
-  'best': qualityFormat(null),
+  // m4a first: the best audio at this tier is often opus, which does not sit
+  // cleanly in the mp4 container the merge writes.
+  'max':  'bestvideo+bestaudio[ext=m4a]/bestvideo+bestaudio/best',
 };
 
 // Download the video as-is, no clipping. Saved under its own title next to a
@@ -514,6 +520,8 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
 .dl-row .btn{margin-top:0;flex:1}
 .quality-select{flex-shrink:0;padding:0 12px;background:#0a0612;border:1px solid rgba(168,85,247,0.3);border-radius:12px;color:#fff;font-size:0.9rem;font-family:inherit;outline:none;cursor:pointer}
 .quality-select:focus{border-color:#a855f7}
+.q-note{display:none;margin-top:0.6rem;padding:0.6rem 0.8rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;color:#fbbf24;font-size:0.76rem;line-height:1.5}
+.q-note.show{display:block}
 .status-bar{margin-top:1rem;display:none}
 .status-bar.active{display:block}
 .progress-bar{width:100%;height:6px;background:#1a1028;border-radius:3px;overflow:hidden;margin-bottom:0.5rem}
@@ -579,13 +587,14 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:#050208;color:#fff;m
   <button class="btn" id="startBtn" onclick="startSplice()">Start Splicing</button>
   <div class="or-divider"><span>or</span></div>
   <div class="dl-row">
-    <select id="quality" class="quality-select">
+    <select id="quality" class="quality-select" onchange="qualityNote()">
       <option value="720">720p</option>
       <option value="1080" selected>1080p</option>
-      <option value="best">Best available</option>
+      <option value="max">4K / Max</option>
     </select>
     <button class="btn secondary" id="downloadBtn" onclick="downloadOnly()">Download Video Only</button>
   </div>
+  <div class="q-note" id="qNote"></div>
   <div class="status-bar" id="statusBar"><div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div><div class="log-box" id="logBox"></div></div>
   <div class="info-box" id="infoBox"><p class="title" id="infoTitle"></p><p id="infoDuration"></p><p id="infoChannel"></p></div>
   <div class="done-box" id="doneBox"><h4>Done!</h4><p id="doneMsg"></p></div>
@@ -887,6 +896,18 @@ function startSplice(){
 function downloadOnly(){
   beginRun("/api/download", {quality: document.getElementById("quality").value},
            "downloadBtn", "Downloading...");
+}
+
+// YouTube has no H.264 above 1080p, so anything higher arrives as VP9 or AV1,
+// which QuickTime cannot open. Say so before the download rather than after.
+function qualityNote(){
+  var note=document.getElementById("qNote");
+  if(document.getElementById("quality").value==="max"){
+    note.textContent="Above 1080p YouTube only has VP9/AV1 — QuickTime won't open these, use VLC. Files are much bigger too.";
+    note.classList.add("show");
+  } else {
+    note.classList.remove("show");
+  }
 }
 
 document.getElementById("url").addEventListener("keydown",function(e){if(e.key==="Enter")startSplice();});
