@@ -160,14 +160,26 @@ const STALL_ARGS = [
   '--continue',
 ];
 
-const SPLICE_FORMAT = 'bestvideo[height<=720]+bestaudio[ext=m4a]/best[height<=720]/best';
+// A size cap written as [height<=720] caps the LONG side of a vertical video:
+// on a 1080x1920 Short it picks 360x640, on a 4K vertical 406x720 -- which is
+// why vertical clips came out blurry. -S res:720 caps the SHORT side instead,
+// so 720 means 1280x720 wide or 720x1280 tall. The -f branches prefer H.264 and
+// fall back to other codecs only when a video has no H.264 at all.
+const H264_FIRST = 'bv*[vcodec^=avc1]+ba[ext=m4a]/bv*+ba[ext=m4a]/bv*+ba/b';
 
-function runDownload(url, outputPath, extraArgs, format) {
+// Splicing re-encodes every clip, so the source codec never reaches the output;
+// H.264 is chosen here because it decodes far faster than AV1 on a weak CPU.
+const SPLICE_QUALITY = { format: H264_FIRST, sort: 'res:720' };
+
+function runDownload(url, outputPath, extraArgs, quality) {
+  const q = quality || SPLICE_QUALITY;
   return new Promise((resolve, reject) => {
-    const proc = spawn('yt-dlp', extraArgs.concat(STALL_ARGS, [
-      '-f', format || SPLICE_FORMAT,
-      '--merge-output-format', 'mp4', '-o', outputPath, '--no-playlist', url,
-    ]));
+    const proc = spawn('yt-dlp', extraArgs.concat(
+      STALL_ARGS,
+      ['-f', q.format],
+      q.sort ? ['-S', q.sort] : [],
+      ['--merge-output-format', 'mp4', '-o', outputPath, '--no-playlist', url],
+    ));
     let stderr = '';
     proc.stderr.on('data', d => { stderr += d.toString(); });
     proc.on('close', code => {
@@ -363,31 +375,24 @@ function safeFilename(name) {
     .slice(0, 120) || 'video';
 }
 
-// Prefer H.264 (avc1) over whatever is technically "best". YouTube increasingly
-// serves AV1, which QuickTime, iMovie and most editors on an Intel Mac cannot
-// open -- a sharper file that will not play is worse than a slightly larger one
-// that plays everywhere. Each rung falls back to any codec if avc1 is missing.
-function qualityFormat(maxHeight) {
-  const cap = maxHeight ? '[height<=' + maxHeight + ']' : '';
-  return [
-    'bestvideo' + cap + '[vcodec^=avc1]+bestaudio[ext=m4a]',
-    'bestvideo' + cap + '+bestaudio[ext=m4a]',
-    'bestvideo' + cap + '+bestaudio',
-    'best' + cap,
-    'best',
-  ].join('/');
-}
-
-// Above 1080p there is no H.264 on YouTube at all -- 1440p and 4K exist only
-// as VP9 or AV1. So "max" cannot prefer avc1 the way the lower rungs do; it
-// takes the highest resolution and accepts whatever codec that comes in, which
-// QuickTime will not open (VLC will).
+// Each tier is an -f format plus an -S sort (see H264_FIRST: the sort caps the
+// short side, so vertical videos keep their full width). 720 and 1080 prefer
+// H.264 over whatever is technically "best": YouTube increasingly serves AV1,
+// which QuickTime, iMovie and most editors on an Intel Mac cannot open, and
+// TikTok expects H.264 on upload.
+//
+// That preference has a visible cost on some vertical uploads: YouTube may
+// encode H.264 only up to 608x1080 while VP9/AV1 go to 2160x3840, so the 1080
+// tier returns 608x1080 there. Max is the way to get those at full size.
+//
+// Above 1080p YouTube has no H.264 at all, so Max takes the highest resolution
+// in whatever codec it comes in (QuickTime will not open it; VLC will). m4a
+// first because the best audio at that tier is often opus, which does not sit
+// cleanly in the mp4 the merge writes. No -S cap, so vertical is unaffected.
 const QUALITY_FORMATS = {
-  '720':  qualityFormat(720),
-  '1080': qualityFormat(1080),
-  // m4a first: the best audio at this tier is often opus, which does not sit
-  // cleanly in the mp4 container the merge writes.
-  'max':  'bestvideo+bestaudio[ext=m4a]/bestvideo+bestaudio/best',
+  '720':  { format: H264_FIRST, sort: 'res:720' },
+  '1080': { format: H264_FIRST, sort: 'res:1080' },
+  'max':  { format: 'bestvideo+bestaudio[ext=m4a]/bestvideo+bestaudio/best', sort: null },
 };
 
 // Download the video as-is, no clipping. Saved under its own title next to a
@@ -412,7 +417,7 @@ async function startDownloadOnly(url, quality) {
     log('Title: ' + info.title);
     log('Duration: ' + Math.floor(info.duration / 60) + 'm ' + (info.duration % 60) + 's');
 
-    const format = QUALITY_FORMATS[quality] || QUALITY_FORMATS['1080'];
+    const spec = QUALITY_FORMATS[quality] || QUALITY_FORMATS['1080'];
     const fileName = safeFilename(info.title) + '.mp4';
     const outputPath = path.join(outputDir, fileName);
 
@@ -426,8 +431,8 @@ async function startDownloadOnly(url, quality) {
     }
 
     log('Downloading video...');
-    await runDownload(url, outputPath, cookieArgs(), format)
-      .catch(() => { warnCookiesUnavailable(); return runDownload(url, outputPath, [], format); });
+    await runDownload(url, outputPath, cookieArgs(), spec)
+      .catch(() => { warnCookiesUnavailable(); return runDownload(url, outputPath, [], spec); });
 
     const mb = (fs.statSync(outputPath).size / 1048576).toFixed(1);
     log('Download complete (' + mb + ' MB)');
