@@ -144,14 +144,14 @@ function getVideoInfo(url) {
   });
 }
 
-// YouTube throttles a long single-connection download until it stops moving
-// entirely -- observed dying at the same ~79% of the audio track every time,
-// on both the opus and m4a streams. The connection stays open, so a socket
-// timeout never fires and yt-dlp waits on it forever. Requesting the file as
-// ranged chunks means a throttled chunk ends and the next one starts on a
-// fresh request, which sails past the point that used to hang (38MB in ~18s
-// vs. stalling indefinitely). The timeout and retries cover genuinely dead
-// connections, and --continue resumes from bytes already on disk.
+// Network resilience for long downloads: ranged 10M chunks so a throttled or
+// dropped request only costs one chunk, a socket timeout and retries for dead
+// connections, and --continue to resume from bytes already on disk.
+//
+// These were first added for downloads that froze at the same point every
+// time. That turned out to be a different bug -- yt-dlp blocking on an unread
+// stdout pipe (see runDownload) -- so they are general hardening, not the fix
+// for that freeze.
 const STALL_ARGS = [
   '--http-chunk-size', '10M',
   '--socket-timeout', '30',
@@ -174,12 +174,17 @@ const SPLICE_QUALITY = { format: H264_FIRST, sort: 'res:720' };
 function runDownload(url, outputPath, extraArgs, quality) {
   const q = quality || SPLICE_QUALITY;
   return new Promise((resolve, reject) => {
+    // stdout must not be a pipe nobody reads. yt-dlp writes its progress bar
+    // there continuously; once that pipe's buffer fills, yt-dlp blocks inside
+    // write() and the download freezes for good -- the server then drops the
+    // idle connection. Slow downloads print more progress, so they froze while
+    // fast ones finished first. Discard stdout; keep stderr for error messages.
     const proc = spawn('yt-dlp', extraArgs.concat(
       STALL_ARGS,
       ['-f', q.format],
       q.sort ? ['-S', q.sort] : [],
       ['--merge-output-format', 'mp4', '-o', outputPath, '--no-playlist', url],
-    ));
+    ), { stdio: ['ignore', 'ignore', 'pipe'] });
     let stderr = '';
     proc.stderr.on('data', d => { stderr += d.toString(); });
     proc.on('close', code => {
