@@ -23,6 +23,7 @@ module.exports = async (req, res) => {
   // and ?task=update in the evening to re-post only if the slate changed.
   if (req.query.task === 'daily') return dailyPost(req, res, false);
   if (req.query.task === 'update') return dailyPost(req, res, true);
+  if (req.query.task === 'deals') return dealsPost(req, res);
 
   const code = req.query.code;
   const state = req.query.state; // Stripe PaymentIntent id
@@ -158,6 +159,66 @@ async function dailyPost(req, res, isUpdate) {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+}
+
+// Deals bot: once a day, post a few online deals from deals-data.js (the same
+// list deals.html shows) to the #deals channel. Rotates through the list by
+// day so the same deals don't repeat back to back; skips anything expired.
+const DEALS_PER_DAY = 3;
+
+async function dealsPost(req, res) {
+  if (process.env.CRON_SECRET && req.headers.authorization !== 'Bearer ' + process.env.CRON_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!process.env.DISCORD_BOT_TOKEN) return res.status(500).json({ error: 'DISCORD_BOT_TOKEN not set' });
+
+  try {
+    const { deals, withAffiliate } = require('../deals-data.js');
+    const today = new Date();
+    const pool = deals.filter(d => d.type === 'Online' && d.link && !(d.expires && new Date(d.expires + ' 23:59') < today));
+    if (!pool.length) return res.status(200).json({ posted: 0, reason: 'no live online deals' });
+
+    const day = Math.floor(today.getTime() / 86400000);
+    const picks = [];
+    for (let i = 0; i < Math.min(DEALS_PER_DAY, pool.length); i++) {
+      picks.push(pool[(day * DEALS_PER_DAY + i) % pool.length]);
+    }
+
+    const channels = await botRequest('GET', `/api/guilds/${GUILD_ID}/channels`, null);
+    if (!Array.isArray(channels)) return res.status(500).json({ error: 'Could not list channels', detail: channels });
+    const text = channels.filter(c => c.type === 0);
+    const ch = text.find(c => c.name.includes(process.env.DISCORD_DEALS_CHANNEL || 'deal'));
+    if (!ch) return res.status(500).json({ error: 'No deals channel found', channelsSeen: text.map(c => c.name) });
+
+    const etDate = today.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'short', day: 'numeric' });
+    const r = await botRequest('POST', `/api/channels/${ch.id}/messages`, {
+      content: `🔥 **Today's Deals — ${etDate}**\nMore at https://www.5starlinks.xyz/deals.html\n-# Links may earn us a commission at no extra cost to you.`,
+      embeds: picks.map(dealEmbed(withAffiliate)),
+    });
+    res.status(200).json({ channel: ch.name, posted: r && r.id ? picks.map(d => d.name) : (r && r.message) || 'failed' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+}
+
+function dealEmbed(withAffiliate) {
+  return d => {
+    let price;
+    if (d.origPrice && d.salePrice != null) {
+      const pct = Math.round((1 - d.salePrice / d.origPrice) * 100);
+      price = `~~$${d.origPrice.toFixed(2)}~~ **$${d.salePrice.toFixed(2)}** · ${pct}% off`;
+    } else if (d.badgeText) {
+      price = `**${d.badgeText}**`;
+    }
+    const desc = [price, d.blurb, d.expires ? `⏳ Ends ${d.expires}` : null].filter(Boolean).join('\n');
+    return {
+      title: d.name.slice(0, 250),
+      url: withAffiliate(d.link, d.store),
+      description: desc.slice(0, 1000) || undefined,
+      color: 0xa855f7,
+      footer: { text: d.store },
+    };
+  };
 }
 
 function buildVipMessages(etDate, games, preds, header) {

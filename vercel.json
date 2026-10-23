@@ -2,7 +2,8 @@
   "version": 2,
   "crons": [
     { "path": "/api/discord?task=daily", "schedule": "0 14 * * *" },
-    { "path": "/api/discord?task=update", "schedule": "0 22 * * *" }
+    { "path": "/api/discord?task=update", "schedule": "0 22 * * *" },
+    { "path": "/api/discord?task=deals", "schedule": "0 17 * * *" }
   ],
   "functions": {
     "api/discord.js": {
