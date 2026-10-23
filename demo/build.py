@@ -39,11 +39,11 @@ BUSINESSES = [
          hours='Mon–Sat · 8:00 am – 5:00 pm', book='https://frank-s-mobile-detailing.reservio.com/',
          services=[('Exterior Wash', '$65'), ('Interior/Exterior Basic', '$120'), ('Interior/Exterior Reset', '$250')],
          about="Professional car detailing at your home or work. Book online, and Frank brings everything needed."),
-    dict(slug='lompoc-kekas', name='Lompoc Kekas', kind='food', tagline='Zacatecas-style kekas, made fresh by Chef Carlos',
+    dict(slug='lompoc-kekas', name='Lompoc Kekas', kind='food', tagline='Food from the heart of Zacatecas, Mexico',
          address='Food truck · Lompoc, CA', mobile=True, instagram='lompockekas',
          services=[('Asada', 'With jack cheese'), ('Al Pastor', 'Marinated pork, fresh pineapple, grilled onions, jack cheese'),
                    ('Queso', 'Melty cheese keka'), ('De Mole', 'Rich mole filling')],
-         about="Kekas are Zacatecas-style fried empanadas, stuffed and fried to order. Follow us on Instagram for today's location and hours."),
+         about="Food from the heart of Zacatecas, Mexico. A keka (keh·kuh) is a stuffed, deep-fried quesadilla made from corn masa. Follow us on Instagram for today's location and hours."),
 ]
 
 
