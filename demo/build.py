@@ -16,7 +16,9 @@ THEMES = {
 }
 
 SERVICE_ICONS = {'Haircut': '✂️', 'Beard': '🧔', 'Shave': '🪒', 'Head': '💈', 'Wash': '🧽', 'Interior': '🧼',
-                 'Reset': '✨', 'Asada': '🥩', 'Pastor': '🍍', 'Queso': '🧀', 'Mole': '🌶️'}
+                 'Reset': '✨', 'Asada': '🥩', 'Pastor': '🍍', 'Queso': '🧀', 'Mole': '🌶️', 'Chicken': '🍗',
+                 'Short Rib': '🥪', 'Tamales': '🫔', 'Vegan': '🌱', 'Torta': '🥖', 'Pozole': '🍲', 'Potato': '🥔',
+                 'Quesadilla': '🫓', 'Fresca': '🍓', 'Taco': '🌮'}
 
 BARBER_SERVICES = [("Men's Haircut", 'Clean cuts and fades'), ('Beard Trim', 'Shape-ups and line-ups'),
                    ('Hot Towel Shave', 'Classic straight-razor shave'), ('Head Shave', 'Smooth, clean finish')]
@@ -44,6 +46,18 @@ BUSINESSES = [
          services=[('Asada', 'With jack cheese'), ('Al Pastor', 'Marinated pork, fresh pineapple, grilled onions, jack cheese'),
                    ('Queso', 'Melty cheese keka'), ('De Mole', 'Rich mole filling')],
          about="Food from the heart of Zacatecas, Mexico. A keka (keh·kuh) is a stuffed, deep-fried quesadilla made from corn masa. Follow us on Instagram for today's location and hours."),
+    dict(slug='sassafrass', name='Sassafrass Lompoc', kind='food', tagline='Elevated comfort food 🌱 · Food truck, events & catering',
+         address='Food truck · Lompoc, CA', mobile=True, instagram='sassafrass805', phone='(805) 865-0404',
+         email='sassafrasslompoc@gmail.com',
+         services=[('Tennessee Hot Chicken', 'Sandwich'), ('Braised Short Rib', 'Grilled sandwich with caramelized pickled red onion'),
+                   ('Hot Cheeto Asada Tacos', 'Asada tacos with a Hot Cheeto crunch'), ('Tamales', 'Ask what’s on today'), ('Vegan Options', 'Plant-based comfort food')],
+         about='Elevated comfort food from a Lompoc food truck, with plenty of vegan options. Booking an event? Sassafrass caters, so get in touch for your date.'),
+    dict(slug='birria-boyz', name='The Birria Boyz', kind='food', tagline='Birria de Res 🐄 · The one and only Birria Boyz',
+         address='Food truck · Lompoc, CA', mobile=True, instagram='thebirriaboyz',
+         services=[('Birria Tacos', 'Slow-cooked birria on flat-top fried corn tortillas with melted cheese'),
+                   ('Birria Quesadilla', 'A customer go-to'), ('Birria Torta', 'Stacked birria sandwich'),
+                   ('Pozole', 'Classic Mexican stew'), ('Birria Baked Potato', 'Loaded with birria'), ('Strawberry Fresca', 'House agua fresca')],
+         about="Lompoc's birria truck. Slow-cooked birria de res, served on crispy tortillas with melted cheese. Follow us on Instagram for today's location and hours."),
 ]
 
 
@@ -62,12 +76,14 @@ def page(b):
     ig = f"https://instagram.com/{b['instagram']}" if b.get('instagram') else None
 
     ctas = []
+    if ig:  # food trucks: where-are-you-today is the first thing people need
+        ctas.append(f'<a class="btn primary" href="{ig}" target="_blank" rel="noopener">📍 Today\'s location on Instagram</a>')
     if b.get('phone'):
-        ctas.append(f'<a class="btn primary" href="{tel}">📞 Call {e(b["phone"])}</a>')
+        ctas.append(f'<a class="btn{"" if ig else " primary"}" href="{tel}">📞 Call {e(b["phone"])}</a>')
+    if b.get('email'):
+        ctas.append(f'<a class="btn" href="mailto:{e(b["email"])}">✉️ Catering &amp; events</a>')
     if b.get('book'):
         ctas.append(f'<a class="btn" href="{e(b["book"])}" target="_blank" rel="noopener">📅 Book online</a>')
-    if ig:
-        ctas.append(f'<a class="btn primary" href="{ig}" target="_blank" rel="noopener">📍 Today\'s location on Instagram</a>')
     if not b.get('mobile'):
         ctas.append(f'<a class="btn" href="https://www.google.com/maps/search/?api=1&query={maps_q}" target="_blank" rel="noopener">🧭 Directions</a>')
 
@@ -79,7 +95,9 @@ def page(b):
     info.append(f'<div><span>Where</span><b>{e(b["address"])}</b></div>')
     if b.get('phone'):
         info.append(f'<div><span>Call</span><b><a href="{tel}">{e(b["phone"])}</a></b></div>')
-    info.append(f'<div><span>Hours</span><b>{e(b.get("hours", "Call for today’s hours" if b.get("phone") else "Posted daily on Instagram"))}</b></div>')
+    info.append(f'<div><span>Hours</span><b>{e(b.get("hours", "Posted daily on Instagram" if ig else "Call for today’s hours"))}</b></div>')
+    if b.get('email'):
+        info.append(f'<div><span>Catering &amp; events</span><b><a href="mailto:{e(b["email"])}">{e(b["email"])}</a></b></div>')
     if ig:
         info.append(f'<div><span>Instagram</span><b><a href="{ig}" target="_blank" rel="noopener">@{e(b["instagram"])}</a></b></div>')
     map_html = '' if b.get('mobile') else (
