@@ -112,6 +112,67 @@
     .wallet-card .bal .amt { font-weight: 800; color: #4ade80; }
     .wallet-card .bal .usd { color: #888; font-size: 0.8rem; }
     .wallet-card .remove { background: none; border: none; color: #ff5c5c; cursor: pointer; font-size: 1.1rem; padding: 0 0.4rem; }
+
+    /* Bot Floor */
+    #botFloor {
+      background: radial-gradient(ellipse at 50% 0%, #1c0f2e 0%, #07030c 70%);
+      border: 1px solid rgba(168,85,247,0.25); border-radius: 16px; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    #botFloor:fullscreen, #botFloor.bf-max { border-radius: 0; border: none; }
+    #botFloor.bf-max { position: fixed; inset: 0; z-index: 3000; }
+    .bf-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
+      padding: 0.7rem 1rem; border-bottom: 1px solid rgba(168,85,247,0.15);
+    }
+    .bf-title { font-weight: 900; letter-spacing: 2px; font-size: 0.8rem; color: #c4b5fd; }
+    .bf-clock { color: #888; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+    .bf-full {
+      background: none; border: 1px solid rgba(168,85,247,0.35); color: #c4b5fd; border-radius: 50px;
+      padding: 0.35rem 0.9rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    .bf-room {
+      flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.5rem 1rem 1rem;
+      background-image: linear-gradient(rgba(168,85,247,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(168,85,247,0.06) 1px, transparent 1px);
+      background-size: 32px 32px; background-position: center bottom;
+    }
+    #botFloor:fullscreen .bf-room, #botFloor.bf-max .bf-room { align-content: center; gap: 2rem; padding: 2rem; }
+    .bot { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
+    .bot-say {
+      min-height: 2.6em; max-width: 100%; padding: 0.35rem 0.7rem; margin-bottom: 0.6rem;
+      background: #160c22; border: 1px solid rgba(168,85,247,0.25); border-radius: 10px;
+      font-size: 0.72rem; color: #e0d6ed; line-height: 1.3; transition: opacity 0.3s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bot svg { width: 100%; max-width: 120px; height: auto; overflow: visible; }
+    #botFloor:fullscreen .bot svg, #botFloor.bf-max .bot svg { max-width: 220px; }
+    #botFloor:fullscreen .bot-say, #botFloor.bf-max .bot-say { font-size: 0.95rem; }
+    #botFloor:fullscreen .bot-name, #botFloor.bf-max .bot-name { font-size: 1.15rem; }
+    #botFloor:fullscreen .bot-job, #botFloor:fullscreen .bot-status,
+    #botFloor.bf-max .bot-job, #botFloor.bf-max .bot-status { font-size: 0.9rem; }
+    .bot-name { font-weight: 800; font-size: 0.85rem; margin-top: 0.4rem; }
+    .bot-job { color: #888; font-size: 0.72rem; }
+    .bot-status { font-size: 0.72rem; margin-top: 0.3rem; font-variant-numeric: tabular-nums; }
+    .bot-status .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+    .bot-status.on .dot { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+    .bot-status.wait .dot { background: #facc15; }
+    .bot-status.on { color: #4ade80; } .bot-status.wait { color: #facc15; }
+
+    .bot .body { animation: botBob 1.6s ease-in-out infinite; transform-origin: 60px 120px; }
+    .bot .arm-l { animation: armWork 0.5s ease-in-out infinite alternate; transform-origin: 30px 72px; }
+    .bot .arm-r { animation: armWork 0.5s ease-in-out infinite alternate-reverse; transform-origin: 90px 72px; }
+    .bot.idle .arm-l, .bot.idle .arm-r { animation-duration: 2s; }
+    .bot .eye { animation: blink 4s infinite; transform-origin: center; transform-box: fill-box; }
+    .bot .light { animation: antenna 1s ease-in-out infinite alternate; }
+    .bot .screen-line { animation: typing 1.2s steps(6) infinite; }
+    @keyframes botBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @keyframes armWork { from { transform: rotate(-12deg); } to { transform: rotate(14deg); } }
+    @keyframes blink { 0%,94%,100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+    @keyframes antenna { from { opacity: 0.35; } to { opacity: 1; } }
+    @keyframes typing { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
+    @media (prefers-reduced-motion: reduce) { .bot * { animation: none !important; } }
+    @media (max-width: 700px) { .bf-room { grid-template-columns: 1fr 1fr; } }
   </style>
 </head>
 <body>
@@ -147,6 +208,19 @@
       </div>
       <div id="walletTotal" class="sub"></div>
       <div id="walletList"></div>
+    </div>
+
+    <div class="section">
+      <h2>Bot Floor</h2>
+      <p class="sub" style="margin-bottom:1rem;">Your bots and their schedules. The animation is for fun &mdash; it isn't live activity.</p>
+      <div id="botFloor">
+        <div class="bf-bar">
+          <span class="bf-title">🤖 5 STAR BOT FLOOR</span>
+          <span class="bf-clock" id="bfClock"></span>
+          <button class="bf-full" id="bfFullBtn" aria-label="Toggle full screen">⛶ Full screen</button>
+        </div>
+        <div class="bf-room" id="bfRoom"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -433,6 +507,116 @@ document.getElementById('addWalletBtn').addEventListener('click', () => {
 document.getElementById('walletAddress').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('addWalletBtn').click(); });
 
 renderWallets();
+</script>
+
+<script>
+// Bot Floor: one cartoon robot per bot. Schedules mirror vercel.json crons
+// (UTC); everything else here is decoration, not live telemetry.
+(function () {
+  const BOTS = [
+    { name: 'Support Bot', job: 'Answers site chat', color: '#a855f7', always: true,
+      lines: ['Answering a question…', 'Pointing to /download.html', 'Sending to support@…', 'Explaining Discord VIP', 'Waiting for a chat'] },
+    { name: 'Discord Poster', job: "Posts the day's games", color: '#5865f2', crons: [14, 22],
+      lines: ['Checking the slate…', 'Formatting game cards', 'Watching for changes', 'Charging up for the post'] },
+    { name: 'VIP Granter', job: 'Gives buyers the VIP role', color: '#facc15', always: true,
+      lines: ['Watching for VIP buyers', 'Checking Stripe payment', 'Handing out roles', 'Standing by'] },
+    { name: 'Picks Bot', job: 'AI sports picks', color: '#4ade80', always: true,
+      lines: ['Crunching team stats', 'Reading the odds', 'Picking winners', 'Studying box scores'] },
+  ];
+
+  function robot(c) {
+    return `<svg viewBox="0 0 120 130" aria-hidden="true">
+      <ellipse cx="60" cy="124" rx="34" ry="5" fill="#000" opacity="0.5"/>
+      <g class="body">
+        <line x1="60" y1="18" x2="60" y2="6" stroke="#666" stroke-width="3"/>
+        <circle class="light" cx="60" cy="5" r="4" fill="${c}"/>
+        <rect x="32" y="18" width="56" height="40" rx="12" fill="#2a1d3a" stroke="${c}" stroke-width="2.5"/>
+        <rect x="40" y="27" width="40" height="20" rx="6" fill="#0b0612"/>
+        <rect class="eye" x="47" y="32" width="8" height="10" rx="3" fill="${c}"/>
+        <rect class="eye" x="65" y="32" width="8" height="10" rx="3" fill="${c}"/>
+        <rect x="36" y="62" width="48" height="38" rx="10" fill="#2a1d3a" stroke="${c}" stroke-width="2.5"/>
+        <rect x="44" y="70" width="32" height="14" rx="3" fill="#0b0612"/>
+        <line class="screen-line" x1="47" y1="77" x2="73" y2="77" stroke="${c}" stroke-width="2" stroke-dasharray="4 2"/>
+        <circle cx="52" cy="92" r="2.5" fill="${c}" opacity="0.7"/><circle cx="60" cy="92" r="2.5" fill="${c}" opacity="0.5"/><circle cx="68" cy="92" r="2.5" fill="${c}" opacity="0.3"/>
+        <g class="arm-l"><rect x="20" y="68" width="12" height="26" rx="6" fill="#3a2a4e" stroke="${c}" stroke-width="2"/></g>
+        <g class="arm-r"><rect x="88" y="68" width="12" height="26" rx="6" fill="#3a2a4e" stroke="${c}" stroke-width="2"/></g>
+        <rect x="44" y="100" width="10" height="16" rx="4" fill="#3a2a4e"/><rect x="66" y="100" width="10" height="16" rx="4" fill="#3a2a4e"/>
+      </g>
+    </svg>`;
+  }
+
+  const room = document.getElementById('bfRoom');
+  room.innerHTML = BOTS.map((b, i) => `
+    <div class="bot" id="bot${i}">
+      <div class="bot-say">${b.lines[0]}</div>
+      ${robot(b.color)}
+      <div class="bot-name" style="color:${b.color}">${b.name}</div>
+      <div class="bot-job">${b.job}</div>
+      <div class="bot-status"></div>
+    </div>`).join('');
+
+  function nextCron(hours, now) {
+    let best = null;
+    for (const h of hours) {
+      const t = new Date(now); t.setUTCHours(h, 0, 0, 0);
+      if (t <= now) t.setUTCDate(t.getUTCDate() + 1);
+      if (!best || t < best) best = t;
+    }
+    return best;
+  }
+
+  function fmtLeft(ms) {
+    const m = Math.floor(ms / 60000), h = Math.floor(m / 60);
+    return h ? `${h}h ${m % 60}m` : `${m}m ${Math.floor(ms / 1000) % 60}s`;
+  }
+
+  function tick() {
+    const now = new Date();
+    document.getElementById('bfClock').textContent = now.toLocaleTimeString();
+    BOTS.forEach((b, i) => {
+      const el = document.getElementById('bot' + i);
+      const st = el.querySelector('.bot-status');
+      if (b.crons) {
+        const next = nextCron(b.crons, now);
+        const left = next - now;
+        st.className = 'bot-status wait';
+        st.innerHTML = `<span class="dot"></span>Next post ${next.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · ${fmtLeft(left)}`;
+        el.classList.toggle('idle', left > 10 * 60000);
+      } else {
+        st.className = 'bot-status on';
+        st.innerHTML = '<span class="dot"></span>On call 24/7';
+      }
+    });
+  }
+
+  // Each bot changes what it's "saying" on its own rhythm.
+  BOTS.forEach((b, i) => {
+    let n = 0;
+    const say = document.querySelector(`#bot${i} .bot-say`);
+    setInterval(() => {
+      say.style.opacity = 0;
+      setTimeout(() => { n = (n + 1) % b.lines.length; say.textContent = b.lines[n]; say.style.opacity = 1; }, 300);
+    }, 3200 + i * 700);
+  });
+
+  tick();
+  setInterval(tick, 1000);
+
+  // Real fullscreen where supported; iPhone Safari falls back to a fixed overlay.
+  const floor = document.getElementById('botFloor');
+  const btn = document.getElementById('bfFullBtn');
+  const isFull = () => document.fullscreenElement === floor || floor.classList.contains('bf-max');
+  function sync() { btn.textContent = isFull() ? '✕ Exit' : '⛶ Full screen'; }
+  btn.addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (floor.classList.contains('bf-max')) floor.classList.remove('bf-max');
+    else if (floor.requestFullscreen) floor.requestFullscreen().catch(() => floor.classList.add('bf-max'));
+    else floor.classList.add('bf-max');
+    setTimeout(sync, 50);
+  });
+  document.addEventListener('fullscreenchange', sync);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && floor.classList.contains('bf-max')) { floor.classList.remove('bf-max'); sync(); } });
+})();
 </script>
 
 </body>
