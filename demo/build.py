@@ -58,6 +58,19 @@ BUSINESSES = [
                    ('Birria Quesadilla', 'A customer go-to'), ('Birria Torta', 'Stacked birria sandwich'),
                    ('Pozole', 'Classic Mexican stew'), ('Birria Baked Potato', 'Loaded with birria'), ('Strawberry Fresca', 'House agua fresca')],
          about="Lompoc's birria truck. Slow-cooked birria de res, served on crispy tortillas with melted cheese. Follow us on Instagram for today's location and hours."),
+    dict(slug='chavitos-grill', name="Chavito's Grill", kind='food', city='Santa Maria',
+         tagline='Birria, shrimp, asada & al pastor · Family-run on South Broadway',
+         address='2116 S Broadway, Santa Maria, CA', instagram='chavitos_grill',
+         hours='Mon–Thu 3:30pm–12am · Fri & Sat 3:30pm–2am · Sun 10am–12am',
+         services=[('Birria', 'A house favorite'), ('Shrimp', 'A top seller'),
+                   ('Carne Asada', 'Carne ranchera cooked on the grill'), ('Al Pastor', 'Classic al pastor')],
+         about="A family-run Mexican food truck on South Broadway in Santa Maria. The family has been running food trucks for over 15 years. Open late every night."),
+    dict(slug='chef-tacos', name='Chef Tacos', kind='food', city='Santa Maria',
+         tagline='Authentic Mexican food · Recipes perfected over 35 years',
+         address='222 E Donovan Rd, Santa Maria, CA', instagram='chef_tacos1',
+         services=[('Al Pastor Tacos', 'One of our most popular'), ('Carne Asada Tacos', 'One of our most popular'),
+                   ('Catering', 'Taco catering for your event')],
+         about='A family-owned taco truck on East Donovan Road with recipes perfected over 35 years of cooking authentic Mexican food. Now booking catering events.'),
 ]
 
 
@@ -108,7 +121,7 @@ def page(b):
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>{e(b["name"])} · Lompoc, CA</title>
+<title>{e(b["name"])} · {e(b.get("city", "Lompoc"))}, CA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family={t["fontlink"]}&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -159,7 +172,7 @@ footer{{text-align:center;color:var(--m);font-size:.8rem;padding:2rem 1rem 6rem}
 <section><h2>{label}</h2><div class="grid">{cards}</div></section>
 <section><h2>About</h2><p class="about">{e(b["about"])}</p></section>
 <section><h2>Find Us</h2><div class="info">{"".join(info)}</div>{map_html}</section>
-<footer>© 2026 {e(b["name"])} · Lompoc, California</footer>
+<footer>© 2026 {e(b["name"])} · {e(b.get("city", "Lompoc"))}, California</footer>
 <div class="sticky">{ctas[0].replace('class="btn', 'class="btn primary') if ctas else ""}</div>
 </body>
 </html>
