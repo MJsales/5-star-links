@@ -132,7 +132,7 @@
       padding: 0.35rem 0.9rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;
     }
     .bf-room {
-      flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.5rem 1rem 1rem;
+      flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; padding: 1.5rem 1rem 1rem;
       background-image: linear-gradient(rgba(168,85,247,0.06) 1px, transparent 1px),
         linear-gradient(90deg, rgba(168,85,247,0.06) 1px, transparent 1px);
       background-size: 32px 32px; background-position: center bottom;
@@ -146,11 +146,14 @@
       display: flex; align-items: center; justify-content: center;
     }
     .bot svg { width: 100%; max-width: 120px; height: auto; overflow: visible; }
-    #botFloor:fullscreen .bot svg, #botFloor.bf-max .bot svg { max-width: 220px; }
-    #botFloor:fullscreen .bot-say, #botFloor.bf-max .bot-say { font-size: 0.95rem; }
-    #botFloor:fullscreen .bot-name, #botFloor.bf-max .bot-name { font-size: 1.15rem; }
-    #botFloor:fullscreen .bot-job, #botFloor:fullscreen .bot-status,
-    #botFloor.bf-max .bot-job, #botFloor.bf-max .bot-status { font-size: 0.9rem; }
+    @media (min-width: 701px) {
+      #botFloor:fullscreen .bot svg, #botFloor.bf-max .bot svg { max-width: 220px; }
+      #botFloor:fullscreen .bot-say, #botFloor.bf-max .bot-say { font-size: 0.95rem; }
+      #botFloor:fullscreen .bot-name, #botFloor.bf-max .bot-name { font-size: 1.15rem; }
+      #botFloor:fullscreen .bot-job, #botFloor:fullscreen .bot-status,
+      #botFloor.bf-max .bot-job, #botFloor.bf-max .bot-status { font-size: 0.9rem; }
+    }
+    #botFloor.bf-max .bf-room { overflow-y: auto; }
     .bot-name { font-weight: 800; font-size: 0.85rem; margin-top: 0.4rem; }
     .bot-job { color: #888; font-size: 0.72rem; }
     .bot-status { font-size: 0.72rem; margin-top: 0.3rem; font-variant-numeric: tabular-nums; }
@@ -522,6 +525,8 @@ renderWallets();
       lines: ['Watching for VIP buyers', 'Checking Stripe payment', 'Handing out roles', 'Standing by'] },
     { name: 'Picks Bot', job: 'AI sports picks', color: '#4ade80', always: true,
       lines: ['Crunching team stats', 'Reading the odds', 'Picking winners', 'Studying box scores'] },
+    { name: 'Deals Bot', job: 'Posts daily deals to Discord', color: '#ff5c5c', crons: [17],
+      lines: ['Hunting for deals…', 'Checking expiry dates', 'Adding affiliate tags', "Picking today's 3"] },
   ];
 
   function robot(c) {
